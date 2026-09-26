@@ -1,0 +1,3 @@
+/api/releases   /.netlify/functions/releases  200
+/releases/*     /releases/:splat              200
+/*              /index.html                   200

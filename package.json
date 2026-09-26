@@ -1,0 +1,52 @@
+{
+  "name": "tooldesk",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node scripts/test-all-tools.js && node scripts/test-download-outputs.js && node scripts/test-routes.js",
+    "desktop:dev": "export PATH=\"$HOME/.cargo/bin:$PATH\" && tauri dev",
+    "desktop:build": "./scripts/build-desktop.sh",
+    "mobile:sync": "cap sync && rm -rf android/app/src/main/assets/public/releases",
+    "mobile:android": "cap open android",
+    "mobile:ios": "cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/camera": "^8.2.4",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/clipboard": "^8.0.1",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2",
+    "@capacitor/status-bar": "^8.0.3",
+    "@ffmpeg/ffmpeg": "^0.12.10",
+    "@ffmpeg/util": "^0.12.1",
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/cli": "^2.11.5",
+    "@zxing/browser": "^0.2.1",
+    "bcryptjs": "^2.4.3",
+    "framer-motion": "^11.0.5",
+    "jsbarcode": "^3.12.3",
+    "jsqr": "^1.4.0",
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.358.0",
+    "mammoth": "^1.12.2",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^3.11.174",
+    "qrcode": "^1.5.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.0",
+    "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "netlify-cli": "^26.2.0",
+    "puppeteer-core": "^25.12.0",
+    "vite": "^5.4.0"
+  }
+}

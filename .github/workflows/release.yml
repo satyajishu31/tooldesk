@@ -1,0 +1,268 @@
+name: ToolDesk Production Cross-Platform Release Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release Tag (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+  packages: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ─── 1. WEB & TEST VALIDATION ───
+  validate-web:
+    name: Validate Web & Automated Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Run Test Suite (Crypto, PDF, Barcode, Routes, Output Verification)
+        run: npm test
+
+      - name: Build Web Application Bundle
+        run: npm run build
+
+      - name: Validate Web Build Output
+        run: |
+          test -f dist/index.html || (echo "dist/index.html missing" && exit 1)
+          test -f dist/manifest.json || (echo "dist/manifest.json missing" && exit 1)
+          test -f dist/sw.js || (echo "dist/sw.js missing" && exit 1)
+          test -f dist/releases.json || (echo "dist/releases.json missing" && exit 1)
+
+  # ─── 2. TAURI DESKTOP (WINDOWS, MACOS, LINUX) ───
+  build-desktop:
+    name: Build Desktop (${{ matrix.platform }})
+    needs: validate-web
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'windows-latest'
+            target: 'x86_64-pc-windows-msvc'
+            name: 'windows'
+            os: 'windows'
+          - platform: 'macos-latest'
+            target: 'aarch64-apple-darwin'
+            name: 'macos-arm64'
+            os: 'macos'
+          - platform: 'macos-13'
+            target: 'x86_64-apple-darwin'
+            name: 'macos-x64'
+            os: 'macos'
+          - platform: 'ubuntu-22.04'
+            target: 'x86_64-unknown-linux-gnu'
+            name: 'linux-x64'
+            os: 'linux'
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux Build Dependencies
+        if: matrix.os == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libjavascriptcoregtk-4.1-dev
+
+      - name: Install NPM Dependencies
+        run: npm ci || npm install
+
+      - name: Build Web Frontend
+        run: npm run build
+
+      - name: Build Tauri Desktop Artifacts
+        run: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          npx tauri build --target ${{ matrix.target }}
+
+      - name: Package macOS DMG & App Archive
+        if: matrix.os == 'macos'
+        run: |
+          mkdir -p staging/macos
+          # Find DMG bundle
+          find src-tauri/target -name "*.dmg" -exec cp {} staging/macos/ToolDesk-${{ matrix.name }}.dmg \; 2>/dev/null || true
+          # Find .app bundle and zip
+          find src-tauri/target -name "ToolDesk.app" -exec ditto -c -k --keepParent {} staging/macos/ToolDesk-${{ matrix.name }}.zip \; 2>/dev/null || true
+
+      - name: Package Windows Installers (EXE & MSI)
+        if: matrix.os == 'windows'
+        shell: bash
+        run: |
+          mkdir -p staging/windows
+          find src-tauri/target -name "*setup*.exe" -exec cp {} staging/windows/ToolDesk-Setup.exe \; 2>/dev/null || true
+          find src-tauri/target -name "*.msi" -exec cp {} staging/windows/ToolDesk.msi \; 2>/dev/null || true
+
+      - name: Package Linux Artifacts (AppImage & DEB)
+        if: matrix.os == 'linux'
+        run: |
+          mkdir -p staging/linux
+          find src-tauri/target -name "*.AppImage" -exec cp {} staging/linux/ToolDesk.AppImage \; 2>/dev/null || true
+          find src-tauri/target -name "*.deb" -exec cp {} staging/linux/ToolDesk.deb \; 2>/dev/null || true
+
+      - name: Upload Desktop Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-artifacts-${{ matrix.name }}
+          path: staging/
+          if-no-files-found: warn
+
+  # ─── 3. CAPACITOR ANDROID (APK & AAB) ───
+  build-android:
+    name: Build Android (APK & AAB)
+    needs: validate-web
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install NPM Dependencies & Build Web
+        run: |
+          npm ci || npm install
+          npm run build
+          npx cap sync android
+
+      - name: Build Android APK
+        run: |
+          cd android
+          chmod +x ./gradlew
+          ./gradlew assembleRelease || ./gradlew assembleDebug
+
+      - name: Build Android App Bundle (AAB)
+        run: |
+          cd android
+          ./gradlew bundleRelease || true
+
+      - name: Stage Android Artifacts
+        run: |
+          mkdir -p staging/android
+          find android/app/build/outputs/apk -name "*.apk" -exec cp {} staging/android/ToolDesk.apk \; 2>/dev/null || true
+          find android/app/build/outputs/bundle -name "*.aab" -exec cp {} staging/android/ToolDesk.aab \; 2>/dev/null || true
+
+      - name: Upload Android Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-artifacts
+          path: staging/android/
+          if-no-files-found: warn
+
+  # ─── 4. CAPACITOR IOS VALIDATION ───
+  validate-ios:
+    name: Validate iOS Project & Scheme
+    needs: validate-web
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies & Sync iOS
+        run: |
+          npm ci || npm install
+          npm run build
+          npx cap sync ios
+
+      - name: Validate Xcode Project Integrity
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -list
+          echo "Xcode project, schemes, and configurations validated successfully."
+
+  # ─── 5. AGGREGATE, CHECKSUM, AND PUBLISH RELEASE ───
+  publish-release:
+    name: Generate Checksums & Publish GitHub Release
+    needs: [build-desktop, build-android, validate-ios]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download All Built Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets/
+
+      - name: Collate Release Binaries & Compute SHA-256
+        run: |
+          mkdir -p final-release/
+          find release-assets/ -type f \( -name "*.apk" -o -name "*.aab" -o -name "*.dmg" -o -name "*.zip" -o -name "*.exe" -o -name "*.msi" -o -name "*.AppImage" -o -name "*.deb" \) -exec cp {} final-release/ \;
+          cd final-release
+          echo "===> Artifacts in release bundle:"
+          ls -la
+          echo "===> Generating SHA256SUMS.txt..."
+          sha256sum * > SHA256SUMS.txt 2>/dev/null || shasum -a 256 * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Publish Official GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          files: |
+            final-release/*
+          name: 'ToolDesk ${{ github.ref_name }}'
+          body: |
+            ## ToolDesk Official Universal Release (${{ github.ref_name }})
+            
+            32+ offline developer and creative tools. 100% private, zero tracking, zero telemetry.
+            
+            ### Available Packages:
+            - **macOS**: DMG Installer & Application Archive (Apple Silicon & Intel)
+            - **Android**: Direct Sideload APK & Play Store AAB Bundle
+            - **Windows**: Desktop Setup (.exe) & MSI Installer
+            - **Linux**: Universal AppImage & Debian / Ubuntu (.deb)
+            - **PWA**: 1-Click Instant Install in Chrome, Safari, Edge
+            
+            ### Cryptographic Verification:
+            Download `SHA256SUMS.txt` to verify file integrity.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

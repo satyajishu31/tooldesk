@@ -1,0 +1,113 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[dev]
+  framework = "vite"
+  command = "npx vite"
+  port = 8888
+  targetPort = 5173
+
+# Release manifest endpoint
+[[redirects]]
+  from = "/api/releases"
+  to = "/.netlify/functions/releases"
+  status = 200
+
+# Standalone Android APK download headers
+[[headers]]
+  for = "/releases/android/*.apk"
+  [headers.values]
+    Content-Type = "application/vnd.android.package-archive"
+    Content-Disposition = "attachment; filename=\"ToolDesk.apk\""
+    Cache-Control = "public, max-age=604800, immutable"
+
+# Android App Bundle download headers
+[[headers]]
+  for = "/releases/android/*.aab"
+  [headers.values]
+    Content-Type = "application/octet-stream"
+    Content-Disposition = "attachment; filename=\"ToolDesk.aab\""
+    Cache-Control = "public, max-age=604800, immutable"
+
+# macOS DMG installer download headers
+[[headers]]
+  for = "/releases/macos/*.dmg"
+  [headers.values]
+    Content-Type = "application/x-apple-diskimage"
+    Content-Disposition = "attachment; filename=\"ToolDesk.dmg\""
+    Cache-Control = "public, max-age=604800, immutable"
+
+# macOS App Zip archive download headers
+[[headers]]
+  for = "/releases/macos/*.zip"
+  [headers.values]
+    Content-Type = "application/zip"
+    Content-Disposition = "attachment; filename=\"ToolDesk-macOS.zip\""
+    Cache-Control = "public, max-age=604800, immutable"
+
+# Windows EXE setup headers
+[[headers]]
+  for = "/releases/windows/*.exe"
+  [headers.values]
+    Content-Type = "application/vnd.microsoft.portable-executable"
+    Content-Disposition = "attachment; filename=\"ToolDesk-Setup.exe\""
+    Cache-Control = "public, max-age=604800, immutable"
+
+# Windows MSI package headers
+[[headers]]
+  for = "/releases/windows/*.msi"
+  [headers.values]
+    Content-Type = "application/x-msi"
+    Content-Disposition = "attachment; filename=\"ToolDesk.msi\""
+    Cache-Control = "public, max-age=604800, immutable"
+
+# Linux AppImage headers
+[[headers]]
+  for = "/releases/linux/*.AppImage"
+  [headers.values]
+    Content-Type = "application/x-executable"
+    Content-Disposition = "attachment; filename=\"ToolDesk.AppImage\""
+    Cache-Control = "public, max-age=604800, immutable"
+
+# Linux DEB package headers
+[[headers]]
+  for = "/releases/linux/*.deb"
+  [headers.values]
+    Content-Type = "application/vnd.debian.binary-package"
+    Content-Disposition = "attachment; filename=\"ToolDesk.deb\""
+    Cache-Control = "public, max-age=604800, immutable"
+
+# Release metadata manifest
+[[headers]]
+  for = "/releases.json"
+  [headers.values]
+    Content-Type = "application/json; charset=utf-8"
+    Cache-Control = "public, max-age=60, s-maxage=300"
+    Access-Control-Allow-Origin = "*"
+
+# Direct release route pass-through
+[[redirects]]
+  from = "/releases/*"
+  to = "/releases/:splat"
+  status = 200
+
+# SPA fallback
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Global security & CORS headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cross-Origin-Opener-Policy = "same-origin"
+    Cross-Origin-Embedder-Policy = "credentialless"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(self), microphone=(self), geolocation=(), interest-cohort=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: data:; connect-src 'self' blob: data: https://api.groq.com https://api.remove.bg https://api-free.deepl.com https://api.deepl.com https://api.pwnedpasswords.com https://haveibeenpwned.com https://api.search.brave.com https://ipapi.co https://ipwho.is https://ipwhois.app https://freeipapi.com https://www.googleapis.com https://fonts.googleapis.com https://fonts.gstatic.com https://api.frankfurter.dev https://restcountries.com https://vimeo.com https://unpkg.com https://*.supabase.co https://api.github.com https://github.com ws://localhost:* wss://localhost:*; worker-src 'self' blob: https://cdn.jsdelivr.net https://unpkg.com; child-src 'self' blob:; frame-ancestors 'none';"

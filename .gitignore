@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment variables — NEVER commit real API keys
+.env
+.env.local
+.env.*.local
+
+# Netlify
+.netlify/
+
+# Editor / OS
+.DS_Store
+.vscode/
+*.log
+npm-debug.log*
+
+# Large Release Binaries (>100MB - built by GitHub Actions for GitHub Releases)
+releases/**/*.dmg
+releases/**/*.zip
+public/releases/**/*.dmg
+public/releases/**/*.zip
+*.dmg
+debug_screenshots/
+screenshot_*.png

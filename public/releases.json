@@ -1,0 +1,167 @@
+{
+  "version": "1.0.0",
+  "releaseDate": "2026-09-26",
+  "minimumSupportedVersion": "1.0.0",
+  "name": "ToolDesk v1.0.0 — Universal Release",
+  "notes": "Official release of ToolDesk: 32+ developer and creative tools running 100% locally with zero tracking and full offline capabilities.",
+  "platforms": {
+    "windows": {
+      "name": "Windows",
+      "status": "coming-soon",
+      "version": "1.0.0",
+      "badge": "Desktop App",
+      "desc": "Windows 10 & 11 • 64-bit Installer",
+      "formats": [
+        {
+          "type": "exe",
+          "label": "Windows Setup (.exe)",
+          "arch": "x64",
+          "filename": "ToolDesk-Setup.exe",
+          "size": "68 MB",
+          "status": "coming-soon",
+          "url": "",
+          "checksum": "",
+          "recommended": true
+        },
+        {
+          "type": "msi",
+          "label": "Windows MSI (.msi)",
+          "arch": "x64",
+          "filename": "ToolDesk.msi",
+          "size": "72 MB",
+          "status": "coming-soon",
+          "url": "",
+          "checksum": "",
+          "recommended": false
+        }
+      ]
+    },
+    "macos": {
+      "name": "macOS",
+      "status": "available",
+      "version": "1.0.0",
+      "badge": "Universal .DMG",
+      "desc": "Apple Silicon (M1/M2/M3/M4) & Intel • Standalone App",
+      "formats": [
+        {
+          "type": "dmg",
+          "label": "macOS Installer (.dmg)",
+          "arch": "Universal / Apple Silicon & Intel",
+          "filename": "ToolDesk.dmg",
+          "size": "397 MB",
+          "status": "available",
+          "url": "/releases/macos/ToolDesk.dmg",
+          "checksum": "ccbe4d36d53830b2715baf2d31ac93de1ef60ba7d069d36299d15d62796f9911",
+          "recommended": true
+        },
+        {
+          "type": "app",
+          "label": "Application Archive (.zip)",
+          "arch": "Apple Silicon (arm64)",
+          "filename": "ToolDesk-macOS.zip",
+          "size": "156 MB",
+          "status": "available",
+          "url": "/releases/macos/ToolDesk-macOS.zip",
+          "checksum": "45106a67b46dd410eeca22dea078fac4d94238e51ae720137376b8083aabb19d",
+          "recommended": false
+        }
+      ]
+    },
+    "linux": {
+      "name": "Linux",
+      "status": "coming-soon",
+      "version": "1.0.0",
+      "badge": "Universal Linux",
+      "desc": "Debian, Ubuntu, Fedora, Arch • Wayland & X11",
+      "formats": [
+        {
+          "type": "appimage",
+          "label": "Universal AppImage (.AppImage)",
+          "arch": "x86_64",
+          "filename": "ToolDesk.AppImage",
+          "size": "85 MB",
+          "status": "coming-soon",
+          "url": "",
+          "checksum": "",
+          "recommended": true
+        },
+        {
+          "type": "deb",
+          "label": "Debian / Ubuntu (.deb)",
+          "arch": "amd64",
+          "filename": "ToolDesk.deb",
+          "size": "78 MB",
+          "status": "coming-soon",
+          "url": "",
+          "checksum": "",
+          "recommended": false
+        }
+      ]
+    },
+    "android": {
+      "name": "Android",
+      "status": "available",
+      "version": "1.0.0",
+      "badge": "Official .APK",
+      "desc": "Direct Sideload • 100% Offline & Private",
+      "formats": [
+        {
+          "type": "apk",
+          "label": "Direct Android APK (.apk)",
+          "arch": "arm64-v8a, armeabi-v7a, x86_64",
+          "filename": "ToolDesk.apk",
+          "size": "33 MB",
+          "status": "available",
+          "url": "/releases/android/ToolDesk.apk",
+          "checksum": "7b00889859bca0b14dca1cc17fe8aecfdcecf5a7ea54bc0788464f46762afd0f",
+          "recommended": true,
+          "note": "Official direct standalone binary. Sideload on any Android 8.0+ device."
+        },
+        {
+          "type": "aab",
+          "label": "Google Play Bundle (.aab)",
+          "arch": "Universal Play Store Bundle",
+          "filename": "ToolDesk.aab",
+          "size": "32 MB",
+          "status": "store-bundle",
+          "url": "/releases/android/ToolDesk.aab",
+          "checksum": "1772c1c448dbf67c57324682b626f60735c1e0805fc1a6c324ea74223f4429ca",
+          "recommended": false,
+          "note": "Play Store publishing bundle"
+        }
+      ],
+      "storeUrl": ""
+    },
+    "ios": {
+      "name": "iPhone / iPad",
+      "status": "pwa-ready",
+      "version": "1.0.0",
+      "badge": "iOS Standalone",
+      "desc": "Add to Home Screen from Safari • Full Screen App",
+      "formats": [],
+      "instructions": "Open in Safari → Tap Share (⎋) → Select 'Add to Home Screen' (➕) → Tap 'Add'",
+      "storeUrl": "",
+      "testflightUrl": ""
+    },
+    "pwa": {
+      "name": "Web App / PWA",
+      "status": "available",
+      "version": "1.0.0",
+      "badge": "Zero Install",
+      "desc": "Runs in Chrome, Edge, Safari, Brave offline",
+      "formats": [
+        {
+          "type": "pwa",
+          "label": "1-Click Browser Install",
+          "arch": "Any OS / Browser",
+          "filename": "",
+          "size": "Instant (0 MB)",
+          "status": "available",
+          "url": "/",
+          "checksum": "",
+          "recommended": true
+        }
+      ]
+    }
+  }
+}
