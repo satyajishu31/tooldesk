@@ -1,4 +1,4 @@
-# ⚡ ToolDesk (SJenix) — Web, Desktop & Mobile
+# ⚡ ToolDesk — Web, Desktop & Mobile
 
 **ToolDesk** — 33+ high-performance, privacy-first utility tools. 
 Runs seamlessly from **one codebase** as:

@@ -191,7 +191,7 @@ export default function IPLookup() {
   const downloadReport = useCallback(() => {
     if (!result) return
     const reportText = `============================================================
-SJENIX IP INTELLIGENCE & ASN THREAT CLASSIFICATION DOSSIER
+TOOLDESK IP INTELLIGENCE & ASN THREAT CLASSIFICATION DOSSIER
 ============================================================
 [1] AUTHORITATIVE NETWORK DATA (DIRECT REGISTRY)
 IP Address:        ${result.ip} (${result.ipType})

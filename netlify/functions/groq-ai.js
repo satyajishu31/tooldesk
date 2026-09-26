@@ -1446,7 +1446,7 @@ exports.handler = async function(event) {
 
       if (!text) throw new Error('Translated text is required.')
 
-      const sys = `You are a cross-cultural localization and native register specialist for ToolDesk/SJenix.
+      const sys = `You are a cross-cultural localization and native register specialist for ToolDesk.
 The user provides a translated text in ${targetLang}.
 Calibrate this translation to sound natural and native for the requested register: "${tone}".
 Return ONLY a valid JSON object with the exact keys:
