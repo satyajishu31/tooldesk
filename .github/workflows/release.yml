@@ -66,7 +66,7 @@ jobs:
             target: 'aarch64-apple-darwin'
             name: 'macos-arm64'
             os: 'macos'
-          - platform: 'macos-13'
+          - platform: 'macos-latest'
             target: 'x86_64-apple-darwin'
             name: 'macos-x64'
             os: 'macos'
@@ -104,6 +104,7 @@ jobs:
         run: npm run build
 
       - name: Build Tauri Desktop Artifacts
+        shell: bash
         run: |
           export PATH="$HOME/.cargo/bin:$PATH"
           npx tauri build --target ${{ matrix.target }}
@@ -123,6 +124,9 @@ jobs:
         run: |
           mkdir -p staging/windows
           find src-tauri/target -name "*setup*.exe" -exec cp {} staging/windows/ToolDesk-Setup.exe \; 2>/dev/null || true
+          if [ ! -f staging/windows/ToolDesk-Setup.exe ]; then
+            find src-tauri/target -path "*/bundle/nsis/*.exe" -exec cp {} staging/windows/ToolDesk-Setup.exe \; 2>/dev/null || true
+          fi
           find src-tauri/target -name "*.msi" -exec cp {} staging/windows/ToolDesk.msi \; 2>/dev/null || true
 
       - name: Package Linux Artifacts (AppImage & DEB)
@@ -148,11 +152,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Java JDK 17
+      - name: Setup Java JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
 
       - name: Setup Node.js 22
         uses: actions/setup-node@v4
