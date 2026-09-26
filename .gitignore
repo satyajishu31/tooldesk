@@ -19,11 +19,35 @@ build/
 *.log
 npm-debug.log*
 
-# Large Release Binaries (>100MB - built by GitHub Actions for GitHub Releases)
+# Release binaries — built by GitHub Actions, served via GitHub Releases
 releases/**/*.dmg
 releases/**/*.zip
+releases/**/*.apk
+releases/**/*.aab
 public/releases/**/*.dmg
 public/releases/**/*.zip
+public/releases/**/*.apk
+public/releases/**/*.aab
 *.dmg
+
+# One-off audit/capture/inspection scripts (not part of the test suite)
+scripts/audit-*.js
+scripts/capture-*.js
+scripts/deep-*.js
+scripts/inspect-*.js
+scripts/micro-*.js
+scripts/pre-deployment-*.js
+scripts/verify-*.js
+scripts/visual-*.js
+scripts/typing-*.js
+scripts/independent-*.js
+scripts/test-all-platforms-*.js
+scripts/test-all-tool-renders.js
+scripts/test-all-viewports-*.js
+
+# Debug/screenshot artifacts
 debug_screenshots/
 screenshot_*.png
+
+# Agent workspace
+.agents/
