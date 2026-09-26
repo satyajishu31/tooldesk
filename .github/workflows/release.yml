@@ -28,20 +28,20 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install Dependencies
         run: npm ci || npm install
 
-      - name: Run Test Suite (Crypto, PDF, Barcode, Routes, Output Verification)
-        run: npm test
-
       - name: Build Web Application Bundle
         run: npm run build
+
+      - name: Run Test Suite (Crypto, PDF, Barcode, Routes, Output Verification)
+        run: npm test
 
       - name: Validate Web Build Output
         run: |
@@ -80,10 +80,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install Rust Stable
@@ -154,10 +154,10 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Setup Node.js
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install NPM Dependencies & Build Web
@@ -199,10 +199,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install Dependencies & Sync iOS

@@ -2,7 +2,8 @@
 // Automated route and asset availability verification against preview server
 
 import assert from 'node:assert/strict'
-import { spawn } from 'node:child_process'
+import { spawn, execSync } from 'node:child_process'
+import fs from 'node:fs'
 import http from 'node:http'
 
 const BASE_URL = 'http://localhost:4173'
@@ -59,6 +60,11 @@ const STATIC_ASSETS_TO_TEST = [
 ]
 
 async function ensureServer() {
+  if (!fs.existsSync('dist/index.html')) {
+    console.log('dist/index.html not found, building production bundle for route tests...')
+    execSync('npm run build', { stdio: 'inherit' })
+  }
+
   const isUp = await new Promise(resolve => {
     const req = http.get(BASE_URL, () => resolve(true))
     req.on('error', () => resolve(false))
