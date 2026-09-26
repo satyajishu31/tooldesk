@@ -20,6 +20,7 @@ function getAllowedOrigins(event) {
   const allowed = new Set()
 
   // 1. Predefined site environment URLs
+  allowed.add('https://tooldesk-app.netlify.app')
   allowed.add('https://tool-desk.netlify.app')
   allowed.add('https://sjenix-tooldesk.netlify.app')
   allowed.add('https://tooldesk.app')

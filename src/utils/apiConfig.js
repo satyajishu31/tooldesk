@@ -10,7 +10,7 @@
 
 export const PRODUCTION_API_ORIGIN = (typeof process !== 'undefined' && process.env?.VITE_API_ORIGIN) ||
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_ORIGIN) ||
-  (typeof window !== 'undefined' && window.location?.origin && window.location.origin.includes('sjenix-tooldesk.netlify.app') ? window.location.origin : 'https://sjenix-tooldesk.netlify.app')
+  (typeof window !== 'undefined' && window.location?.origin && window.location.origin.includes('tooldesk-app.netlify.app') ? window.location.origin : 'https://tooldesk-app.netlify.app')
 
 export function isTauri() {
   if (typeof window === 'undefined') return false
