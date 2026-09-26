@@ -64,8 +64,8 @@ exports.handler = async function (event, context) {
         platforms: {
           macos: { status: 'available', version: '1.0.0' },
           android: { status: 'available', version: '1.0.0' },
-          windows: { status: 'coming-soon', version: '1.0.0' },
-          linux: { status: 'coming-soon', version: '1.0.0' },
+          windows: { status: 'available', version: '1.0.0' },
+          linux: { status: 'available', version: '1.0.0' },
           ios: { status: 'pwa-ready', version: '1.0.0' },
           pwa: { status: 'available', version: '1.0.0' }
         }

@@ -7,7 +7,7 @@
   "platforms": {
     "windows": {
       "name": "Windows",
-      "status": "coming-soon",
+      "status": "available",
       "version": "1.0.0",
       "badge": "Desktop App",
       "desc": "Windows 10 & 11 • 64-bit Installer",
@@ -17,10 +17,10 @@
           "label": "Windows Setup (.exe)",
           "arch": "x64",
           "filename": "ToolDesk-Setup.exe",
-          "size": "68 MB",
-          "status": "coming-soon",
-          "url": "",
-          "checksum": "",
+          "size": "89 MB",
+          "status": "available",
+          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.0/ToolDesk-Setup.exe",
+          "checksum": "d8863d7864eb980f33d6d9d5814259f54da3bd94ecfacf1a6004c349fd3bdf5d",
           "recommended": true
         },
         {
@@ -28,10 +28,10 @@
           "label": "Windows MSI (.msi)",
           "arch": "x64",
           "filename": "ToolDesk.msi",
-          "size": "72 MB",
-          "status": "coming-soon",
-          "url": "",
-          "checksum": "",
+          "size": "89 MB",
+          "status": "available",
+          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.0/ToolDesk.msi",
+          "checksum": "232e984e44c6e1f4237337af0198958d97ef40e3134e510b44b4f700aea81f11",
           "recommended": false
         }
       ]
@@ -45,31 +45,42 @@
       "formats": [
         {
           "type": "dmg",
-          "label": "macOS Installer (.dmg)",
-          "arch": "Universal / Apple Silicon & Intel",
-          "filename": "ToolDesk.dmg",
-          "size": "397 MB",
+          "label": "macOS Apple Silicon (.dmg)",
+          "arch": "Apple Silicon (arm64)",
+          "filename": "ToolDesk-macos-arm64.dmg",
+          "size": "91 MB",
           "status": "available",
-          "url": "/releases/macos/ToolDesk.dmg",
-          "checksum": "ccbe4d36d53830b2715baf2d31ac93de1ef60ba7d069d36299d15d62796f9911",
+          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.0/ToolDesk-macos-arm64.dmg",
+          "checksum": "3dffc07f852d40049c76100876cff5d78e32df98888456035d15a84d612f7602",
           "recommended": true
+        },
+        {
+          "type": "dmg",
+          "label": "macOS Intel (.dmg)",
+          "arch": "Intel (x64)",
+          "filename": "ToolDesk-macos-x64.dmg",
+          "size": "90 MB",
+          "status": "available",
+          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.0/ToolDesk-macos-x64.dmg",
+          "checksum": "e02f911e984c13ff73369f05e0bd244e064bdc5908ccf378d10411f5a490b69f",
+          "recommended": false
         },
         {
           "type": "app",
           "label": "Application Archive (.zip)",
           "arch": "Apple Silicon (arm64)",
-          "filename": "ToolDesk-macOS.zip",
-          "size": "156 MB",
+          "filename": "ToolDesk-macos-arm64.zip",
+          "size": "90 MB",
           "status": "available",
-          "url": "/releases/macos/ToolDesk-macOS.zip",
-          "checksum": "45106a67b46dd410eeca22dea078fac4d94238e51ae720137376b8083aabb19d",
+          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.0/ToolDesk-macos-arm64.zip",
+          "checksum": "d38c15029c1e90c4f43d3201adfd8e6c1951b9e2236ebe76645ffe4586708f68",
           "recommended": false
         }
       ]
     },
     "linux": {
       "name": "Linux",
-      "status": "coming-soon",
+      "status": "available",
       "version": "1.0.0",
       "badge": "Universal Linux",
       "desc": "Debian, Ubuntu, Fedora, Arch • Wayland & X11",
@@ -79,10 +90,10 @@
           "label": "Universal AppImage (.AppImage)",
           "arch": "x86_64",
           "filename": "ToolDesk.AppImage",
-          "size": "85 MB",
-          "status": "coming-soon",
-          "url": "",
-          "checksum": "",
+          "size": "168 MB",
+          "status": "available",
+          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.0/ToolDesk.AppImage",
+          "checksum": "5093aca4546939b8eec1da4a87634305a2bc17658c20d517d454973965797d3c",
           "recommended": true
         },
         {
@@ -90,10 +101,10 @@
           "label": "Debian / Ubuntu (.deb)",
           "arch": "amd64",
           "filename": "ToolDesk.deb",
-          "size": "78 MB",
-          "status": "coming-soon",
-          "url": "",
-          "checksum": "",
+          "size": "89 MB",
+          "status": "available",
+          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.0/ToolDesk.deb",
+          "checksum": "983242fb6eabe9b0781f9f91f2cfcc9ed8a84d0929456c48e7ba5cb08e74b6c4",
           "recommended": false
         }
       ]
@@ -110,10 +121,10 @@
           "label": "Direct Android APK (.apk)",
           "arch": "arm64-v8a, armeabi-v7a, x86_64",
           "filename": "ToolDesk.apk",
-          "size": "33 MB",
+          "size": "42 MB",
           "status": "available",
           "url": "/releases/android/ToolDesk.apk",
-          "checksum": "7b00889859bca0b14dca1cc17fe8aecfdcecf5a7ea54bc0788464f46762afd0f",
+          "checksum": "849e404e91c505da40a4e2bdf6974c667214ccda5218606ebdc8830ef48499a4",
           "recommended": true,
           "note": "Official direct standalone binary. Sideload on any Android 8.0+ device."
         },
@@ -122,10 +133,10 @@
           "label": "Google Play Bundle (.aab)",
           "arch": "Universal Play Store Bundle",
           "filename": "ToolDesk.aab",
-          "size": "32 MB",
+          "size": "33 MB",
           "status": "store-bundle",
-          "url": "/releases/android/ToolDesk.aab",
-          "checksum": "1772c1c448dbf67c57324682b626f60735c1e0805fc1a6c324ea74223f4429ca",
+          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.0/ToolDesk.aab",
+          "checksum": "d3637572187816914ce4117ea6f95695b76a415fcb33234add95be8af8120e14",
           "recommended": false,
           "note": "Play Store publishing bundle"
         }
