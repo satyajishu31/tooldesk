@@ -105,131 +105,40 @@ function getSafeMapKey(dict, userKey, fallbackKey) {
 }
 
 
-const STABLE_GROQ_MODELS = [
-  'llama-3.1-8b-instant',
-  'llama-3.3-70b-versatile',
-  'llama-3.2-11b-vision-preview',
-  'llama-3.2-90b-vision-preview',
-  'whisper-large-v3',
-  'whisper-large-v3-turbo'
-]
-let _cachedGroqModels = null
-let _lastModelsFetch = 0
-let _modelsFetchPromise = null
-
-function fetchGroqAvailableModels(key) {
-  const now = Date.now()
-  if (!key || typeof key !== 'string') return STABLE_GROQ_MODELS
-  if (_cachedGroqModels && (now - _lastModelsFetch < 300000)) {
-    return _cachedGroqModels
-  }
-  // If not cached, trigger background refresh asynchronously without blocking user's immediate request
-  if (!_modelsFetchPromise) {
-    _modelsFetchPromise = (async () => {
-      try {
-        const res = await new Promise((resolve, reject) => {
-          let activeRes = null
-          const req = https.request({
-            hostname: 'api.groq.com',
-            path: '/openai/v1/models',
-            method: 'GET',
-            headers: {
-              Authorization: `Bearer ${key}`,
-              'User-Agent': 'ToolDesk/1.0',
-            },
-            timeout: 3000,
-          }, r => {
-            activeRes = r
-            const chunks = []
-            let byteCount = 0
-            const MAX_MODELS = 2 * 1024 * 1024 // 2MB cap
-            r.on('data', c => {
-              byteCount += c.length
-              if (byteCount > MAX_MODELS) {
-                r.destroy()
-                req.destroy()
-                if (r.socket && !r.socket.destroyed) r.socket.destroy()
-                reject(new Error('Model list exceeded 2MB limit'))
-                return
-              }
-              chunks.push(c)
-            })
-            r.on('end', () => resolve({ status: r.statusCode, body: Buffer.concat(chunks).toString('utf8') }))
-            r.on('error', reject)
-          })
-          req.on('error', reject)
-          req.on('timeout', () => {
-            req.destroy()
-            if (activeRes) activeRes.destroy()
-            reject(new Error('timeout'))
-          })
-          req.end()
-        })
-        if (res.status === 200) {
-          const d = JSON.parse(res.body)
-          if (Array.isArray(d?.data)) {
-            _cachedGroqModels = d.data.map(m => m.id)
-            _lastModelsFetch = Date.now()
-          }
-        } else {
-          _lastModelsFetch = Date.now() - 240000
-        }
-      } catch {
-        _lastModelsFetch = Date.now() - 240000
-      } finally {
-        _modelsFetchPromise = null
-      }
-    })()
-  }
-
-  return _cachedGroqModels || STABLE_GROQ_MODELS
-}
-
-/* ── Groq chat completion with automatic model fallback & dynamic discovery ── */
+/* ── Groq chat completion with fast, direct fallback ── */
 async function groqChat(key, model, messages, options = {}) {
   const isMultimodal = Array.isArray(messages) && messages.some(m => Array.isArray(m.content) && m.content.some(c => c.type === 'image_url'))
-
-  const availableModels = fetchGroqAvailableModels(key)
 
   const textPreferences = [
     model,
     process.env.GROQ_MODEL,
     'llama-3.1-8b-instant',
-    'llama-3.3-70b-versatile',
+    'openai/gpt-oss-20b',
   ].filter((m, idx, arr) => typeof m === 'string' && m.trim().length > 0 && arr.indexOf(m) === idx)
 
   const visionPreferences = [
     model,
     process.env.GROQ_VISION_MODEL,
     'llama-3.2-11b-vision-preview',
-    'llama-3.2-90b-vision-preview',
+    'qwen/qwen3.8-27b',
   ].filter((m, idx, arr) => typeof m === 'string' && m.trim().length > 0 && arr.indexOf(m) === idx)
 
-  let rawCandidates = isMultimodal ? visionPreferences : textPreferences
-  let candidateModels = rawCandidates
-
-  // If live available models are loaded, filter to only valid models to prevent "model does not exist" errors
-  if (Array.isArray(availableModels) && availableModels.length > 0) {
-    const valid = rawCandidates.filter(m => availableModels.includes(m))
-    if (valid.length > 0) {
-      candidateModels = valid
-    }
-  }
+  const candidateModels = isMultimodal ? visionPreferences : textPreferences
 
   let lastRes = null
-  const deadline = Date.now() + 8500 // 8.5s total deadline budget to prevent unhandled Netlify lambda kill
+  const deadline = Date.now() + 8000 // 8s total deadline budget to prevent Netlify lambda kill
   for (const candidate of candidateModels) {
     const remainingTime = deadline - Date.now()
     if (remainingTime <= 1000) break
 
     let effectiveMaxTokens = options.max_tokens ?? 1024
-    // If we are retrying after a 429 on an earlier candidate, cap max_tokens to preserve quota
     if (lastRes && lastRes.status === 429 && effectiveMaxTokens > 512) {
       effectiveMaxTokens = 512
     }
 
     try {
       const res = await new Promise((resolve, reject) => {
+        let activeRes = null
         const body = JSON.stringify({
           model: candidate,
           messages,
@@ -247,28 +156,29 @@ async function groqChat(key, model, messages, options = {}) {
             'Content-Type': 'application/json',
             'Content-Length': Buffer.byteLength(body),
           },
-          timeout: Math.max(2000, Math.min(6500, remainingTime - 500)),
-        }, res => {
+          timeout: Math.max(1500, Math.min(4500, remainingTime - 500)),
+        }, r => {
+          activeRes = r
           const chunks = []
           let byteCount = 0
-          const MAX_STREAM = 5 * 1024 * 1024 // 5MB cap
-          res.on('data', c => {
+          const MAX_STREAM = 5 * 1024 * 1024
+          r.on('data', c => {
             byteCount += c.length
             if (byteCount > MAX_STREAM) {
-              res.destroy()
+              r.destroy()
               req.destroy()
-              if (res.socket && !res.socket.destroyed) res.socket.destroy()
               reject(new Error('Groq response exceeded 5MB stream limit'))
               return
             }
             chunks.push(c)
           })
-          res.on('end', () => resolve({ status: res.statusCode, body: Buffer.concat(chunks).toString('utf8') }))
-          res.on('error', reject)
+          r.on('end', () => resolve({ status: r.statusCode, body: Buffer.concat(chunks).toString('utf8') }))
+          r.on('error', reject)
         })
         req.on('error', reject)
         req.on('timeout', () => {
           req.destroy()
+          if (activeRes) activeRes.destroy()
           reject(new Error('Groq request timed out'))
         })
         req.write(body)
@@ -289,7 +199,7 @@ async function groqChat(key, model, messages, options = {}) {
       }
 
       lastRes = res
-      // If the error is model not found, decommissioned, rate limited (429), entity too large (413), or temporary outage (502/503), try next candidate
+      // If error is 429, 404, 400 (bad model), or 502/503, immediately try next candidate model without artificial sleep
       let isRetryable = false
       if (res.status === 429 || res.status === 404 || res.status === 413 || res.status === 502 || res.status === 503) {
         isRetryable = true
@@ -297,23 +207,21 @@ async function groqChat(key, model, messages, options = {}) {
         try {
           const parsed = JSON.parse(res.body)
           const msg = (parsed?.error?.message || '').toLowerCase()
-          if (msg.includes('model') || msg.includes('limit') || msg.includes('token') || msg.includes('decommissioned') || msg.includes('access') || msg.includes('large')) {
+          if (msg.includes('model') || msg.includes('limit') || msg.includes('token') || msg.includes('decommissioned') || msg.includes('access')) {
             isRetryable = true
           }
         } catch {}
       }
 
       if (isRetryable && Date.now() < deadline) {
-        await new Promise(r => setTimeout(r, 200))
-        continue // Try next candidate model
+        continue // Try next candidate immediately!
       } else {
         break
       }
     } catch (e) {
       lastRes = { status: 504, body: JSON.stringify({ error: { message: e.message || 'Groq request failed or timed out' } }) }
       if (Date.now() < deadline) {
-        await new Promise(r => setTimeout(r, 200))
-        continue // Try next candidate model
+        continue
       } else {
         break
       }
@@ -322,6 +230,7 @@ async function groqChat(key, model, messages, options = {}) {
 
   return lastRes || { status: 504, body: JSON.stringify({ error: { message: 'All candidate Groq AI models timed out or were unavailable' } }) }
 }
+
 
 /* ── Parse Groq response ── */
 function parseChat(res) {
@@ -1010,7 +919,7 @@ Your job is to recommend the best tool for the user's needs, explain how to use 
     safeMessages.push({ role: 'user', content: 'What free tools does ToolDesk offer, and how can you help me?' })
   }
 
-  const res = await groqChat(key, 'llama-3.1-8b-instant', [
+  const res = await groqChat(key, null, [
     { role: 'system', content: systemPrompt },
     ...safeMessages
   ], { temperature: 0.7, max_tokens: 256 })
@@ -1025,7 +934,7 @@ async function handleVideoInsights(key, payload = {}) {
   if (!transcript) throw new Error('Valid transcript text is required')
   const duration = Number(payload.duration) || 0
 
-  const res = await groqChat(key, 'llama-3.3-70b-versatile', [
+  const res = await groqChat(key, null, [
     {
       role: 'system',
       content: `You are an elite executive assistant and media analyst. Analyze the following spoken transcript and extract structured meeting/video intelligence. Return ONLY a valid JSON object matching this schema:
@@ -1099,7 +1008,7 @@ async function handleContractAuditor(key, payload = {}) {
     ? `Answer the user question about this document based strictly on the text provided: "${sanitizeForPrompt(query, 500)}"`
     : `Audit this contract or legal document. Identify critical clauses, hidden liabilities, auto-renewal terms, termination conditions, and provide an overall risk assessment.`
 
-  const res = await groqChat(key, 'llama-3.3-70b-versatile', [
+  const res = await groqChat(key, null, [
     {
       role: 'system',
       content: `You are an expert contract and legal document analyst. Analyze the document thoroughly and return ONLY a JSON object:
@@ -1133,7 +1042,7 @@ async function handleGenerateFaviconSvg(key, payload = {}) {
   const prompt = typeof payload.prompt === 'string' ? payload.prompt.trim() : ''
   if (!prompt) throw new Error('Favicon description prompt is required')
 
-  const res = await groqChat(key, 'llama-3.3-70b-versatile', [
+  const res = await groqChat(key, null, [
     {
       role: 'system',
       content: `You are an elite vector icon designer and brand identity specialist. Generate a clean, modern, ultra-sharp vector SVG icon suitable for a 32x32 to 512x512 app favicon.
@@ -1211,7 +1120,7 @@ async function handleThumbnailIdeas(key, payload = {}) {
   const query = title || topic || ''
   if (!query) throw new Error('Video title or topic is required')
 
-  const res = await groqChat(key, 'llama-3.3-70b-versatile', [
+  const res = await groqChat(key, null, [
     {
       role: 'system',
       content: `You are an elite YouTube growth strategist and viral media producer. Given a video topic or title, produce high-CTR titles, opening curiosity hooks, and visual thumbnail concepts.
@@ -1311,7 +1220,7 @@ async function handleToneAuditor(key, payload = {}) {
   const text = typeof payload.text === 'string' ? payload.text.trim() : ''
   if (!text) throw new Error('Text is required for tone analysis')
 
-  const res = await groqChat(key, 'llama-3.3-70b-versatile', [
+  const res = await groqChat(key, null, [
     {
       role: 'system',
       content: `You are an expert computational linguist and communications editor. Analyze the provided text and return ONLY a valid JSON object:
