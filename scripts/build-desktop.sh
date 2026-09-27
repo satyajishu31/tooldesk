@@ -45,8 +45,6 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     
     # 5. Convert to compressed read-only DMG (UDZO)
     hdiutil convert "$TMP_DMG" -format UDZO -o "releases/macos/ToolDesk.dmg" -ov
-    cp "releases/macos/ToolDesk.dmg" "public/releases/macos/ToolDesk.dmg"
-    cp "releases/macos/ToolDesk.dmg" "dist/releases/macos/ToolDesk.dmg"
     rm -f "$TMP_DMG"
     trap - EXIT INT TERM
     
@@ -54,8 +52,6 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 
     echo "==> Creating macOS Application ZIP archive..."
     ditto -c -k --keepParent "$APP_PATH" "releases/macos/ToolDesk-macOS.zip"
-    cp "releases/macos/ToolDesk-macOS.zip" "public/releases/macos/ToolDesk-macOS.zip"
-    cp "releases/macos/ToolDesk-macOS.zip" "dist/releases/macos/ToolDesk-macOS.zip"
 
     echo "==> Verifying DMG integrity..."
     hdiutil verify "releases/macos/ToolDesk.dmg"
