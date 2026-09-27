@@ -1,6 +1,6 @@
 [package]
 name = "tooldesk"
-version = "1.0.1"
+version = "1.0.2"
 description = "ToolDesk — All Tools in Your Browser & Desktop"
 authors = ["you"]
 license = ""

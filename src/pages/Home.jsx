@@ -1159,7 +1159,7 @@ export default function Home() {
         </div>
 
         {/* Central content */}
-        <div className="hero-content-wrap" style={{ maxWidth:400, width:'100%', position:'relative', zIndex:3, display:'flex', flexDirection:'column', alignItems:'center', boxSizing:'border-box', padding:'0 8px' }}>
+        <div className="hero-content-wrap" style={{ maxWidth:460, width:'100%', position:'relative', zIndex:3, display:'flex', flexDirection:'column', alignItems:'center', boxSizing:'border-box', padding:'0 12px' }}>
           <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ duration:.45, delay:.02, ease:[.22,1,.36,1] }}
             className="hero-eyebrow"
             style={{ display:'inline-flex', alignItems:'center', gap:7, padding:'6px 14px', borderRadius:999,
@@ -1176,18 +1176,18 @@ export default function Home() {
 
           <motion.h1 initial={{ opacity:0, y:24 }} animate={{ opacity:1, y:0 }} transition={{ duration:.6, delay:.13, ease:[.22,1,.36,1] }}
             className="hero-h1"
-            style={{ fontFamily:'Syne,sans-serif', fontSize:'clamp(24px, 3.5vw, 40px)', fontWeight:800, lineHeight:1.15, letterSpacing:'-0.5px', color:'#0d0d1a', marginBottom:14,
+            style={{ fontFamily:'Syne,sans-serif', fontSize:'clamp(28px, 4vw, 42px)', fontWeight:800, lineHeight:1.16, letterSpacing:'-0.5px', color:'#0d0d1a', marginBottom:14,
               textAlign:'center', maxWidth:'100%', width:'100%', boxSizing:'border-box', overflowWrap:'break-word', wordBreak:'normal', hyphens:'none', whiteSpace:'normal' }}>
             <RotatingText/>
           </motion.h1>
 
           <motion.p initial={{ opacity:0, y:14 }} animate={{ opacity:1, y:0 }} transition={{ duration:.54, delay:.25 }}
             className="hero-sub"
-            style={{ fontSize:'clamp(14px,1.35vw,15.5px)', color:'#475569', lineHeight:1.62, fontWeight:400, maxWidth:370, width:'100%', boxSizing:'border-box', margin:'0 auto 18px', padding:'0 4px', textWrap:'balance' }}>
+            style={{ fontSize:'clamp(14.5px,1.4vw,16px)', color:'#475569', lineHeight:1.64, fontWeight:400, maxWidth:420, width:'100%', boxSizing:'border-box', margin:'0 auto 18px', padding:'0 6px', textWrap:'balance' }}>
             {TOOL_COUNT} powerful browser tools —{' '}
             <span style={{ fontWeight:600, color:'#2563EB' }}>no installs, no accounts, no limits.</span>
             <br/>
-            <span className="hero-sub-secondary" style={{ fontSize:'clamp(12.5px,1.15vw,13.5px)', color:'#64748b', fontWeight:400, display:'inline-block', marginTop:5 }}>
+            <span className="hero-sub-secondary" style={{ fontSize:'clamp(13px,1.2vw,14px)', color:'#64748b', fontWeight:400, display:'inline-block', marginTop:5 }}>
               Privacy-first tools trusted by developers, designers &amp; creators worldwide.
             </span>
           </motion.p>
@@ -1925,8 +1925,8 @@ export default function Home() {
             min-height: auto !important;
             padding-top: calc(64px + max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px)) + 24px) !important;
             padding-bottom: calc(32px + max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px))) !important;
-            padding-left: 16px !important;
-            padding-right: 16px !important;
+            padding-left: 20px !important;
+            padding-right: 20px !important;
             display: flex !important;
             flex-direction: column !important;
             align-items: center !important;
@@ -1935,11 +1935,11 @@ export default function Home() {
           .hero-content-wrap {
             max-width: 100% !important;
             width: 100% !important;
-            padding: 0 4px !important;
+            padding: 0 8px !important;
             margin: 0 auto !important;
           }
           .hero-h1 {
-            font-size: clamp(21px, 6.2vw, 30px) !important;
+            font-size: clamp(26px, 7vw, 34px) !important;
             line-height: 1.18 !important;
             letter-spacing: -0.4px !important;
             margin-bottom: 14px !important;
@@ -1982,9 +1982,9 @@ export default function Home() {
             margin: 0 auto !important;
           }
           .hero-sub {
-            font-size: clamp(13.5px, 3.4vw, 15px) !important;
-            line-height: 1.54 !important;
-            max-width: 340px !important;
+            font-size: clamp(14px, 3.6vw, 15.5px) !important;
+            line-height: 1.58 !important;
+            max-width: 360px !important;
             margin: 0 auto 18px !important;
           }
           .orbit-shell {
@@ -2051,17 +2051,17 @@ export default function Home() {
           .hero-section {
             padding-top: calc(64px + max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px)) + 20px) !important;
             padding-bottom: calc(24px + max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px))) !important;
-            padding-left: 10px !important;
-            padding-right: 10px !important;
+            padding-left: 14px !important;
+            padding-right: 14px !important;
           }
           .hero-h1 {
-            font-size: clamp(19px, 5.8vw, 23px) !important;
+            font-size: clamp(23px, 6.8vw, 27px) !important;
             line-height: 1.18 !important;
             letter-spacing: -0.3px !important;
           }
           .hero-sub {
-            font-size: 13px !important;
-            max-width: 290px !important;
+            font-size: 13.5px !important;
+            max-width: 310px !important;
             margin-bottom: 14px !important;
           }
           .mobile-orbit-frame {

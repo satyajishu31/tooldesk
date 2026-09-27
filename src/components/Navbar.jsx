@@ -249,7 +249,7 @@ export default function Navbar() {
                 }
               }}
               style={{
-                height: 38,
+                height: 42,
                 width: 'auto',
                 display: 'block',
                 objectFit: 'contain'
@@ -704,7 +704,7 @@ export default function Navbar() {
             padding-right: max(12px, env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px)) !important;
             gap: 8px !important;
           }
-          .tooldesk-navbar-logo { height: 35.5px !important; }
+          .tooldesk-navbar-logo { height: 39px !important; }
         }
         @media (max-width:380px) {
           .tooldesk-nav-bar {
@@ -715,7 +715,7 @@ export default function Navbar() {
             padding-right: max(8px, env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px)) !important;
             gap: 6px !important;
           }
-          .tooldesk-navbar-logo { height: 34.5px !important; }
+          .tooldesk-navbar-logo { height: 37.5px !important; }
           .nav-mobile { gap: 4px !important; }
         }
         @media (max-width:560px) {

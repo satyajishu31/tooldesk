@@ -95,6 +95,15 @@ export default function AIHelper() {
   const chatEndRef = useRef(null)
   const panelRef = useRef(null)
   const prevPathRef = useRef(location.pathname)
+  const abortControllerRef = useRef(null)
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [])
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -147,6 +156,12 @@ export default function AIHelper() {
 
   const sendText = async (text) => {
     if (!text.trim() || loading) return
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
     const userMsg = { role: 'user', content: text }
     setMessages(prev => [...prev, userMsg])
     setLoading(true)
@@ -155,11 +170,13 @@ export default function AIHelper() {
       const data = await safeFetchJSON('/.netlify/functions/groq-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           tool: 'aiHelper',
           payload: { messages: history, currentPage: currentPageLabel }
         })
       })
+      if (controller.signal.aborted) return
       if (data?.response || data?.result) {
         setMessages(prev => [...prev, { role: 'assistant', content: data.response || data.result }])
       } else if (data?.error) {
@@ -167,7 +184,8 @@ export default function AIHelper() {
       } else {
         setMessages(prev => [...prev, { role: 'assistant', content: "⚠️ Sorry, I encountered an issue. Please try again." }])
       }
-    } catch {
+    } catch (e) {
+      if (e?.name === 'AbortError') return
       setMessages(prev => [...prev, { role: 'assistant', content: "⚠️ Connection error. Please check your network." }])
     } finally {
       setLoading(false)
@@ -212,14 +230,19 @@ export default function AIHelper() {
             {/* Header */}
             <div style={{
               background: 'linear-gradient(135deg, rgba(79,142,247,1), rgba(156,111,222,1))',
-              padding: '16px',
+              padding: '14px 16px',
               color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
               gap: 10,
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,.35)'
             }}>
-              <div style={{ fontSize: 22, flexShrink: 0 }}>🤖</div>
+              <img
+                src="/robot-assistant-64.webp"
+                alt="ToolDesk AI Assistant"
+                style={{ width: 28, height: 28, objectFit: 'contain', flexShrink: 0 }}
+                onError={e => { e.currentTarget.src = '/robot-assistant-64.png' }}
+              />
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontWeight: 700, fontSize: 14.5, fontFamily: 'Syne, sans-serif' }}>ToolDesk Assistant</div>
                 <div style={{ fontSize: 11.5, opacity: 0.85, display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -261,17 +284,31 @@ export default function AIHelper() {
               {messages.map((m, idx) => (
                 <div key={idx} style={{
                   alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-                  maxWidth: '85%',
-                  padding: '10px 14px',
-                  borderRadius: m.role === 'user' ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
-                  background: m.role === 'user' ? 'var(--blue, #4F8EF7)' : '#ffffff',
-                  color: m.role === 'user' ? '#ffffff' : '#1e293b',
-                  fontSize: 13.5,
-                  lineHeight: 1.62,
-                  boxShadow: m.role === 'user' ? '0 2px 8px rgba(79,142,247,0.2)' : '0 2px 6px rgba(0,0,0,0.04)',
-                  border: m.role === 'user' ? 'none' : '1px solid rgba(0,0,0,0.05)'
+                  maxWidth: '88%',
+                  display: 'flex',
+                  gap: 8,
+                  alignItems: 'flex-start'
                 }}>
-                  {m.content}
+                  {m.role !== 'user' && (
+                    <img
+                      src="/robot-assistant-64.webp"
+                      alt="Assistant"
+                      style={{ width: 22, height: 22, objectFit: 'contain', flexShrink: 0, marginTop: 4 }}
+                      onError={e => { e.currentTarget.src = '/robot-assistant-64.png' }}
+                    />
+                  )}
+                  <div style={{
+                    padding: '10px 14px',
+                    borderRadius: m.role === 'user' ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
+                    background: m.role === 'user' ? 'var(--blue, #4F8EF7)' : '#ffffff',
+                    color: m.role === 'user' ? '#ffffff' : '#1e293b',
+                    fontSize: 13.5,
+                    lineHeight: 1.62,
+                    boxShadow: m.role === 'user' ? '0 2px 8px rgba(79,142,247,0.2)' : '0 2px 6px rgba(0,0,0,0.04)',
+                    border: m.role === 'user' ? 'none' : '1px solid rgba(0,0,0,0.05)'
+                  }}>
+                    {m.content}
+                  </div>
                 </div>
               ))}
               {loading && (
@@ -408,8 +445,17 @@ export default function AIHelper() {
             animation: 'aiHelperPulse 2.2s ease-out infinite',
           }}/>
         )}
-        <motion.span animate={{ rotate: isOpen ? 90 : 0 }} transition={{ duration: 0.25 }} style={{ display:'flex' }}>
-          {isOpen ? '✕' : '🤖'}
+        <motion.span animate={{ rotate: isOpen ? 90 : 0 }} transition={{ duration: 0.25 }} style={{ display:'flex', alignItems:'center', justifyContent:'center' }}>
+          {isOpen ? (
+            <span style={{ fontSize: 18, fontWeight: 700 }}>✕</span>
+          ) : (
+            <img
+              src="/robot-assistant-64.webp"
+              alt="ToolDesk Assistant"
+              style={{ width: 34, height: 34, objectFit: 'contain', pointerEvents: 'none', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.18))' }}
+              onError={e => { e.currentTarget.src = '/robot-assistant-64.png' }}
+            />
+          )}
         </motion.span>
       </motion.button>
       <style>{`

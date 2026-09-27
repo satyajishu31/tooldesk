@@ -106,102 +106,96 @@ function getSafeMapKey(dict, userKey, fallbackKey) {
 
 
 const STABLE_GROQ_MODELS = [
-  'qwen/qwen3.8-27b',
-  'openai/gpt-oss-120b',
-  'openai/gpt-oss-20b',
-  'llama-3.3-70b-versatile',
   'llama-3.1-8b-instant',
+  'llama-3.3-70b-versatile',
   'llama-3.2-11b-vision-preview',
   'llama-3.2-90b-vision-preview',
-  'whisper-large-v3'
+  'whisper-large-v3',
+  'whisper-large-v3-turbo'
 ]
 let _cachedGroqModels = null
 let _lastModelsFetch = 0
 let _modelsFetchPromise = null
 
-async function fetchGroqAvailableModels(key) {
+function fetchGroqAvailableModels(key) {
   const now = Date.now()
   if (!key || typeof key !== 'string') return STABLE_GROQ_MODELS
   if (_cachedGroqModels && (now - _lastModelsFetch < 300000)) {
     return _cachedGroqModels
   }
-  if (_modelsFetchPromise) return _modelsFetchPromise
-
-  _modelsFetchPromise = (async () => {
-    try {
-      const res = await new Promise((resolve, reject) => {
-        let activeRes = null
-        const req = https.request({
-          hostname: 'api.groq.com',
-          path: '/openai/v1/models',
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${key}`,
-            'User-Agent': 'ToolDesk/1.0',
-          },
-          timeout: 4000,
-        }, r => {
-          activeRes = r
-          const chunks = []
-          let byteCount = 0
-          const MAX_MODELS = 2 * 1024 * 1024 // 2MB cap
-          r.on('data', c => {
-            byteCount += c.length
-            if (byteCount > MAX_MODELS) {
-              r.destroy()
-              req.destroy()
-              if (r.socket && !r.socket.destroyed) r.socket.destroy()
-              reject(new Error('Model list exceeded 2MB limit'))
-              return
-            }
-            chunks.push(c)
+  // If not cached, trigger background refresh asynchronously without blocking user's immediate request
+  if (!_modelsFetchPromise) {
+    _modelsFetchPromise = (async () => {
+      try {
+        const res = await new Promise((resolve, reject) => {
+          let activeRes = null
+          const req = https.request({
+            hostname: 'api.groq.com',
+            path: '/openai/v1/models',
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${key}`,
+              'User-Agent': 'ToolDesk/1.0',
+            },
+            timeout: 3000,
+          }, r => {
+            activeRes = r
+            const chunks = []
+            let byteCount = 0
+            const MAX_MODELS = 2 * 1024 * 1024 // 2MB cap
+            r.on('data', c => {
+              byteCount += c.length
+              if (byteCount > MAX_MODELS) {
+                r.destroy()
+                req.destroy()
+                if (r.socket && !r.socket.destroyed) r.socket.destroy()
+                reject(new Error('Model list exceeded 2MB limit'))
+                return
+              }
+              chunks.push(c)
+            })
+            r.on('end', () => resolve({ status: r.statusCode, body: Buffer.concat(chunks).toString('utf8') }))
+            r.on('error', reject)
           })
-          r.on('end', () => resolve({ status: r.statusCode, body: Buffer.concat(chunks).toString('utf8') }))
-          r.on('error', reject)
+          req.on('error', reject)
+          req.on('timeout', () => {
+            req.destroy()
+            if (activeRes) activeRes.destroy()
+            reject(new Error('timeout'))
+          })
+          req.end()
         })
-        req.on('error', reject)
-        req.on('timeout', () => {
-          req.destroy()
-          if (activeRes) activeRes.destroy()
-          reject(new Error('timeout'))
-        })
-        req.end()
-      })
-      if (res.status === 200) {
-        const d = JSON.parse(res.body)
-        if (Array.isArray(d?.data)) {
-          _cachedGroqModels = d.data.map(m => m.id)
-          _lastModelsFetch = Date.now()
-          return _cachedGroqModels
+        if (res.status === 200) {
+          const d = JSON.parse(res.body)
+          if (Array.isArray(d?.data)) {
+            _cachedGroqModels = d.data.map(m => m.id)
+            _lastModelsFetch = Date.now()
+          }
+        } else {
+          _lastModelsFetch = Date.now() - 240000
         }
+      } catch {
+        _lastModelsFetch = Date.now() - 240000
+      } finally {
+        _modelsFetchPromise = null
       }
-      _lastModelsFetch = Date.now() - 240000
-    } catch {
-      _lastModelsFetch = Date.now() - 240000
-    }
-    finally {
-      _modelsFetchPromise = null
-    }
-    return _cachedGroqModels || STABLE_GROQ_MODELS
-  })()
+    })()
+  }
 
-  return _modelsFetchPromise
+  return _cachedGroqModels || STABLE_GROQ_MODELS
 }
 
 /* ── Groq chat completion with automatic model fallback & dynamic discovery ── */
 async function groqChat(key, model, messages, options = {}) {
   const isMultimodal = Array.isArray(messages) && messages.some(m => Array.isArray(m.content) && m.content.some(c => c.type === 'image_url'))
 
-  const availableModels = await fetchGroqAvailableModels(key)
+  const availableModels = fetchGroqAvailableModels(key)
 
   const textPreferences = [
     model,
     process.env.GROQ_MODEL,
-    'qwen/qwen3.8-27b',
-    'openai/gpt-oss-120b',
-    'openai/gpt-oss-20b',
-    'llama-3.3-70b-versatile',
     'llama-3.1-8b-instant',
+    'llama-3.3-70b-versatile',
   ].filter((m, idx, arr) => typeof m === 'string' && m.trim().length > 0 && arr.indexOf(m) === idx)
 
   const visionPreferences = [
@@ -209,14 +203,13 @@ async function groqChat(key, model, messages, options = {}) {
     process.env.GROQ_VISION_MODEL,
     'llama-3.2-11b-vision-preview',
     'llama-3.2-90b-vision-preview',
-    'qwen/qwen3.8-27b',
   ].filter((m, idx, arr) => typeof m === 'string' && m.trim().length > 0 && arr.indexOf(m) === idx)
 
   let rawCandidates = isMultimodal ? visionPreferences : textPreferences
   let candidateModels = rawCandidates
 
   // If live available models are loaded, filter to only valid models to prevent "model does not exist" errors
-  if (availableModels.length > 0) {
+  if (Array.isArray(availableModels) && availableModels.length > 0) {
     const valid = rawCandidates.filter(m => availableModels.includes(m))
     if (valid.length > 0) {
       candidateModels = valid
@@ -1017,7 +1010,7 @@ Your job is to recommend the best tool for the user's needs, explain how to use 
     safeMessages.push({ role: 'user', content: 'What free tools does ToolDesk offer, and how can you help me?' })
   }
 
-  const res = await groqChat(key, null, [
+  const res = await groqChat(key, 'llama-3.1-8b-instant', [
     { role: 'system', content: systemPrompt },
     ...safeMessages
   ], { temperature: 0.7, max_tokens: 256 })

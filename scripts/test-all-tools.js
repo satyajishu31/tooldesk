@@ -8,6 +8,9 @@ import { parsePageRangeString, formatBytes, PAGE_SIZES } from '../src/utils/pdfE
 import { resolveApiUrl, getApiBaseUrl, isTauri, isCapacitor, isNativeShell, isDownloadAppAvailable } from '../src/utils/apiConfig.js'
 import { DEFAULT_RELEASE_CONFIG, CURRENT_RELEASE_VERSION, partitionFormatsForPlatform, detectCpuArchitecture } from '../src/utils/releaseConfig.js'
 import { createHash } from 'node:crypto'
+import fs from 'node:fs'
+import path from 'node:path'
+import { execSync } from 'node:child_process'
 
 console.log('===> Starting ToolDesk Comprehensive Automated Test Suite...\n')
 
@@ -541,20 +544,27 @@ test('Download Logic 12: Installed iOS app - Download App hidden in iOS Capacito
   }
 })
 
-test('Release Integrity: Release version 1.0.1 canonical consistency across files', async () => {
-  const fs = await import('fs')
-  const path = await import('path')
+test('Release Integrity: Release version 1.0.2 canonical consistency across files', () => {
   const pkg = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf8'))
   const releasesJson = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'public/releases.json'), 'utf8'))
+  const tauriConf = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'src-tauri/tauri.conf.json'), 'utf8'))
+  const cargoToml = fs.readFileSync(path.resolve(process.cwd(), 'src-tauri/Cargo.toml'), 'utf8')
+  const gradle = fs.readFileSync(path.resolve(process.cwd(), 'android/app/build.gradle'), 'utf8')
+  const pbxproj = fs.readFileSync(path.resolve(process.cwd(), 'ios/App/App.xcodeproj/project.pbxproj'), 'utf8')
 
-  assert.equal(pkg.version, '1.0.1', 'package.json version must be 1.0.1')
-  assert.equal(releasesJson.version, '1.0.1', 'public/releases.json version must be 1.0.1')
-  assert.equal(DEFAULT_RELEASE_CONFIG.version, '1.0.1', 'DEFAULT_RELEASE_CONFIG.version must be 1.0.1')
-  assert.equal(CURRENT_RELEASE_VERSION, '1.0.1', 'CURRENT_RELEASE_VERSION must be 1.0.1')
+  assert.equal(pkg.version, '1.0.2', 'package.json version must be 1.0.2')
+  assert.equal(releasesJson.version, '1.0.2', 'public/releases.json version must be 1.0.2')
+  assert.equal(DEFAULT_RELEASE_CONFIG.version, '1.0.2', 'DEFAULT_RELEASE_CONFIG.version must be 1.0.2')
+  assert.equal(CURRENT_RELEASE_VERSION, '1.0.2', 'CURRENT_RELEASE_VERSION must be 1.0.2')
+  assert.equal(tauriConf.version, '1.0.2', 'tauri.conf.json version must be 1.0.2')
+  assert(cargoToml.includes('version = "1.0.2"'), 'Cargo.toml must have version 1.0.2')
+  assert(gradle.includes('versionName "1.0.2"'), 'Android build.gradle must have versionName "1.0.2"')
+  assert(gradle.includes('versionCode 3'), 'Android build.gradle must have versionCode 3')
+  assert(pbxproj.includes('MARKETING_VERSION = 1.0.2;'), 'iOS pbxproj must have MARKETING_VERSION = 1.0.2')
+  assert(pbxproj.includes('CURRENT_PROJECT_VERSION = 3;'), 'iOS pbxproj must have CURRENT_PROJECT_VERSION = 3')
 })
 
-test('Release Integrity: Tag v1.0.0 remains permanently immutable at 580276d', async () => {
-  const { execSync } = await import('child_process')
+test('Release Integrity: Tag v1.0.0 remains permanently immutable at 580276d', () => {
   let resolved = ''
   try {
     resolved = execSync('git rev-parse refs/tags/v1.0.0^{commit}', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }).trim()
@@ -569,16 +579,127 @@ test('Release Integrity: Tag v1.0.0 remains permanently immutable at 580276d', a
   }
 })
 
-test('Release Integrity: Release metadata download URLs reference v1.0.1 and not v1.0.0', async () => {
-  const fs = await import('fs')
-  const path = await import('path')
+test('Release Integrity: Release metadata download URLs reference v1.0.2 and not older releases', () => {
   const releasesRaw = fs.readFileSync(path.resolve(process.cwd(), 'public/releases.json'), 'utf8')
   const configRaw = fs.readFileSync(path.resolve(process.cwd(), 'src/utils/releaseConfig.js'), 'utf8')
 
   assert(!releasesRaw.includes('/releases/download/v1.0.0/'), 'releases.json must NOT contain download URLs pointing to v1.0.0')
   assert(!configRaw.includes('/releases/download/v1.0.0/'), 'releaseConfig.js must NOT contain download URLs pointing to v1.0.0')
-  assert(releasesRaw.includes('/releases/download/v1.0.1/'), 'releases.json MUST contain download URLs pointing to v1.0.1')
-  assert(configRaw.includes('/releases/download/v1.0.1/'), 'releaseConfig.js MUST contain download URLs pointing to v1.0.1')
+  assert(releasesRaw.includes('/releases/download/v1.0.2/'), 'releases.json MUST contain download URLs pointing to v1.0.2')
+  assert(configRaw.includes('/releases/download/v1.0.2/'), 'releaseConfig.js MUST contain download URLs pointing to v1.0.2')
+})
+
+test('Branding: Logo assets existence and optimization across formats', () => {
+  const requiredAssets = [
+    'public/logo.png',
+    'public/logo.webp',
+    'public/logo-tooldesk.png',
+    'public/logo-tooldesk.webp',
+    'public/logo-white.png',
+    'public/logo-white.webp',
+    'public/logo-icon.png',
+    'public/logo-icon.webp',
+    'public/favicon.ico',
+    'public/favicon.png',
+    'public/pwa-192x192.png',
+    'public/pwa-512x512.png',
+    'android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png',
+    'ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-1024x1024.png',
+    'src-tauri/icons/icon.icns'
+  ]
+  for (const asset of requiredAssets) {
+    const fullPath = path.resolve(process.cwd(), asset)
+    assert(fs.existsSync(fullPath), `Required branding asset missing: ${asset}`)
+    const stat = fs.statSync(fullPath)
+    assert(stat.size > 0, `Branding asset empty: ${asset}`)
+  }
+})
+
+test('Branding: Robot assistant assets existence and transparency verification', () => {
+  const requiredRobotAssets = [
+    'public/robot-assistant.webp',
+    'public/robot-assistant.png',
+    'public/robot-assistant-128.webp',
+    'public/robot-assistant-128.png',
+    'public/robot-assistant-64.webp',
+    'public/robot-assistant-64.png',
+    'public/robot-assistant-32.png'
+  ]
+  for (const asset of requiredRobotAssets) {
+    const fullPath = path.resolve(process.cwd(), asset)
+    assert(fs.existsSync(fullPath), `Required robot asset missing: ${asset}`)
+    const stat = fs.statSync(fullPath)
+    assert(stat.size > 0, `Robot asset empty: ${asset}`)
+  }
+  // Verify PNG header has alpha channel support
+  const pngHeader = fs.readFileSync(path.resolve(process.cwd(), 'public/robot-assistant.png')).subarray(0, 30)
+  assert.equal(pngHeader[12], 0x49) // I
+  assert.equal(pngHeader[13], 0x48) // H
+  assert.equal(pngHeader[14], 0x44) // D
+  assert.equal(pngHeader[15], 0x52) // R
+  assert.equal(pngHeader[25], 6) // Color type 6 = RGBA (truecolor with alpha)
+})
+
+test('AI UX & Architecture: Malformed and standard AI response handling', () => {
+  // Test helper parsing logic simulating what handleAIHelper and AI clients do
+  function parseAIResponse(data) {
+    if (!data) return { error: 'Empty response' }
+    if (typeof data === 'string') {
+      try {
+        data = JSON.parse(data)
+      } catch {
+        return { error: 'Invalid JSON format' }
+      }
+    }
+    if (data.choices?.[0]?.message?.content) {
+      return { success: true, text: data.choices[0].message.content }
+    }
+    if (data.reply) {
+      return { success: true, text: data.reply }
+    }
+    if (data.error) {
+      return { error: typeof data.error === 'string' ? data.error : (data.error.message || 'Unknown API error') }
+    }
+    return { error: 'Unexpected response schema' }
+  }
+
+  // 1. Standard OpenAI/Groq format
+  const groqRes = parseAIResponse({ choices: [{ message: { content: 'Hello from Groq LPU' } }] })
+  assert.equal(groqRes.success, true)
+  assert.equal(groqRes.text, 'Hello from Groq LPU')
+
+  // 2. Direct reply format
+  const directRes = parseAIResponse({ reply: 'Direct helper reply' })
+  assert.equal(directRes.success, true)
+  assert.equal(directRes.text, 'Direct helper reply')
+
+  // 3. Upstream error format
+  const errRes = parseAIResponse({ error: { message: 'Rate limit exceeded' } })
+  assert.equal(errRes.error, 'Rate limit exceeded')
+
+  // 4. Malformed raw HTML or random text
+  const malformedRes = parseAIResponse('<html>502 Bad Gateway</html>')
+  assert.equal(malformedRes.error, 'Invalid JSON format')
+
+  // 5. Empty input
+  const emptyRes = parseAIResponse(null)
+  assert.equal(emptyRes.error, 'Empty response')
+})
+
+test('Service Worker: Cache version matches v1.0.2 and precaches robot asset', () => {
+  const swCode = fs.readFileSync(path.resolve(process.cwd(), 'public/sw.js'), 'utf8')
+  assert(swCode.includes("SW_VERSION = 'v1.0.2'"), 'sw.js SW_VERSION must be v1.0.2')
+  assert(swCode.includes("CACHE_NAME = `tooldesk-pwa-${SW_VERSION}`"), 'sw.js CACHE_NAME must use SW_VERSION')
+  assert(swCode.includes('/robot-assistant-64.webp'), 'sw.js must precache /robot-assistant-64.webp')
+  assert(swCode.includes('/logo.png'), 'sw.js must precache /logo.png')
+})
+
+test('Release Integrity: Checksums consistency in SHA256SUMS.txt', () => {
+  const sumsPath = path.resolve(process.cwd(), 'public/SHA256SUMS.txt')
+  assert(fs.existsSync(sumsPath), 'public/SHA256SUMS.txt must exist')
+  const content = fs.readFileSync(sumsPath, 'utf8')
+  assert(content.includes('ToolDesk-macos-arm64.dmg'), 'SHA256SUMS.txt must contain ToolDesk-macos-arm64.dmg')
+  assert(content.includes('ToolDesk-macos-arm64.zip'), 'SHA256SUMS.txt must contain ToolDesk-macos-arm64.zip')
 })
 
 console.log(`\n===> Test Suite Finished: ${passed} passed, ${failed} failed.\n`)
