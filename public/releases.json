@@ -124,7 +124,7 @@
           "size": "34 MB",
           "status": "available",
           "url": "/releases/android/ToolDesk.apk",
-          "checksum": "71c771fcd172613c8cf43c12ec987fbe806c6314783e402d6471f5ffb1e1ba44",
+          "checksum": "205668f42435077b7b2708f046bf9b92ffa1f80d5b3c8f901b9936ebb527160e",
           "recommended": true,
           "note": "Official direct standalone binary. Sideload on any Android 8.0+ device."
         },
