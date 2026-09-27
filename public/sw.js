@@ -1,6 +1,7 @@
-const CACHE_NAME = 'tooldesk-pwa-v4'
-const RUNTIME_CACHE = 'tooldesk-runtime-v4'
-const FONT_CACHE = 'tooldesk-fonts-v4'
+const SW_VERSION = 'v1.0.1'
+const CACHE_NAME = `tooldesk-pwa-${SW_VERSION}`
+const RUNTIME_CACHE = `tooldesk-runtime-${SW_VERSION}`
+const FONT_CACHE = 'tooldesk-fonts-v1'
 
 const PRECACHE_URLS = [
   '/',
@@ -15,10 +16,14 @@ const PRECACHE_URLS = [
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      // Resilient precaching: individual failures won't break the entire service worker installation
+      // Resilient precaching with cache: 'reload' to ensure fresh assets from server
       for (const url of PRECACHE_URLS) {
         try {
-          await cache.add(url)
+          const req = new Request(url, { cache: 'reload' })
+          const res = await fetch(req)
+          if (res && res.status === 200) {
+            await cache.put(url, res)
+          }
         } catch (err) {
           console.warn(`[SW] Precache skipped for ${url}:`, err)
         }
@@ -33,6 +38,7 @@ self.addEventListener('activate', (e) => {
       return Promise.all(
         keys.map((k) => {
           if (k !== CACHE_NAME && k !== RUNTIME_CACHE && k !== FONT_CACHE) {
+            console.log('[SW] Purging obsolete cache:', k)
             return caches.delete(k)
           }
         })
@@ -46,11 +52,12 @@ self.addEventListener('fetch', (e) => {
 
   const url = new URL(e.request.url)
 
-  // 1. Never intercept or cache serverless function requests or standalone release installers
+  // 1. Never intercept or cache serverless function requests, release metadata, or standalone installers
   if (
     url.pathname.startsWith('/.netlify/functions/') ||
     url.pathname.startsWith('/api/') ||
-    url.pathname.startsWith('/releases/')
+    url.pathname.startsWith('/releases/') ||
+    url.pathname === '/releases.json'
   ) {
     return
   }

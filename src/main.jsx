@@ -39,9 +39,31 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   </React.StrictMode>
 )
 
+// Reload on dynamic chunk preload failure (e.g. after a new release is deployed)
+if (typeof window !== 'undefined') {
+  window.addEventListener('vite:preloadError', () => {
+    window.location.reload()
+  })
+}
+
 if ('serviceWorker' in navigator && !isNativeShell() && window.location?.protocol?.startsWith('http')) {
+  let refreshing = false
+  const hadController = Boolean(navigator.serviceWorker.controller)
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hadController && !refreshing) {
+      refreshing = true
+      window.location.reload()
+    }
+  })
+
   const registerSW = () => {
-    navigator.serviceWorker.register('/sw.js').catch(err => {
+    navigator.serviceWorker.register('/sw.js').then((registration) => {
+      // Periodic update check
+      setInterval(() => {
+        registration.update().catch(() => {})
+      }, 60 * 60 * 1000)
+    }).catch(err => {
       console.warn('Service worker registration failed:', err)
     })
   }
@@ -52,3 +74,4 @@ if ('serviceWorker' in navigator && !isNativeShell() && window.location?.protoco
     window.addEventListener('load', registerSW)
   }
 }
+
