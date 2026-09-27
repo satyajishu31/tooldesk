@@ -119,18 +119,18 @@ function ScrollTop() {
   useEffect(() => {
     if (hash) {
       const targetId = hash.replace('#', '')
-      const el = document.getElementById(targetId)
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        return
-      }
-      const timer = setTimeout(() => {
-        const retryEl = document.getElementById(targetId)
-        if (retryEl) {
-          retryEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      let cancelled = false
+      const tryScroll = (attempts = 0) => {
+        if (cancelled) return
+        const el = document.getElementById(targetId)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        } else if (attempts < 10) {
+          setTimeout(() => tryScroll(attempts + 1), 100)
         }
-      }, 150)
-      return () => clearTimeout(timer)
+      }
+      tryScroll()
+      return () => { cancelled = true }
     }
     window.scrollTo(0, 0)
   }, [pathname, hash])

@@ -1086,6 +1086,16 @@ export default function Home() {
     return () => window.removeEventListener('tooldesk-favorites-changed', onFavChanged)
   }, [])
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const targetId = window.location.hash.replace('#', '')
+      const el = document.getElementById(targetId)
+      if (el) {
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60)
+      }
+    }
+  }, [])
+
   const categories = useMemo(() => {
     const set = new Set(TOOLS.map(t => t.cat))
     return ['All', ...(favoriteList.length > 0 ? ['Favorites'] : []), ...Array.from(set)]
