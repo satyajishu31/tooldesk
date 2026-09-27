@@ -460,13 +460,25 @@ test('Download Logic 6: iOS - Standalone guide behavior preserved, no fake downl
   assert.equal(secondary.length, 0)
 })
 
-test('Download Logic 7: Unknown desktop architecture - Safe fallback to recommended DMG, never dead link', () => {
+test('Download Logic 7: macOS unknown architecture - NO DMG auto-selected, user choice required', () => {
   const macFormats = DEFAULT_RELEASE_CONFIG.platforms.macos.formats
-  const { primary, secondary } = partitionFormatsForPlatform('macos', macFormats, 'unknown')
-  assert(primary, 'Unknown architecture on macOS must fall back to recommended DMG')
-  assert.equal(primary.type, 'dmg')
-  assert(primary.url, 'Primary fallback download must have a valid URL')
-  assert.equal(secondary.length, 2, 'Alternatives must still be accessible in secondary accordion')
+  const { primary, secondary, architectureChoiceRequired, macVariants } = partitionFormatsForPlatform('macos', macFormats, 'unknown')
+  assert.equal(primary, null, 'NO architecture-specific DMG must be automatically selected when architecture is unknown')
+  assert.equal(architectureChoiceRequired, true, 'architectureChoiceRequired must be true when architecture is unknown')
+  assert.equal(macVariants.length, 2, 'Both Apple Silicon and Intel DMGs must be provided in macVariants')
+  assert(macVariants.some(f => f.filename.includes('arm64')), 'Apple Silicon DMG must be in macVariants')
+  assert(macVariants.some(f => f.filename.includes('x64')), 'Intel DMG must be in macVariants')
+  assert.equal(secondary.length, 1, 'Application Archive (.zip) must be in collapsed secondary downloads')
+  assert.equal(secondary[0].filename, 'ToolDesk-macos-arm64.zip')
+})
+
+test('Download Logic 7b: macOS ambiguous architecture - NO DMG auto-selected, user choice required', () => {
+  const macFormats = DEFAULT_RELEASE_CONFIG.platforms.macos.formats
+  const { primary, secondary, architectureChoiceRequired, macVariants } = partitionFormatsForPlatform('macos', macFormats, 'ambiguous')
+  assert.equal(primary, null, 'NO architecture-specific DMG must be automatically selected when architecture is ambiguous')
+  assert.equal(architectureChoiceRequired, true, 'architectureChoiceRequired must be true when architecture is ambiguous')
+  assert.equal(macVariants.length, 2, 'Both Apple Silicon and Intel DMGs must be provided in macVariants')
+  assert.equal(secondary.length, 1, 'Application Archive (.zip) must be in collapsed secondary downloads')
 })
 
 test('Download Logic 8: Web mobile - Download App option remains visible on mobile web', () => {

@@ -153,6 +153,7 @@ export default function DownloadAppModal({ isOpen, onClose }) {
   const [showAll, setShowAll] = useState(false)
   const [expandedOthers, setExpandedOthers] = useState({})
   const [expandedPrimaryOther, setExpandedPrimaryOther] = useState(false)
+  const [expandedMacChooser, setExpandedMacChooser] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState(null)
   const [pwaInstalled, setPwaInstalled] = useState(false)
   const [inAppBrowser, setInAppBrowser] = useState(null)
@@ -764,78 +765,212 @@ export default function DownloadAppModal({ isOpen, onClose }) {
 
                   {/* 1. macOS Primary Action */}
                   {platform === 'macos' && (() => {
-                    const { primary: macPrimary, secondary: macSecondary } = partitionFormatsForPlatform('macos', detectedConfig.formats, cpuArch)
+                    const { primary: macPrimary, secondary: macSecondary, architectureChoiceRequired, macVariants } = partitionFormatsForPlatform('macos', detectedConfig.formats, cpuArch)
                     return (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        {macPrimary && macPrimary.resolvedUrl && (
-                          <motion.a
-                            key={macPrimary.filename || macPrimary.type}
-                            href={macPrimary.resolvedUrl}
-                            download={macPrimary.filename || 'ToolDesk.dmg'}
-                            onClick={() => handleDownloadClick('macos-primary', macPrimary.resolvedUrl)}
-                            role="button"
-                            whileHover={{ scale: 1.02, y: -1 }}
-                            whileTap={{ scale: 0.97 }}
-                            style={{
-                              position: 'relative',
-                              overflow: 'hidden',
-                              width: '100%',
-                              minHeight: 52,
-                              padding: '12px 18px',
-                              borderRadius: 14,
-                              background: 'linear-gradient(135deg, #1e2530 0%, #11141c 100%)',
-                              color: '#ffffff',
-                              border: '1px solid rgba(255, 255, 255, 0.2)',
-                              fontWeight: 700,
-                              fontFamily: 'DM Sans, sans-serif',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: 12,
-                              boxShadow: '0 8px 24px rgba(13,13,26,0.26), inset 0 1px 0 rgba(255,255,255,0.25)',
-                              boxSizing: 'border-box',
-                              textDecoration: 'none'
-                            }}>
-                            <PlatformIcon id="macos" size={24} />
-                            <div style={{ textAlign: 'left' }}>
-                              <div style={{ fontWeight: 800, fontSize: 14.5, lineHeight: 1.2 }}>
-                                {downloadingId === 'macos-primary' ? 'Preparing download…' : (
-                                  cpuArch === 'x64'
-                                    ? 'Download for Mac (Intel .dmg)'
-                                    : (cpuArch === 'arm64' ? 'Download for Mac (Apple Silicon .dmg)' : 'Download for Mac (.dmg)')
-                                )}
-                              </div>
-                              <div style={{ fontSize: 11, opacity: 0.9, fontWeight: 500 }}>
-                                {macPrimary.arch || 'Apple Silicon & Intel'} • {macPrimary.size} • Standalone
-                              </div>
-                            </div>
-                          </motion.a>
-                        )}
-
-                        {/* macOS Secondary Format (.zip) & SHA-256 */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, flexWrap: 'wrap', fontSize: 11.5, color: '#475569', padding: '0 4px' }}>
-                          <span>Drag into Applications to install.</span>
-                          {macPrimary?.checksum && (
-                            <button
-                              type="button"
-                              onClick={(e) => copyChecksum(e, macPrimary.checksum)}
+                        {/* Case A/B: Known architecture with a single verified primary DMG */}
+                        {!architectureChoiceRequired && macPrimary && macPrimary.resolvedUrl && (
+                          <>
+                            <motion.a
+                              key={macPrimary.filename || macPrimary.type}
+                              href={macPrimary.resolvedUrl}
+                              download={macPrimary.filename || 'ToolDesk.dmg'}
+                              onClick={() => handleDownloadClick('macos-primary', macPrimary.resolvedUrl)}
+                              role="button"
+                              whileHover={{ scale: 1.02, y: -1 }}
+                              whileTap={{ scale: 0.97 }}
                               style={{
-                                background: 'none',
-                                border: 'none',
-                                color: '#2563eb',
-                                fontSize: 11,
-                                fontWeight: 600,
+                                position: 'relative',
+                                overflow: 'hidden',
+                                width: '100%',
+                                minHeight: 52,
+                                padding: '12px 18px',
+                                borderRadius: 14,
+                                background: 'linear-gradient(135deg, #1e2530 0%, #11141c 100%)',
+                                color: '#ffffff',
+                                border: '1px solid rgba(255, 255, 255, 0.2)',
+                                fontWeight: 700,
+                                fontFamily: 'DM Sans, sans-serif',
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 4,
+                                justifyContent: 'center',
+                                gap: 12,
+                                boxShadow: '0 8px 24px rgba(13,13,26,0.26), inset 0 1px 0 rgba(255,255,255,0.25)',
+                                boxSizing: 'border-box',
+                                textDecoration: 'none'
                               }}>
-                              <Copy size={12} />
-                              <span>{copiedChecksum === macPrimary.checksum ? '✓ SHA-256 Copied' : 'Copy SHA-256'}</span>
-                            </button>
-                          )}
-                        </div>
+                              <PlatformIcon id="macos" size={24} />
+                              <div style={{ textAlign: 'left' }}>
+                                <div style={{ fontWeight: 800, fontSize: 14.5, lineHeight: 1.2 }}>
+                                  {downloadingId === 'macos-primary' ? 'Preparing download…' : (
+                                    cpuArch === 'x64'
+                                      ? 'Download for Mac (Intel .dmg)'
+                                      : 'Download for Mac (Apple Silicon .dmg)'
+                                  )}
+                                </div>
+                                <div style={{ fontSize: 11, opacity: 0.9, fontWeight: 500 }}>
+                                  {macPrimary.arch || 'Apple Silicon & Intel'} • {macPrimary.size} • Standalone
+                                </div>
+                              </div>
+                            </motion.a>
+
+                            {/* macOS Secondary Format (.zip) & SHA-256 for verified arch */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, flexWrap: 'wrap', fontSize: 11.5, color: '#475569', padding: '0 4px' }}>
+                              <span>Drag into Applications to install.</span>
+                              {macPrimary?.checksum && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => copyChecksum(e, macPrimary.checksum)}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#2563eb',
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                  }}>
+                                  <Copy size={12} />
+                                  <span>{copiedChecksum === macPrimary.checksum ? '✓ SHA-256 Copied' : 'Copy SHA-256'}</span>
+                                </button>
+                              )}
+                            </div>
+                          </>
+                        )}
+
+                        {/* Case C: macOS architecture UNKNOWN / AMBIGUOUS */}
+                        {architectureChoiceRequired && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <motion.button
+                              type="button"
+                              onClick={() => setExpandedMacChooser(s => !s)}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedMacChooser(s => !s); } }}
+                              aria-expanded={expandedMacChooser}
+                              aria-controls="macos-arch-chooser-options"
+                              whileHover={{ scale: 1.01, y: -1 }}
+                              whileTap={{ scale: 0.98 }}
+                              style={{
+                                position: 'relative',
+                                overflow: 'hidden',
+                                width: '100%',
+                                minHeight: 50,
+                                padding: '12px 18px',
+                                borderRadius: 14,
+                                background: 'linear-gradient(135deg, #1e2530 0%, #11141c 100%)',
+                                color: '#ffffff',
+                                border: '1px solid rgba(255, 255, 255, 0.2)',
+                                fontWeight: 700,
+                                fontFamily: 'DM Sans, sans-serif',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: 12,
+                                boxShadow: '0 8px 24px rgba(13,13,26,0.22), inset 0 1px 0 rgba(255,255,255,0.25)',
+                                boxSizing: 'border-box',
+                              }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <PlatformIcon id="macos" size={24} />
+                                <div style={{ textAlign: 'left' }}>
+                                  <div style={{ fontWeight: 800, fontSize: 14.5, lineHeight: 1.2 }}>
+                                    Choose your Mac version
+                                  </div>
+                                  <div style={{ fontSize: 11, opacity: 0.85, fontWeight: 500 }}>
+                                    Select Apple Silicon or Intel (.dmg)
+                                  </div>
+                                </div>
+                              </div>
+                              <motion.span
+                                animate={{ rotate: expandedMacChooser ? 180 : 0 }}
+                                transition={{ duration: 0.2 }}
+                                style={{ display: 'inline-flex', alignItems: 'center', color: '#93c5fd' }}>
+                                <ChevronDown size={18} />
+                              </motion.span>
+                            </motion.button>
+
+                            <AnimatePresence initial={false}>
+                              {expandedMacChooser && (
+                                <motion.div
+                                  id="macos-arch-chooser-options"
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: 'auto' }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                                  style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 6, paddingTop: 2 }}>
+                                  {macVariants.map(variant => (
+                                    <div
+                                      key={variant.filename || variant.label}
+                                      style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        gap: 8,
+                                        padding: '9px 12px',
+                                        borderRadius: 12,
+                                        background: '#ffffff',
+                                        border: '1.5px solid rgba(79,142,247,0.22)',
+                                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                                      }}>
+                                      <motion.a
+                                        href={variant.resolvedUrl}
+                                        download={variant.filename || true}
+                                        onClick={() => handleDownloadClick(`mac-${variant.filename}`, variant.resolvedUrl)}
+                                        role="button"
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: 8,
+                                          fontSize: 12.5,
+                                          fontWeight: 700,
+                                          color: '#0d0d1a',
+                                          textDecoration: 'none',
+                                          minWidth: 0,
+                                        }}>
+                                        <Download size={14} color="#2563eb" />
+                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                          {downloadingId === `mac-${variant.filename}` ? 'Preparing…' : variant.label}
+                                        </span>
+                                        <span style={{ fontSize: 10.5, color: '#64748b', fontWeight: 500 }}>({variant.size})</span>
+                                      </motion.a>
+                                      {variant.checksum && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => copyChecksum(e, variant.checksum)}
+                                          title={`SHA-256: ${variant.checksum}`}
+                                          style={{
+                                            padding: '3px 7px',
+                                            borderRadius: 6,
+                                            background: 'rgba(0,0,0,0.04)',
+                                            border: '1px solid rgba(0,0,0,0.06)',
+                                            fontSize: 10,
+                                            fontWeight: 600,
+                                            color: '#475569',
+                                            cursor: 'pointer',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 3,
+                                            flexShrink: 0,
+                                          }}>
+                                          <Copy size={10} />
+                                          <span>{copiedChecksum === variant.checksum ? '✓' : 'SHA-256'}</span>
+                                        </button>
+                                      )}
+                                    </div>
+                                  ))}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+
+                            <div style={{ fontSize: 11.5, color: '#475569', padding: '0 4px' }}>
+                              Drag into Applications to install.
+                            </div>
+                          </div>
+                        )}
 
                         {/* Collapsed Other Downloads for macOS */}
                         {macSecondary && macSecondary.length > 0 && (
@@ -861,7 +996,7 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                                 gap: 5,
                                 alignSelf: 'flex-start',
                               }}>
-                              <span>{cpuArch === 'unknown' ? 'Choose Mac version / Other downloads' : 'Other downloads'}</span>
+                              <span>Other downloads</span>
                               <motion.span
                                 animate={{ rotate: expandedPrimaryOther ? 180 : 0 }}
                                 transition={{ duration: 0.2 }}
@@ -1959,7 +2094,7 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                       style={{ overflow: 'hidden', marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {platforms.map((p, idx) => {
                         const isUserDevice = p.id === platform || (platform === 'web' && p.id === 'pwa') || (platform === 'pwa' && p.id === 'web')
-                        const { primary: pPrimary, secondary: pSecondary } = partitionFormatsForPlatform(
+                        const { primary: pPrimary, secondary: pSecondary, architectureChoiceRequired: pArchChoiceRequired, macVariants: pMacVariants } = partitionFormatsForPlatform(
                           p.id,
                           p.formats,
                           isUserDevice ? cpuArch : 'unknown'
@@ -2022,15 +2157,16 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                             {/* Formats & Action Buttons */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                               <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
-                                {pPrimary && pPrimary.resolvedUrl && pPrimary.status === 'available' ? (
+                                {pArchChoiceRequired ? (
                                   <>
-                                    <motion.a
-                                      href={pPrimary.resolvedUrl}
-                                      download={pPrimary.filename || true}
-                                      onClick={() => handleDownloadClick(`${p.id}-${pPrimary.type}-${pPrimary.filename || ''}`, pPrimary.resolvedUrl)}
-                                      role="button"
-                                      whileHover={{ scale: 1.03, background: '#2563eb' }}
-                                      whileTap={{ scale: 0.96 }}
+                                    <motion.button
+                                      type="button"
+                                      onClick={() => toggleOtherDownloads(`${p.id}-chooser`)}
+                                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleOtherDownloads(`${p.id}-chooser`); } }}
+                                      aria-expanded={!!expandedOthers[`${p.id}-chooser`]}
+                                      aria-controls={`${p.id}-chooser-variants`}
+                                      whileHover={{ scale: 1.02 }}
+                                      whileTap={{ scale: 0.98 }}
                                       style={{
                                         padding: '6px 12px',
                                         borderRadius: 999,
@@ -2044,37 +2180,17 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                                         alignItems: 'center',
                                         gap: 6,
                                         boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
-                                        textDecoration: 'none'
                                       }}>
-                                      <Download size={13} color="#ffffff" />
-                                      <span>{downloadingId === `${p.id}-${pPrimary.type}-${pPrimary.filename || ''}` ? 'Preparing…' : pPrimary.label}</span>
-                                      <span style={{ opacity: 0.8, fontSize: 10.5 }}>({pPrimary.size})</span>
-                                    </motion.a>
+                                      <span>Choose your Mac version</span>
+                                      <motion.span
+                                        animate={{ rotate: expandedOthers[`${p.id}-chooser`] ? 180 : 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                        <ChevronDown size={12} />
+                                      </motion.span>
+                                    </motion.button>
 
-                                    {pPrimary.checksum && (
-                                      <button
-                                        type="button"
-                                        onClick={(e) => copyChecksum(e, pPrimary.checksum)}
-                                        title={`SHA-256: ${pPrimary.checksum}`}
-                                        style={{
-                                          padding: '5px 8px',
-                                          borderRadius: 999,
-                                          background: 'rgba(0,0,0,0.04)',
-                                          border: '1px solid rgba(0,0,0,0.06)',
-                                          fontSize: 10,
-                                          fontWeight: 600,
-                                          color: '#475569',
-                                          cursor: 'pointer',
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: 3,
-                                        }}>
-                                        <Copy size={11} />
-                                        <span>{copiedChecksum === pPrimary.checksum ? '✓' : 'SHA-256'}</span>
-                                      </button>
-                                    )}
-
-                                    {/* Collapsed Secondary Formats Toggle */}
+                                    {/* Collapsed Secondary Formats Toggle (.zip) */}
                                     {pSecondary && pSecondary.length > 0 && (
                                       <motion.button
                                         type="button"
@@ -2108,7 +2224,95 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                                       </motion.button>
                                     )}
                                   </>
-                                ) : null}
+                                ) : (
+                                  pPrimary && pPrimary.resolvedUrl && pPrimary.status === 'available' ? (
+                                    <>
+                                      <motion.a
+                                        href={pPrimary.resolvedUrl}
+                                        download={pPrimary.filename || true}
+                                        onClick={() => handleDownloadClick(`${p.id}-${pPrimary.type}-${pPrimary.filename || ''}`, pPrimary.resolvedUrl)}
+                                        role="button"
+                                        whileHover={{ scale: 1.03, background: '#2563eb' }}
+                                        whileTap={{ scale: 0.96 }}
+                                        style={{
+                                          padding: '6px 12px',
+                                          borderRadius: 999,
+                                          background: '#0d0d1a',
+                                          color: '#ffffff',
+                                          border: 'none',
+                                          fontSize: 12,
+                                          fontWeight: 700,
+                                          cursor: 'pointer',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: 6,
+                                          boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+                                          textDecoration: 'none'
+                                        }}>
+                                        <Download size={13} color="#ffffff" />
+                                        <span>{downloadingId === `${p.id}-${pPrimary.type}-${pPrimary.filename || ''}` ? 'Preparing…' : pPrimary.label}</span>
+                                        <span style={{ opacity: 0.8, fontSize: 10.5 }}>({pPrimary.size})</span>
+                                      </motion.a>
+
+                                      {pPrimary.checksum && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => copyChecksum(e, pPrimary.checksum)}
+                                          title={`SHA-256: ${pPrimary.checksum}`}
+                                          style={{
+                                            padding: '5px 8px',
+                                            borderRadius: 999,
+                                            background: 'rgba(0,0,0,0.04)',
+                                            border: '1px solid rgba(0,0,0,0.06)',
+                                            fontSize: 10,
+                                            fontWeight: 600,
+                                            color: '#475569',
+                                            cursor: 'pointer',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 3,
+                                          }}>
+                                          <Copy size={11} />
+                                          <span>{copiedChecksum === pPrimary.checksum ? '✓' : 'SHA-256'}</span>
+                                        </button>
+                                      )}
+
+                                      {/* Collapsed Secondary Formats Toggle */}
+                                      {pSecondary && pSecondary.length > 0 && (
+                                        <motion.button
+                                          type="button"
+                                          onClick={() => toggleOtherDownloads(p.id)}
+                                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleOtherDownloads(p.id); } }}
+                                          aria-expanded={!!expandedOthers[p.id]}
+                                          aria-controls={`${p.id}-other-downloads`}
+                                          whileHover={{ scale: 1.02 }}
+                                          whileTap={{ scale: 0.98 }}
+                                          style={{
+                                            padding: '4px 9px',
+                                            borderRadius: 999,
+                                            background: expandedOthers[p.id] ? 'rgba(79,142,247,0.12)' : 'rgba(0,0,0,0.04)',
+                                            border: '1px solid ' + (expandedOthers[p.id] ? 'rgba(79,142,247,0.3)' : 'rgba(0,0,0,0.07)'),
+                                            fontSize: 11,
+                                            fontWeight: 600,
+                                            color: expandedOthers[p.id] ? '#1d4ed8' : '#475569',
+                                            cursor: 'pointer',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 4,
+                                            transition: 'all 0.15s ease',
+                                          }}>
+                                          <span>Other downloads</span>
+                                          <motion.span
+                                            animate={{ rotate: expandedOthers[p.id] ? 180 : 0 }}
+                                            transition={{ duration: 0.2 }}
+                                            style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                            <ChevronDown size={12} />
+                                          </motion.span>
+                                        </motion.button>
+                                      )}
+                                    </>
+                                  ) : null
+                                )}
 
                                 {/* PWA / iOS fallback buttons */}
                                 {p.id === 'ios' && (
@@ -2155,6 +2359,83 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                                   </button>
                                 )}
                               </div>
+
+                              {/* Architecture Variants Collapsible Area for macOS unknown */}
+                              {pArchChoiceRequired && pMacVariants && pMacVariants.length > 0 && (
+                                <AnimatePresence initial={false}>
+                                  {expandedOthers[`${p.id}-chooser`] && (
+                                    <motion.div
+                                      id={`${p.id}-chooser-variants`}
+                                      initial={{ opacity: 0, height: 0 }}
+                                      animate={{ opacity: 1, height: 'auto' }}
+                                      exit={{ opacity: 0, height: 0 }}
+                                      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                                      style={{
+                                        overflow: 'hidden',
+                                        display: 'flex',
+                                        flexWrap: 'wrap',
+                                        alignItems: 'center',
+                                        gap: 6,
+                                        paddingTop: 6,
+                                        borderTop: '1px dashed rgba(0,0,0,0.08)',
+                                        marginTop: 2,
+                                      }}>
+                                      {pMacVariants.map((fmt) => (
+                                        <div key={fmt.filename || fmt.type} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                          <motion.a
+                                            href={fmt.resolvedUrl}
+                                            download={fmt.filename || true}
+                                            onClick={() => handleDownloadClick(`${p.id}-${fmt.type}-${fmt.filename || ''}`, fmt.resolvedUrl)}
+                                            role="button"
+                                            whileHover={{ scale: 1.03, background: '#2563eb' }}
+                                            whileTap={{ scale: 0.96 }}
+                                            style={{
+                                              padding: '5px 11px',
+                                              borderRadius: 999,
+                                              background: '#1e2530',
+                                              color: '#ffffff',
+                                              border: 'none',
+                                              fontSize: 11.5,
+                                              fontWeight: 600,
+                                              cursor: 'pointer',
+                                              display: 'inline-flex',
+                                              alignItems: 'center',
+                                              gap: 5,
+                                              boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+                                              textDecoration: 'none',
+                                            }}>
+                                            <Download size={12} color="#93c5fd" />
+                                            <span>{downloadingId === `${p.id}-${fmt.type}-${fmt.filename || ''}` ? 'Preparing…' : fmt.label}</span>
+                                            <span style={{ opacity: 0.8, fontSize: 10 }}>({fmt.size})</span>
+                                          </motion.a>
+                                          {fmt.checksum && (
+                                            <button
+                                              type="button"
+                                              onClick={(e) => copyChecksum(e, fmt.checksum)}
+                                              title={`SHA-256: ${fmt.checksum}`}
+                                              style={{
+                                                padding: '4px 7px',
+                                                borderRadius: 999,
+                                                background: 'rgba(0,0,0,0.04)',
+                                                border: '1px solid rgba(0,0,0,0.06)',
+                                                fontSize: 9.5,
+                                                fontWeight: 600,
+                                                color: '#475569',
+                                                cursor: 'pointer',
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: 3,
+                                              }}>
+                                              <Copy size={9} />
+                                              <span>{copiedChecksum === fmt.checksum ? '✓' : 'SHA-256'}</span>
+                                            </button>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              )}
 
                               {/* Secondary Formats Collapsible Area */}
                               {pSecondary && pSecondary.length > 0 && (

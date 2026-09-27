@@ -337,10 +337,12 @@ export function detectCpuArchitecture() {
   const plat = (navigator.platform || '').toLowerCase()
 
   // 1. Direct explicit architecture tokens in UA or platform
-  if (/arm64|aarch64/i.test(ua) || /arm64|aarch64/i.test(plat)) {
+  // Note: Ignore generic "MacIntel" platform token because modern Safari & Chrome report "MacIntel" on Apple Silicon for legacy compatibility
+  const platNonMac = !/macintel/i.test(plat) ? plat : ''
+  if (/arm64|aarch64/i.test(ua) || /arm64|aarch64/i.test(platNonMac)) {
     return 'arm64'
   }
-  if (/x86_64|x86-64|win64|x64|amd64|wow64/i.test(ua) || /x86_64|x64/i.test(plat)) {
+  if (/x86_64|x86-64|win64|amd64|wow64/i.test(ua) || (/x86_64|x64/i.test(platNonMac))) {
     return 'x64'
   }
 
@@ -353,10 +355,17 @@ export function detectCpuArchitecture() {
         const debugInfo = gl.getExtension('WEBGL_debug_renderer_info')
         if (debugInfo) {
           const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || ''
-          if (/Apple M[0-9]|Apple GPU|Apple processor/i.test(renderer)) {
+          const hasAppleSilicon = /Apple M[0-9]|Apple GPU|Apple processor/i.test(renderer)
+          const hasIntelOrAmd = /(?:Intel|Radeon|AMD)\s+(?:HD|Iris|UHD|Graphics|Pro|Radeon)/i.test(renderer) || /Intel\s*\(R\)/i.test(renderer) || /AMD\s+Radeon/i.test(renderer)
+
+          // If conflicting signals appear, mark as ambiguous
+          if (hasAppleSilicon && hasIntelOrAmd) {
+            return 'ambiguous'
+          }
+          if (hasAppleSilicon) {
             return 'arm64'
           }
-          if (/Intel|Radeon|AMD/i.test(renderer)) {
+          if (hasIntelOrAmd) {
             return 'x64'
           }
         }
@@ -371,38 +380,56 @@ export function detectCpuArchitecture() {
  * Partitions available formats for a platform into ONE primary recommended download
  * and a list of secondary/alternative downloads.
  * 
+ * STRICT ARCHITECTURE SAFETY RULE FOR MACOS:
+ * When platformId is 'macos' and cpuArch is unknown, ambiguous, or unsupported,
+ * primary MUST BE null and architectureChoiceRequired MUST BE true.
+ * Apple Silicon is NEVER guessed or assumed without verified evidence.
+ * 
  * @param {string} platformId - 'windows' | 'macos' | 'linux' | 'android' | 'ios' | 'pwa'
  * @param {Array} formats - List of formats configured for the platform
- * @param {string} [cpuArch='unknown'] - 'arm64' | 'x64' | 'unknown'
- * @returns {{ primary: Object|null, secondary: Array }}
+ * @param {string} [cpuArch='unknown'] - 'arm64' | 'x64' | 'unknown' | 'ambiguous'
+ * @returns {{ primary: Object|null, secondary: Array, architectureChoiceRequired: boolean, macVariants: Array }}
  */
 export function partitionFormatsForPlatform(platformId, formats = [], cpuArch = 'unknown') {
   if (!formats || formats.length === 0) {
-    return { primary: null, secondary: [] }
+    return { primary: null, secondary: [], architectureChoiceRequired: false, macVariants: [] }
   }
 
   // Filter only available standalone artifacts (exclude store bundles like Play Store AAB)
   const available = formats.filter(f => f.status === 'available' && (f.resolvedUrl || f.url))
   if (available.length === 0) {
-    return { primary: null, secondary: [] }
+    return { primary: null, secondary: [], architectureChoiceRequired: false, macVariants: [] }
   }
 
   let primary = null
+  let architectureChoiceRequired = false
+  let macVariants = []
 
   if (platformId === 'macos') {
-    if (cpuArch === 'x64') {
-      // Prioritize Intel DMG for verified Intel Macs
-      primary = available.find(f => f.type === 'dmg' && /intel|x64/i.test(f.arch || f.label || ''))
-    } else if (cpuArch === 'arm64') {
-      // Prioritize Apple Silicon DMG for verified Apple Silicon Macs
-      primary = available.find(f => f.type === 'dmg' && /arm64|apple silicon/i.test(f.arch || f.label || ''))
+    const isArm64 = cpuArch === 'arm64'
+    const isX64 = cpuArch === 'x64'
+
+    if (isArm64) {
+      primary = available.find(f => f.type === 'dmg' && /arm64|apple silicon/i.test(f.arch || f.label || '')) || null
+    } else if (isX64) {
+      primary = available.find(f => f.type === 'dmg' && /intel|x64/i.test(f.arch || f.label || '')) || null
     }
 
-    // Fallback: If arch is unknown or specific arch DMG wasn't matched, pick recommended DMG or first DMG
-    if (!primary) {
-      primary = available.find(f => f.recommended && f.type === 'dmg') ||
-                available.find(f => f.type === 'dmg') ||
-                available[0]
+    if (primary) {
+      // Reliably verified architecture: primary is matched DMG, secondary is remaining DMG + ZIP
+      architectureChoiceRequired = false
+      const secondary = available.filter(f => f !== primary)
+      return { primary, secondary, architectureChoiceRequired, macVariants: [] }
+    } else {
+      // Unknown / Ambiguous or architecture could not be verified:
+      // STRICT REQUIREMENT: NEVER automatically select Apple Silicon or Intel!
+      // Return primary: null, architectureChoiceRequired: true
+      // macVariants contains available DMG installers (Apple Silicon & Intel)
+      // secondary contains non-DMG formats (e.g. Application Archive .zip)
+      architectureChoiceRequired = true
+      macVariants = available.filter(f => f.type === 'dmg')
+      const secondary = available.filter(f => f.type !== 'dmg')
+      return { primary: null, secondary, architectureChoiceRequired, macVariants }
     }
   } else if (platformId === 'windows') {
     // Windows: Primary is always Setup (.exe) installer
@@ -425,6 +452,7 @@ export function partitionFormatsForPlatform(platformId, formats = [], cpuArch = 
   // Secondary formats: all other available formats excluding the primary
   const secondary = available.filter(f => f !== primary)
 
-  return { primary, secondary }
+  return { primary, secondary, architectureChoiceRequired: false, macVariants: [] }
 }
+
 
