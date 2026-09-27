@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { useCopy } from '../../hooks'
 import { safeFetchJSON, safeTimeoutSignal } from '../../utils/safeFetch'
-import { resolveApiUrl } from '../../utils/apiConfig'
+import { resolveApiUrl, getApiHeaders } from '../../utils/apiConfig'
 import { TOOLS } from '../../constants'
 import SafeImage from '../../components/SafeImage'
 import { saveFileWithFallback } from '../../utils/fileSaver'
@@ -290,7 +290,7 @@ ${d.dnsInfo?`<div class="section"><h2>🌐 Server</h2><div class="grid">
         await Promise.allSettled(d.images.urls.slice(0,10).map(async (imgUrl, i) => {
           try {
             const proxyUrl = resolveApiUrl(`/.netlify/functions/image-proxy?url=${encodeURIComponent(imgUrl)}`)
-            const res = await fetch(proxyUrl, { signal: safeTimeoutSignal(7000) })
+            const res = await fetch(proxyUrl, { headers: getApiHeaders(), signal: safeTimeoutSignal(7000) })
             if (!res.ok) return
             const ab  = await res.arrayBuffer()
             const ext = (imgUrl.split('.').pop()?.split('?')[0]||'jpg').slice(0,4)

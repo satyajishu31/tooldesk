@@ -8,6 +8,8 @@
  * Desktop/Mobile: Prepends the configured production backend origin
  */
 
+import { Capacitor } from '@capacitor/core'
+
 export const PRODUCTION_API_ORIGIN = (typeof process !== 'undefined' && process.env?.VITE_API_ORIGIN) ||
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_ORIGIN) ||
   (typeof window !== 'undefined' && window.location?.origin && window.location.origin.includes('tooldesk-app.netlify.app') ? window.location.origin : 'https://tooldesk-app.netlify.app')
@@ -25,6 +27,15 @@ export function isTauri() {
 
 export function isCapacitor() {
   if (typeof window === 'undefined') return false
+  try {
+    if (Capacitor && typeof Capacitor.isNativePlatform === 'function' && Capacitor.isNativePlatform()) {
+      return true
+    }
+    if (Capacitor && typeof Capacitor.getPlatform === 'function') {
+      const p = Capacitor.getPlatform()
+      if (p === 'android' || p === 'ios') return true
+    }
+  } catch {}
   if (
     window.Capacitor?.isNativePlatform?.() ||
     window.Capacitor?.getPlatform?.() === 'android' ||
@@ -44,6 +55,10 @@ export function getPlatform() {
   if (typeof window === 'undefined') return 'server'
   if (isTauri()) return 'desktop'
   if (isCapacitor()) {
+    try {
+      const cp = Capacitor?.getPlatform?.()
+      if (cp === 'android' || cp === 'ios') return cp
+    } catch {}
     const p = window.Capacitor?.getPlatform?.()
     if (p === 'android' || p === 'ios') return p
     return 'android'

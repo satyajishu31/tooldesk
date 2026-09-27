@@ -5,7 +5,7 @@ import { TOOLS } from '../../constants'
 import { safeFetchJSON, safeTimeoutSignal } from '../../utils/safeFetch'
 import { processBackgroundInWorker } from '../../utils/bgWorkerClient'
 import { saveFileWithFallback } from '../../utils/fileSaver'
-import { resolveApiUrl } from '../../utils/apiConfig'
+import { resolveApiUrl, getApiHeaders } from '../../utils/apiConfig'
 
 const tool = TOOLS.find(t => t.id === 'bgremove')
 
@@ -813,7 +813,7 @@ export default function BGRemover() {
         
         const res = await fetch(resolveApiUrl('/.netlify/functions/removebg'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getApiHeaders({ 'Content-Type': 'application/json' }),
           signal: safeTimeoutSignal(20000),
           body: JSON.stringify({
             imageBase64: srcDataUrl,

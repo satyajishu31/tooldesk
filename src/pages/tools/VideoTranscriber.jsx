@@ -5,7 +5,7 @@ import { useCopy } from '../../hooks'
 import { TOOLS } from '../../constants'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import { safeFetchJSON } from '../../utils/safeFetch'
-import { resolveApiUrl } from '../../utils/apiConfig'
+import { resolveApiUrl, getApiHeaders } from '../../utils/apiConfig'
 
 const tool = TOOLS.find(t => t.id === 'videotranscriber')
 
@@ -492,7 +492,7 @@ async function transcribeChunk({ b64, mime, fileName, language, chunkIndex, tota
   try {
     res = await fetch(resolveApiUrl('/.netlify/functions/transcribe'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getApiHeaders({ 'Content-Type': 'application/json' }),
       signal,
       body: JSON.stringify({
         audioBase64: b64,

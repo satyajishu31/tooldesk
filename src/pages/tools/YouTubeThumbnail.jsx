@@ -4,7 +4,7 @@ import ToolShell, { ToolCard } from '../../components/ToolShell'
 import { TOOLS } from '../../constants'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import { safeFetchJSON, safeTimeoutSignal } from '../../utils/safeFetch'
-import { resolveApiUrl } from '../../utils/apiConfig'
+import { resolveApiUrl, getApiHeaders } from '../../utils/apiConfig'
 import { useCopy } from '../../hooks'
 
 const tool = TOOLS.find(t => t.id === 'thumbnail')
@@ -192,7 +192,7 @@ const PLATFORMS = [
 async function downloadImage(url, filename) {
   try {
     const proxyUrl = resolveApiUrl(`/.netlify/functions/image-proxy?url=${encodeURIComponent(url)}`)
-    const res = await fetch(proxyUrl, { signal: safeTimeoutSignal(10000) })
+    const res = await fetch(proxyUrl, { headers: getApiHeaders(), signal: safeTimeoutSignal(10000) })
     if (!res.ok) throw new Error()
     const blob = await res.blob()
     await saveFileWithFallback(blob, filename, 'image/jpeg')

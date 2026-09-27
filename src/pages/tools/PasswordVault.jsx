@@ -4,7 +4,7 @@ import ToolShell, { ToolCard } from '../../components/ToolShell'
 import { TOOLS } from '../../constants'
 import { generateQRDataURL } from '../../utils/qrCode'
 import { saveFileWithFallback } from '../../utils/fileSaver'
-import { resolveApiUrl } from '../../utils/apiConfig'
+import { resolveApiUrl, getApiHeaders } from '../../utils/apiConfig'
 
 const tool = TOOLS.find(t => t.id === 'vault')
 const VAULT_KEY = 'tbpro_vault_v1'
@@ -773,7 +773,7 @@ export default function PasswordVault() {
         const authToken = await deriveVaultId(masterPwd, syncToken, 'tooldesk-vault-auth-')
         const res = await fetch(resolveApiUrl('/.netlify/functions/vault-sync'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getApiHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ action: 'get', vaultId, authToken })
         })
         if (res.ok) {
@@ -866,7 +866,7 @@ export default function PasswordVault() {
         const authToken = await deriveVaultId(masterPwd, syncToken, 'tooldesk-vault-auth-')
         await fetch(resolveApiUrl('/.netlify/functions/vault-sync'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getApiHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ action: 'put', vaultId, authToken, encryptedData: enc })
         })
       } catch (e) {
@@ -894,7 +894,7 @@ export default function PasswordVault() {
         const authToken = await deriveVaultId(masterPwd, syncToken, 'tooldesk-vault-auth-')
         const res = await fetch(resolveApiUrl('/.netlify/functions/vault-sync'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getApiHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ action: 'put', vaultId, authToken, encryptedData: enc })
         })
         if (!res.ok) {
