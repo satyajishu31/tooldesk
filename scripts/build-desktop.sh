@@ -20,8 +20,8 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     TMP_DMG="/tmp/ToolDesk_rw_$$.dmg"
     rm -f "$TMP_DMG"
     
-    # 1. Create a blank 650MB HFS+ volume (large enough for app bundle + overhead)
-    hdiutil create -size 650m -volname "ToolDesk" -fs HFS+ -ov "$TMP_DMG"
+    # 1. Create a blank 950MB HFS+ volume (large enough for app bundle + overhead)
+    hdiutil create -size 950m -volname "ToolDesk" -fs HFS+ -ov "$TMP_DMG"
     
     # 2. Mount it silently
     MOUNT_DIR=$(hdiutil attach "$TMP_DMG" -nobrowse | grep -o '/Volumes/.*' | head -n 1)

@@ -6,7 +6,7 @@ import { TOOLS, UNIT_CATEGORIES, CURRENCY_RATES, QUOTES } from '../src/constants
 import { generateQRDataURL, generateQRSVG } from '../src/utils/qrCode.js'
 import { parsePageRangeString, formatBytes, PAGE_SIZES } from '../src/utils/pdfEngine.js'
 import { resolveApiUrl, getApiBaseUrl, isTauri, isCapacitor, isNativeShell, isDownloadAppAvailable } from '../src/utils/apiConfig.js'
-import { DEFAULT_RELEASE_CONFIG, partitionFormatsForPlatform, detectCpuArchitecture } from '../src/utils/releaseConfig.js'
+import { DEFAULT_RELEASE_CONFIG, CURRENT_RELEASE_VERSION, partitionFormatsForPlatform, detectCpuArchitecture } from '../src/utils/releaseConfig.js'
 import { createHash } from 'node:crypto'
 
 console.log('===> Starting ToolDesk Comprehensive Automated Test Suite...\n')
@@ -509,5 +509,68 @@ test('Download Logic 10: Missing/invalid release asset safety - Filters out unav
   assert(!primary.url.includes('#'), 'Dead placeholder url # must not be allowed')
 })
 
+test('Download Logic 11: Installed Android app - Download App hidden in Android Capacitor shell', () => {
+  const origWindow = globalThis.window
+  try {
+    globalThis.window = {
+      Capacitor: {
+        isNativePlatform: () => true,
+        getPlatform: () => 'android'
+      }
+    }
+    assert.equal(isNativeShell(), true, 'Android Capacitor window must be recognized as native shell')
+    assert.equal(isDownloadAppAvailable(), false, 'Download App must be hidden in Android native shell')
+  } finally {
+    globalThis.window = origWindow
+  }
+})
+
+test('Download Logic 12: Installed iOS app - Download App hidden in iOS Capacitor shell', () => {
+  const origWindow = globalThis.window
+  try {
+    globalThis.window = {
+      Capacitor: {
+        isNativePlatform: () => true,
+        getPlatform: () => 'ios'
+      }
+    }
+    assert.equal(isNativeShell(), true, 'iOS Capacitor window must be recognized as native shell')
+    assert.equal(isDownloadAppAvailable(), false, 'Download App must be hidden in iOS native shell')
+  } finally {
+    globalThis.window = origWindow
+  }
+})
+
+test('Release Integrity: Release version 1.0.1 canonical consistency across files', async () => {
+  const fs = await import('fs')
+  const path = await import('path')
+  const pkg = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf8'))
+  const releasesJson = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'public/releases.json'), 'utf8'))
+
+  assert.equal(pkg.version, '1.0.1', 'package.json version must be 1.0.1')
+  assert.equal(releasesJson.version, '1.0.1', 'public/releases.json version must be 1.0.1')
+  assert.equal(DEFAULT_RELEASE_CONFIG.version, '1.0.1', 'DEFAULT_RELEASE_CONFIG.version must be 1.0.1')
+  assert.equal(CURRENT_RELEASE_VERSION, '1.0.1', 'CURRENT_RELEASE_VERSION must be 1.0.1')
+})
+
+test('Release Integrity: Tag v1.0.0 remains permanently immutable at 580276d', async () => {
+  const { execSync } = await import('child_process')
+  const resolved = execSync('git rev-parse refs/tags/v1.0.0^{commit}', { encoding: 'utf8' }).trim()
+  assert.equal(resolved, '580276d1e07a925e9447f745213ed291895bbfa2', 'v1.0.0 tag MUST NOT be retagged or moved')
+})
+
+test('Release Integrity: Release metadata download URLs reference v1.0.1 and not v1.0.0', async () => {
+  const fs = await import('fs')
+  const path = await import('path')
+  const releasesRaw = fs.readFileSync(path.resolve(process.cwd(), 'public/releases.json'), 'utf8')
+  const configRaw = fs.readFileSync(path.resolve(process.cwd(), 'src/utils/releaseConfig.js'), 'utf8')
+
+  assert(!releasesRaw.includes('/releases/download/v1.0.0/'), 'releases.json must NOT contain download URLs pointing to v1.0.0')
+  assert(!configRaw.includes('/releases/download/v1.0.0/'), 'releaseConfig.js must NOT contain download URLs pointing to v1.0.0')
+  assert(releasesRaw.includes('/releases/download/v1.0.1/'), 'releases.json MUST contain download URLs pointing to v1.0.1')
+  assert(configRaw.includes('/releases/download/v1.0.1/'), 'releaseConfig.js MUST contain download URLs pointing to v1.0.1')
+})
+
 console.log(`\n===> Test Suite Finished: ${passed} passed, ${failed} failed.\n`)
 if (failed > 0) process.exit(1)
+
