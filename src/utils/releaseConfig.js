@@ -9,8 +9,8 @@
  * - Safe download URL resolution (Env -> Remote manifest -> GitHub Releases -> Staged)
  */
 
-import { resolveApiUrl } from './apiConfig'
-import { safeFetchJSON } from './safeFetch'
+import { resolveApiUrl } from './apiConfig.js'
+import { safeFetchJSON } from './safeFetch.js'
 
 export const CURRENT_RELEASE_VERSION = '1.0.0'
 export const CURRENT_RELEASE_DATE = '2026-09-26'
@@ -29,7 +29,7 @@ export const DEFAULT_RELEASE_CONFIG = {
   platforms: {
     windows: {
       name: 'Windows',
-      status: 'coming-soon', // Mark available if VITE_WINDOWS_EXE_URL is provided or on release publish
+      status: 'available',
       version: CURRENT_RELEASE_VERSION,
       badge: 'Desktop App',
       desc: 'Windows 10 & 11 • 64-bit Installer',
@@ -39,11 +39,11 @@ export const DEFAULT_RELEASE_CONFIG = {
           label: 'Windows Setup (.exe)',
           arch: 'x64',
           filename: 'ToolDesk-Setup.exe',
-          size: '68 MB',
-          status: 'coming-soon',
+          size: '89 MB',
+          status: 'available',
           envKey: 'VITE_WINDOWS_EXE_URL',
-          url: '',
-          checksum: '',
+          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.0/ToolDesk-Setup.exe',
+          checksum: 'd8863d7864eb980f33d6d9d5814259f54da3bd94ecfacf1a6004c349fd3bdf5d',
           recommended: true
         },
         {
@@ -51,11 +51,11 @@ export const DEFAULT_RELEASE_CONFIG = {
           label: 'Windows MSI (.msi)',
           arch: 'x64',
           filename: 'ToolDesk.msi',
-          size: '72 MB',
-          status: 'coming-soon',
+          size: '89 MB',
+          status: 'available',
           envKey: 'VITE_WINDOWS_MSI_URL',
-          url: '',
-          checksum: '',
+          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.0/ToolDesk.msi',
+          checksum: '232e984e44c6e1f4237337af0198958d97ef40e3134e510b44b4f700aea81f11',
           recommended: false
         }
       ]
@@ -69,33 +69,45 @@ export const DEFAULT_RELEASE_CONFIG = {
       formats: [
         {
           type: 'dmg',
-          label: 'macOS Installer (.dmg)',
-          arch: 'Universal / Apple Silicon & Intel',
-          filename: 'ToolDesk.dmg',
-          size: '397 MB',
+          label: 'macOS Apple Silicon (.dmg)',
+          arch: 'Apple Silicon (arm64)',
+          filename: 'ToolDesk-macos-arm64.dmg',
+          size: '91 MB',
           status: 'available',
-          envKey: 'VITE_MAC_DMG_URL',
-          url: '/releases/macos/ToolDesk.dmg',
-          checksum: 'ccbe4d36d53830b2715baf2d31ac93de1ef60ba7d069d36299d15d62796f9911',
+          envKey: 'VITE_MAC_DMG_ARM64_URL',
+          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.0/ToolDesk-macos-arm64.dmg',
+          checksum: '3dffc07f852d40049c76100876cff5d78e32df98888456035d15a84d612f7602',
           recommended: true
+        },
+        {
+          type: 'dmg',
+          label: 'macOS Intel (.dmg)',
+          arch: 'Intel (x64)',
+          filename: 'ToolDesk-macos-x64.dmg',
+          size: '90 MB',
+          status: 'available',
+          envKey: 'VITE_MAC_DMG_X64_URL',
+          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.0/ToolDesk-macos-x64.dmg',
+          checksum: 'e02f911e984c13ff73369f05e0bd244e064bdc5908ccf378d10411f5a490b69f',
+          recommended: false
         },
         {
           type: 'app',
           label: 'Application Archive (.zip)',
           arch: 'Apple Silicon (arm64)',
-          filename: 'ToolDesk-macOS.zip',
-          size: '156 MB',
+          filename: 'ToolDesk-macos-arm64.zip',
+          size: '90 MB',
           status: 'available',
           envKey: 'VITE_MAC_APP_URL',
-          url: '/releases/macos/ToolDesk-macOS.zip',
-          checksum: '45106a67b46dd410eeca22dea078fac4d94238e51ae720137376b8083aabb19d',
+          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.0/ToolDesk-macos-arm64.zip',
+          checksum: 'd38c15029c1e90c4f43d3201adfd8e6c1951b9e2236ebe76645ffe4586708f68',
           recommended: false
         }
       ]
     },
     linux: {
       name: 'Linux',
-      status: 'coming-soon',
+      status: 'available',
       version: CURRENT_RELEASE_VERSION,
       badge: 'Universal Linux',
       desc: 'Debian, Ubuntu, Fedora, Arch • Wayland & X11',
@@ -105,11 +117,11 @@ export const DEFAULT_RELEASE_CONFIG = {
           label: 'Universal AppImage (.AppImage)',
           arch: 'x86_64',
           filename: 'ToolDesk.AppImage',
-          size: '85 MB',
-          status: 'coming-soon',
+          size: '168 MB',
+          status: 'available',
           envKey: 'VITE_LINUX_APPIMAGE_URL',
-          url: '',
-          checksum: '',
+          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.0/ToolDesk.AppImage',
+          checksum: '5093aca4546939b8eec1da4a87634305a2bc17658c20d517d454973965797d3c',
           recommended: true
         },
         {
@@ -117,11 +129,11 @@ export const DEFAULT_RELEASE_CONFIG = {
           label: 'Debian / Ubuntu (.deb)',
           arch: 'amd64',
           filename: 'ToolDesk.deb',
-          size: '78 MB',
-          status: 'coming-soon',
+          size: '89 MB',
+          status: 'available',
           envKey: 'VITE_LINUX_DEB_URL',
-          url: '',
-          checksum: '',
+          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.0/ToolDesk.deb',
+          checksum: '983242fb6eabe9b0781f9f91f2cfcc9ed8a84d0929456c48e7ba5cb08e74b6c4',
           recommended: false
         }
       ]
@@ -154,7 +166,7 @@ export const DEFAULT_RELEASE_CONFIG = {
           size: '33 MB',
           status: 'store-bundle',
           envKey: 'VITE_ANDROID_AAB_URL',
-          url: '/releases/android/ToolDesk.aab',
+          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.0/ToolDesk.aab',
           checksum: 'd3637572187816914ce4117ea6f95695b76a415fcb33234add95be8af8120e14',
           recommended: false,
           note: 'Official Play Store publishing package'
@@ -294,11 +306,16 @@ function mergeManifestWithDefaults(remote) {
 
   if (remote.platforms) {
     for (const [key, plat] of Object.entries(remote.platforms)) {
+      const defaultFormats = DEFAULT_RELEASE_CONFIG.platforms[key]?.formats || []
       merged.platforms[key] = {
         ...(DEFAULT_RELEASE_CONFIG.platforms[key] || {}),
         ...plat,
-        formats: (plat.formats || DEFAULT_RELEASE_CONFIG.platforms[key]?.formats || []).map(fmt => {
-          const defaultFmt = DEFAULT_RELEASE_CONFIG.platforms[key]?.formats?.find(f => f.type === fmt.type) || {}
+        formats: (plat.formats || defaultFormats).map(fmt => {
+          const defaultFmt = defaultFormats.find(f => 
+            (fmt.filename && f.filename === fmt.filename) ||
+            (f.type === fmt.type && f.arch === fmt.arch) ||
+            (f.type === fmt.type)
+          ) || {}
           return { ...defaultFmt, ...fmt }
         })
       }
@@ -307,3 +324,107 @@ function mergeManifestWithDefaults(remote) {
 
   return merged
 }
+
+/**
+ * Detects client CPU architecture with graceful fallback.
+ * Checks UA/platform tokens and WebGL GPU renderer string where available.
+ * 
+ * Returns: 'arm64' | 'x64' | 'unknown'
+ */
+export function detectCpuArchitecture() {
+  if (typeof navigator === 'undefined') return 'unknown'
+  const ua = (navigator.userAgent || '').toLowerCase()
+  const plat = (navigator.platform || '').toLowerCase()
+
+  // 1. Direct explicit architecture tokens in UA or platform
+  if (/arm64|aarch64/i.test(ua) || /arm64|aarch64/i.test(plat)) {
+    return 'arm64'
+  }
+  if (/x86_64|x86-64|win64|x64|amd64|wow64/i.test(ua) || /x86_64|x64/i.test(plat)) {
+    return 'x64'
+  }
+
+  // 2. Hardware / GPU heuristic for macOS: distinguish Apple Silicon M-series from Intel
+  if (typeof document !== 'undefined' && (/mac/.test(plat) || /macintosh/.test(ua))) {
+    try {
+      const canvas = document.createElement('canvas')
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
+      if (gl) {
+        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info')
+        if (debugInfo) {
+          const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || ''
+          if (/Apple M[0-9]|Apple GPU|Apple processor/i.test(renderer)) {
+            return 'arm64'
+          }
+          if (/Intel|Radeon|AMD/i.test(renderer)) {
+            return 'x64'
+          }
+        }
+      }
+    } catch {}
+  }
+
+  return 'unknown'
+}
+
+/**
+ * Partitions available formats for a platform into ONE primary recommended download
+ * and a list of secondary/alternative downloads.
+ * 
+ * @param {string} platformId - 'windows' | 'macos' | 'linux' | 'android' | 'ios' | 'pwa'
+ * @param {Array} formats - List of formats configured for the platform
+ * @param {string} [cpuArch='unknown'] - 'arm64' | 'x64' | 'unknown'
+ * @returns {{ primary: Object|null, secondary: Array }}
+ */
+export function partitionFormatsForPlatform(platformId, formats = [], cpuArch = 'unknown') {
+  if (!formats || formats.length === 0) {
+    return { primary: null, secondary: [] }
+  }
+
+  // Filter only available standalone artifacts (exclude store bundles like Play Store AAB)
+  const available = formats.filter(f => f.status === 'available' && (f.resolvedUrl || f.url))
+  if (available.length === 0) {
+    return { primary: null, secondary: [] }
+  }
+
+  let primary = null
+
+  if (platformId === 'macos') {
+    if (cpuArch === 'x64') {
+      // Prioritize Intel DMG for verified Intel Macs
+      primary = available.find(f => f.type === 'dmg' && /intel|x64/i.test(f.arch || f.label || ''))
+    } else if (cpuArch === 'arm64') {
+      // Prioritize Apple Silicon DMG for verified Apple Silicon Macs
+      primary = available.find(f => f.type === 'dmg' && /arm64|apple silicon/i.test(f.arch || f.label || ''))
+    }
+
+    // Fallback: If arch is unknown or specific arch DMG wasn't matched, pick recommended DMG or first DMG
+    if (!primary) {
+      primary = available.find(f => f.recommended && f.type === 'dmg') ||
+                available.find(f => f.type === 'dmg') ||
+                available[0]
+    }
+  } else if (platformId === 'windows') {
+    // Windows: Primary is always Setup (.exe) installer
+    primary = available.find(f => f.type === 'exe' && f.recommended) ||
+              available.find(f => f.type === 'exe') ||
+              available[0]
+  } else if (platformId === 'linux') {
+    // Linux: Primary is Universal AppImage (.AppImage)
+    primary = available.find(f => f.type === 'appimage' && f.recommended) ||
+              available.find(f => f.type === 'appimage') ||
+              available[0]
+  } else if (platformId === 'android') {
+    // Android: Primary is standalone APK sideload
+    primary = available.find(f => f.type === 'apk') || available[0]
+  } else {
+    // Other / Default: recommended format or first available
+    primary = available.find(f => f.recommended) || available[0]
+  }
+
+  // Secondary formats: all other available formats excluding the primary
+  const secondary = available.filter(f => f !== primary)
+
+  return { primary, secondary }
+}
+

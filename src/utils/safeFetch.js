@@ -1,4 +1,4 @@
-import { resolveApiUrl, getApiHeaders } from './apiConfig'
+import { resolveApiUrl, getApiHeaders } from './apiConfig.js'
 
 /**
  * Universal safe fetch wrapper for JSON endpoints.

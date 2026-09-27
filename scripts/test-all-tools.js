@@ -5,7 +5,8 @@ import assert from 'node:assert/strict'
 import { TOOLS, UNIT_CATEGORIES, CURRENCY_RATES, QUOTES } from '../src/constants.js'
 import { generateQRDataURL, generateQRSVG } from '../src/utils/qrCode.js'
 import { parsePageRangeString, formatBytes, PAGE_SIZES } from '../src/utils/pdfEngine.js'
-import { resolveApiUrl, getApiBaseUrl, isTauri, isCapacitor, isNativeShell } from '../src/utils/apiConfig.js'
+import { resolveApiUrl, getApiBaseUrl, isTauri, isCapacitor, isNativeShell, isDownloadAppAvailable } from '../src/utils/apiConfig.js'
+import { DEFAULT_RELEASE_CONFIG, partitionFormatsForPlatform, detectCpuArchitecture } from '../src/utils/releaseConfig.js'
 import { createHash } from 'node:crypto'
 
 console.log('===> Starting ToolDesk Comprehensive Automated Test Suite...\n')
@@ -397,6 +398,103 @@ test('Security: SSRF validation blocks all private/internal IP ranges', () => {
   for (const ip of publicIps) {
     assert(!isPrivateOrReservedIPv4(ip), `Public IP ${ip} should be permitted`)
   }
+})
+
+// ─────────────────────────────────────────────────────────────
+// 14. DOWNLOAD CENTER PLATFORM-AWARE SELECTION TESTS (10 Cases)
+// ─────────────────────────────────────────────────────────────
+test('Download Logic 1: Windows - Setup (.exe) is primary, MSI is collapsed secondary', () => {
+  const winFormats = DEFAULT_RELEASE_CONFIG.platforms.windows.formats
+  const { primary, secondary } = partitionFormatsForPlatform('windows', winFormats, 'x64')
+  assert(primary, 'Windows must have a primary download')
+  assert.equal(primary.type, 'exe', 'Primary Windows installer must be .exe')
+  assert.equal(primary.filename, 'ToolDesk-Setup.exe')
+  assert.equal(secondary.length, 1, 'Windows must have exactly 1 secondary download')
+  assert.equal(secondary[0].type, 'msi', 'Secondary Windows package must be .msi')
+})
+
+test('Download Logic 2: macOS Apple Silicon - arm64 DMG is primary, Intel DMG & ZIP are secondary', () => {
+  const macFormats = DEFAULT_RELEASE_CONFIG.platforms.macos.formats
+  const { primary, secondary } = partitionFormatsForPlatform('macos', macFormats, 'arm64')
+  assert(primary, 'macOS Apple Silicon must have a primary download')
+  assert.equal(primary.type, 'dmg')
+  assert(primary.filename.includes('arm64'), 'Primary for Apple Silicon must be arm64 DMG')
+  assert.equal(secondary.length, 2, 'Intel DMG and ZIP must be secondary')
+  assert(secondary.some(f => f.filename.includes('x64')), 'Intel DMG must be in secondary')
+  assert(secondary.some(f => f.type === 'app' || f.filename.endsWith('.zip')), 'Archive ZIP must be in secondary')
+})
+
+test('Download Logic 3: macOS Intel - x64 DMG is primary, arm64 DMG & ZIP are secondary', () => {
+  const macFormats = DEFAULT_RELEASE_CONFIG.platforms.macos.formats
+  const { primary, secondary } = partitionFormatsForPlatform('macos', macFormats, 'x64')
+  assert(primary, 'macOS Intel must have a primary download')
+  assert.equal(primary.type, 'dmg')
+  assert(primary.filename.includes('x64'), 'Primary for Intel must be x64 DMG')
+  assert.equal(secondary.length, 2, 'Apple Silicon DMG and ZIP must be secondary')
+  assert(secondary.some(f => f.filename.includes('arm64')), 'Apple Silicon DMG must be in secondary')
+})
+
+test('Download Logic 4: Linux - Universal AppImage is primary, DEB is secondary', () => {
+  const linuxFormats = DEFAULT_RELEASE_CONFIG.platforms.linux.formats
+  const { primary, secondary } = partitionFormatsForPlatform('linux', linuxFormats, 'x64')
+  assert(primary, 'Linux must have a primary download')
+  assert.equal(primary.type, 'appimage', 'Primary Linux package must be AppImage')
+  assert.equal(secondary.length, 1, 'Linux must have 1 secondary download')
+  assert.equal(secondary[0].type, 'deb', 'Secondary Linux package must be .deb')
+})
+
+test('Download Logic 5: Android - APK is primary, AAB is excluded from end-user downloads', () => {
+  const androidFormats = DEFAULT_RELEASE_CONFIG.platforms.android.formats
+  const { primary, secondary } = partitionFormatsForPlatform('android', androidFormats, 'unknown')
+  assert(primary, 'Android must have a primary download')
+  assert.equal(primary.type, 'apk', 'Primary Android download must be .apk')
+  assert.equal(secondary.length, 0, 'AAB (store-bundle) must NOT be shown as end-user direct download')
+})
+
+test('Download Logic 6: iOS - Standalone guide behavior preserved, no fake downloads', () => {
+  const iosConfig = DEFAULT_RELEASE_CONFIG.platforms.ios
+  assert.equal(iosConfig.status, 'pwa-ready', 'iOS platform status must be pwa-ready')
+  assert.equal(iosConfig.formats.length, 0, 'iOS must not display desktop or android binary downloads')
+  const { primary, secondary } = partitionFormatsForPlatform('ios', iosConfig.formats, 'unknown')
+  assert.equal(primary, null, 'iOS has no direct binary download')
+  assert.equal(secondary.length, 0)
+})
+
+test('Download Logic 7: Unknown desktop architecture - Safe fallback to recommended DMG, never dead link', () => {
+  const macFormats = DEFAULT_RELEASE_CONFIG.platforms.macos.formats
+  const { primary, secondary } = partitionFormatsForPlatform('macos', macFormats, 'unknown')
+  assert(primary, 'Unknown architecture on macOS must fall back to recommended DMG')
+  assert.equal(primary.type, 'dmg')
+  assert(primary.url, 'Primary fallback download must have a valid URL')
+  assert.equal(secondary.length, 2, 'Alternatives must still be accessible in secondary accordion')
+})
+
+test('Download Logic 8: Web mobile - Download App option remains visible on mobile web', () => {
+  const available = isDownloadAppAvailable()
+  assert.equal(available, true, 'isDownloadAppAvailable must return true in standard web browser environment')
+})
+
+test('Download Logic 9: Installed native app - Download App hidden in native shell', () => {
+  const origWindow = globalThis.window
+  try {
+    globalThis.window = { __TAURI__: {} }
+    assert.equal(isNativeShell(), true, 'Native Tauri window must be recognized as native shell')
+    assert.equal(isDownloadAppAvailable(), false, 'Download App must be hidden in native shell')
+  } finally {
+    globalThis.window = origWindow
+  }
+})
+
+test('Download Logic 10: Missing/invalid release asset safety - Filters out unavailable and dead links', () => {
+  const testFormats = [
+    { type: 'exe', label: 'Broken Exe', status: 'unavailable', url: '' },
+    { type: 'zip', label: 'Hash Only', status: 'available', url: '#' },
+    { type: 'appimage', label: 'Good Package', status: 'available', url: 'https://example.com/app.AppImage', recommended: true }
+  ]
+  const { primary, secondary } = partitionFormatsForPlatform('linux', testFormats, 'x64')
+  assert(primary, 'Valid package should be picked as primary')
+  assert.equal(primary.label, 'Good Package')
+  assert(!primary.url.includes('#'), 'Dead placeholder url # must not be allowed')
 })
 
 console.log(`\n===> Test Suite Finished: ${passed} passed, ${failed} failed.\n`)
