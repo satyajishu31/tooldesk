@@ -64,7 +64,7 @@ const RotatingText = memo(function RotatingText() {
 /* ─────────────────────────────────────────────────── */
 /*  RIPPLE BUTTON                                      */
 /* ─────────────────────────────────────────────────── */
-const RippleBtn = memo(function RippleBtn({ children, style = {}, onClick, onMouseEnter, onMouseLeave }) {
+const RippleBtn = memo(function RippleBtn({ children, className = '', style = {}, onClick, onMouseEnter, onMouseLeave, ...rest }) {
   const [rips, setRips] = useState([])
   const isMounted = useRef(true)
   const timersRef = useRef(new Set())
@@ -88,7 +88,7 @@ const RippleBtn = memo(function RippleBtn({ children, style = {}, onClick, onMou
     onClick?.()
   }
   return (
-    <button onClick={fire} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}
+    <button className={className} onClick={fire} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} {...rest}
       style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer',
         border: 'none', WebkitTapHighlightColor: 'transparent', ...style }}>
       {children}
