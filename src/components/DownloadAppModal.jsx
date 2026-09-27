@@ -367,7 +367,7 @@ export default function DownloadAppModal({ isOpen, onClose }) {
         name: manifest.platforms?.windows?.name || 'Windows',
         badge: manifest.platforms?.windows?.badge || 'Desktop App',
         desc: manifest.platforms?.windows?.desc || 'Windows 10 & 11 • 64-bit Installer',
-        status: manifest.platforms?.windows?.status || 'coming-soon',
+        status: manifest.platforms?.windows?.status || 'available',
         formats: (manifest.platforms?.windows?.formats || []).map(f => ({
           ...f,
           resolvedUrl: resolveArtifactUrl('windows', f, manifest)
@@ -389,7 +389,7 @@ export default function DownloadAppModal({ isOpen, onClose }) {
         name: manifest.platforms?.linux?.name || 'Linux',
         badge: manifest.platforms?.linux?.badge || 'Universal Linux',
         desc: manifest.platforms?.linux?.desc || 'Wayland & X11 • Desktop Packages',
-        status: manifest.platforms?.linux?.status || 'coming-soon',
+        status: manifest.platforms?.linux?.status || 'available',
         formats: (manifest.platforms?.linux?.formats || []).map(f => ({
           ...f,
           resolvedUrl: resolveArtifactUrl('linux', f, manifest)
@@ -440,7 +440,7 @@ export default function DownloadAppModal({ isOpen, onClose }) {
     return list
   }, [manifest])
 
-  const detectedConfig = platforms.find(p => p.id === platform) || platforms[0]
+  const detectedConfig = platforms.find(p => p.id === platform || (platform === 'web' && p.id === 'pwa')) || platforms.find(p => p.id === 'pwa') || platforms[0]
 
   return (
     <AnimatePresence>
@@ -861,7 +861,7 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                                 gap: 5,
                                 alignSelf: 'flex-start',
                               }}>
-                              <span>Other downloads</span>
+                              <span>{cpuArch === 'unknown' ? 'Choose Mac version / Other downloads' : 'Other downloads'}</span>
                               <motion.span
                                 animate={{ rotate: expandedPrimaryOther ? 180 : 0 }}
                                 transition={{ duration: 0.2 }}
@@ -1958,7 +1958,7 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                       transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                       style={{ overflow: 'hidden', marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {platforms.map((p, idx) => {
-                        const isUserDevice = p.id === platform
+                        const isUserDevice = p.id === platform || (platform === 'web' && p.id === 'pwa') || (platform === 'pwa' && p.id === 'web')
                         const { primary: pPrimary, secondary: pSecondary } = partitionFormatsForPlatform(
                           p.id,
                           p.formats,
