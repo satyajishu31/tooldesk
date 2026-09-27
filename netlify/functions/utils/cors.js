@@ -68,15 +68,6 @@ function isOriginAllowed(origin, event) {
 
   if (allowed.has(cleanOrigin)) return true
 
-  // Allow native app custom schemes (Capacitor iOS/Android, Tauri Desktop, Ionic)
-  if (
-    cleanOrigin.startsWith('capacitor://') ||
-    cleanOrigin.startsWith('tauri://') ||
-    cleanOrigin.startsWith('ionic://')
-  ) {
-    return true
-  }
-
   // Allow legitimate subdomains of the primary site domain if deployed
   if (process.env.URL) {
     try {
@@ -106,6 +97,11 @@ function isOriginAllowed(origin, event) {
 /**
  * Validates request origin for sensitive/paid endpoints.
  * Returns consistent object matching both { ok, response } and { isAllowed, status, headers } patterns.
+ *
+ * Security Guarantee:
+ * - Exact allowlist matching only (no wildcard scheme prefixes)
+ * - Client-controlled headers (e.g. X-ToolDesk-Client) NEVER bypass origin validation
+ * - No wildcard Access-Control-Allow-Origin: * on protected endpoints
  */
 function handleCors(event, options = {}) {
   const isPaid = options.isPaid !== false // Default to true for paid/server protection
@@ -122,13 +118,25 @@ function handleCors(event, options = {}) {
     } catch {}
   }
 
-  const clientHeader = (headers['x-tooldesk-client'] || '').toLowerCase()
-  const isNativeClient = clientHeader === 'native' || clientHeader === 'tauri' || clientHeader === 'capacitor' || clientHeader === 'tooldesk'
+  // Strict origin validation: if Origin or Referer is supplied, it MUST match the allowlist.
+  // Client-controlled headers NEVER override an unauthorized origin.
+  let isAllowed = false
+  if (effectiveOrigin) {
+    isAllowed = isOriginAllowed(effectiveOrigin, event)
+  } else {
+    // When no browser Origin/Referer is present:
+    // Cross-site browser requests attach sec-fetch-site: cross-site; reject them.
+    if (secFetchSite === 'cross-site') {
+      isAllowed = false
+    } else {
+      // Direct native HTTP calls or same-site requests
+      isAllowed = true
+    }
+  }
 
-  const isAllowed = isNativeClient || (effectiveOrigin ? isOriginAllowed(effectiveOrigin, event) : (!secFetchSite || secFetchSite === 'none' || secFetchSite === 'same-origin'))
   const isSameSiteContext = secFetchSite === 'same-origin' || secFetchSite === 'same-site'
 
-  // Handle preflight OPTIONS
+  // Preflight OPTIONS
   if (event.httpMethod === 'OPTIONS') {
     if (isPaid && !isAllowed && !isSameSiteContext) {
       const errBody = JSON.stringify({ error: 'Cross-origin access from this origin is forbidden.' })
@@ -146,7 +154,10 @@ function handleCors(event, options = {}) {
       }
     }
 
-    const allowOrigin = (isAllowed && effectiveOrigin && effectiveOrigin !== 'null') ? effectiveOrigin : '*'
+    const allowOrigin = (isAllowed && effectiveOrigin && effectiveOrigin !== 'null')
+      ? effectiveOrigin
+      : 'https://tooldesk-app.netlify.app'
+
     const optHeaders = {
       'Access-Control-Allow-Origin': allowOrigin,
       'Access-Control-Allow-Methods': allowMethods,
@@ -167,25 +178,8 @@ function handleCors(event, options = {}) {
     }
   }
 
-  // Reject explicit cross-site browser requests on protected endpoints
+  // Reject unauthorized origins on protected endpoints
   if (isPaid) {
-    if (secFetchSite === 'cross-site' && !isAllowed) {
-      const errBody = JSON.stringify({ error: 'Cross-site invocation of paid APIs is not permitted.' })
-      return {
-        ok: false,
-        isAllowed: false,
-        status: 403,
-        error: 'Cross-site invocation of paid APIs is not permitted.',
-        headers: { 'Content-Type': 'application/json' },
-        response: {
-          statusCode: 403,
-          headers: { 'Content-Type': 'application/json' },
-          body: errBody
-        }
-      }
-    }
-
-    // Require an authorized Origin or Referer or native client
     if (!isAllowed && !isSameSiteContext) {
       const errBody = JSON.stringify({ error: 'Unauthorized origin for this protected service.' })
       return {
@@ -204,7 +198,9 @@ function handleCors(event, options = {}) {
   }
 
   const corsHeaders = {
-    'Access-Control-Allow-Origin': (isAllowed && effectiveOrigin && effectiveOrigin !== 'null') ? effectiveOrigin : '*',
+    'Access-Control-Allow-Origin': (isAllowed && effectiveOrigin && effectiveOrigin !== 'null')
+      ? effectiveOrigin
+      : 'https://tooldesk-app.netlify.app',
     'Access-Control-Allow-Methods': allowMethods,
     'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-ToolDesk-Client',
     'Vary': 'Origin',
