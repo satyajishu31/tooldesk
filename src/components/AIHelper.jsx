@@ -376,6 +376,7 @@ export default function AIHelper() {
       {/* Floating Toggle Button — always fully visible while scrolling, on every page */}
       <motion.button
         className="ai-toggle-btn"
+        aria-label="Open ToolDesk Assistant"
         onClick={() => setIsOpen(o => !o)}
         whileHover={{ scale: 1.06, y: -3 }}
         whileTap={{ scale: 0.94 }}

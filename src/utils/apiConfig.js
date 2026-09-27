@@ -17,7 +17,6 @@ export const PRODUCTION_API_ORIGIN = (typeof process !== 'undefined' && process.
 export function isTauri() {
   if (typeof window === 'undefined') return false
   if (Boolean(window.__TAURI_INTERNALS__ || window.__TAURI__ || window.__TAURI_METADATA__)) return true
-  if (typeof navigator !== 'undefined' && /tauri/i.test(navigator.userAgent || '')) return true
   if (window.location) {
     const { protocol, hostname, origin } = window.location
     if (protocol === 'tauri:' || hostname === 'tauri.localhost' || (origin && origin.includes('tauri'))) return true
@@ -27,6 +26,7 @@ export function isTauri() {
 
 export function isCapacitor() {
   if (typeof window === 'undefined') return false
+  if (Boolean(window.androidBridge || window.webkit?.messageHandlers?.bridge)) return true
   try {
     if (Capacitor && typeof Capacitor.isNativePlatform === 'function' && Capacitor.isNativePlatform()) {
       return true
@@ -43,11 +43,6 @@ export function isCapacitor() {
     (typeof window.Capacitor !== 'undefined' && window.Capacitor.platform && window.Capacitor.platform !== 'web') ||
     window.location?.protocol === 'capacitor:'
   ) return true
-  if (window.location) {
-    const { protocol, hostname, port } = window.location
-    if (protocol === 'https:' && hostname === 'localhost' && !port) return true
-    if (protocol === 'http:' && hostname === 'localhost' && !port && !isTauri()) return true
-  }
   return false
 }
 
@@ -70,10 +65,9 @@ export function isNativeShell() {
   if (typeof window === 'undefined') return false
   if (isTauri() || isCapacitor()) return true
   if (window.location) {
-    const { protocol, hostname, port, origin } = window.location
+    const { protocol, hostname, origin } = window.location
     if (protocol === 'capacitor:' || protocol === 'tauri:' || protocol === 'file:') return true
     if (hostname === 'tauri.localhost' || (origin && origin.includes('tauri'))) return true
-    if (hostname === 'localhost' && !port) return true
   }
   return false
 }
