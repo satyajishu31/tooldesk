@@ -1069,7 +1069,7 @@ export async function convertXmlToPdf(xmlText, options = {}) {
 export async function renderPdfPagesToImages(file, format = 'image/png', dpi = 150, onProgress) {
   const pdfjs = await getPdfJs()
   const arrayBuffer = file instanceof ArrayBuffer ? file : await file.arrayBuffer()
-  const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer), isEvalSupported: false }).promise
+  const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer), isEvalSupported: false, enableScripting: false }).promise
 
   const totalPages = pdf.numPages
   const pages = []
@@ -1126,7 +1126,7 @@ export async function renderPdfPagesToImages(file, format = 'image/png', dpi = 1
 export async function generatePdfThumbnails(file, maxPages = 60, onProgress) {
   const pdfjs = await getPdfJs()
   const arrayBuffer = file instanceof ArrayBuffer ? file : await file.arrayBuffer()
-  const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer), isEvalSupported: false }).promise
+  const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer), isEvalSupported: false, enableScripting: false }).promise
 
   const totalPages = pdf.numPages
   const count = Math.min(totalPages, maxPages)
@@ -1718,7 +1718,7 @@ export async function unlockPdf(file, password, onProgress = null) {
 
   let pdf
   try {
-    const loadingTask = pdfjs.getDocument({ data: arrayBuffer, password, isEvalSupported: false })
+    const loadingTask = pdfjs.getDocument({ data: arrayBuffer, password, isEvalSupported: false, enableScripting: false })
     pdf = await loadingTask.promise
   } catch (err) {
     if (/password|incorrect/i.test(err?.message || '')) {
@@ -1782,7 +1782,7 @@ export async function redactPdfPages(file, redactionsByPage, onProgress = null) 
   if (onProgress) onProgress('Initializing permanent PDF redaction engine...')
   const pdfjs = await getPdfJs()
   const arrayBuffer = await file.arrayBuffer()
-  const pdf = await pdfjs.getDocument({ data: arrayBuffer, isEvalSupported: false }).promise
+  const pdf = await pdfjs.getDocument({ data: arrayBuffer, isEvalSupported: false, enableScripting: false }).promise
   const numPages = pdf.numPages
 
   const srcDoc = await safeLoadPdfDocument(arrayBuffer.slice(0), file.name)
@@ -2067,7 +2067,7 @@ export async function comparePdfs(fileA, fileB, onProgress) {
   const textA = []
   try {
     const bufA = await fileA.arrayBuffer()
-    const loadingTaskA = pdfjs.getDocument({ data: new Uint8Array(bufA), isEvalSupported: false })
+    const loadingTaskA = pdfjs.getDocument({ data: new Uint8Array(bufA), isEvalSupported: false, enableScripting: false })
     const pdfA = await loadingTaskA.promise
     for (let i = 1; i <= Math.min(pdfA.numPages, 50); i++) {
       const page = await pdfA.getPage(i)
@@ -2082,7 +2082,7 @@ export async function comparePdfs(fileA, fileB, onProgress) {
   const textB = []
   try {
     const bufB = await fileB.arrayBuffer()
-    const loadingTaskB = pdfjs.getDocument({ data: new Uint8Array(bufB), isEvalSupported: false })
+    const loadingTaskB = pdfjs.getDocument({ data: new Uint8Array(bufB), isEvalSupported: false, enableScripting: false })
     const pdfB = await loadingTaskB.promise
     for (let i = 1; i <= Math.min(pdfB.numPages, 50); i++) {
       const page = await pdfB.getPage(i)

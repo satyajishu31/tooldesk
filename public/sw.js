@@ -1,6 +1,6 @@
-const CACHE_NAME = 'tooldesk-pwa-v3'
-const RUNTIME_CACHE = 'tooldesk-runtime-v3'
-const FONT_CACHE = 'tooldesk-fonts-v3'
+const CACHE_NAME = 'tooldesk-pwa-v4'
+const RUNTIME_CACHE = 'tooldesk-runtime-v4'
+const FONT_CACHE = 'tooldesk-fonts-v4'
 
 const PRECACHE_URLS = [
   '/',

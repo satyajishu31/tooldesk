@@ -93,6 +93,7 @@ async function extractPdfText(ab) {
     cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/cmaps/',
     cMapPacked: true,
     isEvalSupported: false,
+    enableScripting: false,
   })
   const pdf = await loadingTask.promise
   const pages = []
