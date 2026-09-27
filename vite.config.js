@@ -158,8 +158,8 @@ export default defineConfig({
   },
 
   build: {
-    // es2020 — supports BigInt literals needed by onnxruntime-web (AI bg-removal model)
-    target: 'es2020',
+    // es2022 — supports BigInt literals (onnxruntime-web) and top-level await (pdfjs-dist 4.x)
+    target: 'es2022',
     minify: 'esbuild',
     cssMinify: 'esbuild',
     sourcemap: false,

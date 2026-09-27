@@ -138,11 +138,11 @@ export const DEFAULT_RELEASE_CONFIG = {
           label: 'Direct Android APK (.apk)',
           arch: 'arm64-v8a, armeabi-v7a, x86_64',
           filename: 'ToolDesk.apk',
-          size: '33 MB',
+          size: '34 MB',
           status: 'available',
           envKey: 'VITE_ANDROID_APK_URL',
           url: '/releases/android/ToolDesk.apk',
-          checksum: '671397e353a41421b2d2106943572df0ca13e3920ddaf1b3ac1106a0505257aa',
+          checksum: '205668f42435077b7b2708f046bf9b92ffa1f80d5b3c8f901b9936ebb527160e',
           recommended: true,
           note: 'Direct standalone binary. Sideload on any Android device.'
         },
@@ -151,11 +151,11 @@ export const DEFAULT_RELEASE_CONFIG = {
           label: 'Google Play Bundle (.aab)',
           arch: 'Universal Play Store Bundle',
           filename: 'ToolDesk.aab',
-          size: '32 MB',
+          size: '33 MB',
           status: 'store-bundle',
           envKey: 'VITE_ANDROID_AAB_URL',
           url: '/releases/android/ToolDesk.aab',
-          checksum: 'e6e88fe9dd9093bdbd01f054f704cb43a07979bd0ea8bafaeae4ca5cca675bbb',
+          checksum: 'd3637572187816914ce4117ea6f95695b76a415fcb33234add95be8af8120e14',
           recommended: false,
           note: 'Official Play Store publishing package'
         }

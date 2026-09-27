@@ -193,11 +193,11 @@ function errorResponse(last, corsHeaders) {
 
 exports.handler = async function(event) {
   const cors = handleCors(event, { allowedMethods: 'POST,OPTIONS' })
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 204, headers: cors.headers }
+  if (!cors.isAllowed || !cors.ok) {
+    return cors.response || { statusCode: cors.status || 403, headers: cors.headers, body: JSON.stringify({ error: cors.error }) }
   }
-  if (!cors.isAllowed) {
-    return { statusCode: cors.status, headers: cors.headers, body: JSON.stringify({ error: cors.error }) }
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 204, headers: cors.headers, body: '' }
   }
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers: cors.headers, body: JSON.stringify({ error: 'Method not allowed' }) }

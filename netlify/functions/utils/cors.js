@@ -56,7 +56,6 @@ function getAllowedOrigins(event) {
   allowed.add('https://localhost')
   allowed.add('http://localhost')
   allowed.add('ionic://localhost')
-  allowed.add('null')
 
   return allowed
 }
@@ -64,6 +63,7 @@ function getAllowedOrigins(event) {
 function isOriginAllowed(origin, event) {
   if (!origin || typeof origin !== 'string') return false
   const cleanOrigin = origin.trim().toLowerCase().replace(/\/$/, '')
+  if (cleanOrigin === 'null') return false
   const allowed = getAllowedOrigins(event)
 
   if (allowed.has(cleanOrigin)) return true
@@ -118,10 +118,16 @@ function handleCors(event, options = {}) {
     } catch {}
   }
 
+  // Explicitly reject null origin (sandboxed iframes, privacy browsers, untrusted local files)
+  const isNullOrigin = (typeof origin === 'string' && origin.trim().toLowerCase() === 'null') ||
+                       (typeof effectiveOrigin === 'string' && effectiveOrigin.trim().toLowerCase() === 'null')
+
   // Strict origin validation: if Origin or Referer is supplied, it MUST match the allowlist.
   // Client-controlled headers NEVER override an unauthorized origin.
   let isAllowed = false
-  if (effectiveOrigin) {
+  if (isNullOrigin) {
+    isAllowed = false
+  } else if (effectiveOrigin) {
     isAllowed = isOriginAllowed(effectiveOrigin, event)
   } else {
     // When no browser Origin/Referer is present:
@@ -134,7 +140,7 @@ function handleCors(event, options = {}) {
     }
   }
 
-  const isSameSiteContext = secFetchSite === 'same-origin' || secFetchSite === 'same-site'
+  const isSameSiteContext = !isNullOrigin && (secFetchSite === 'same-origin' || secFetchSite === 'same-site')
 
   // Preflight OPTIONS
   if (event.httpMethod === 'OPTIONS') {

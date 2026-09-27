@@ -43,15 +43,17 @@ jobs:
 
       - name: Build Web & Tauri Desktop Apps
         uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: v__VERSION__
-          releaseName: 'ToolDesk v__VERSION__'
-          releaseBody: 'ToolDesk official desktop release.'
-          releaseDraft: false
-          prerelease: false
           args: ${{ matrix.args }}
+
+      - name: Upload Tauri Desktop Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ToolDesk-Desktop-${{ matrix.platform }}
+          path: |
+            src-tauri/target/release/bundle/
+            src-tauri/target/*/release/bundle/
+          if-no-files-found: warn
 
   build-android:
     runs-on: ubuntu-latest

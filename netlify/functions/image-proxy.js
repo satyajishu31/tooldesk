@@ -333,8 +333,8 @@ async function fetchImage(rawUrl, corsHeaders, redirectsLeft = 3) {
 
 exports.handler = async function(event) {
   const cors = handleCors(event, { allowedMethods: 'GET,OPTIONS' })
+  if (!cors.isAllowed || !cors.ok) return cors.response || { statusCode: cors.status || 403, headers: cors.headers, body: JSON.stringify({ error: cors.error }) }
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors.headers, body: '' }
-  if (!cors.isAllowed) return { statusCode: cors.status, headers: cors.headers, body: JSON.stringify({ error: cors.error }) }
   if (event.httpMethod !== 'GET') return { statusCode: 405, headers: cors.headers, body: 'Method Not Allowed' }
 
   const clientIp = getClientIp(event)

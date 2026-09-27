@@ -22,6 +22,18 @@ export function formatBytes(bytes) {
   return bytes + ' B'
 }
 
+// Polyfill Promise.withResolvers for broader compatibility (Safari < 17.4, older Android WebViews)
+if (typeof Promise.withResolvers === 'undefined') {
+  Promise.withResolvers = function () {
+    let resolve, reject
+    const promise = new Promise((res, rej) => {
+      resolve = res
+      reject = rej
+    })
+    return { promise, resolve, reject }
+  }
+}
+
 /**
  * Dynamically load PDF.js library with web worker
  */
@@ -30,7 +42,7 @@ export async function getPdfJs() {
   if (typeof window === 'undefined') throw new Error('PDF.js requires browser environment.')
   if (window.pdfjsLib) {
     if (!window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
     }
     return window.pdfjsLib
   }
@@ -40,16 +52,16 @@ export async function getPdfJs() {
       try {
         const pdfjs = await import('pdfjs-dist')
         const lib = pdfjs.default || pdfjs
-        lib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+        lib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
         window.pdfjsLib = lib
         return lib
       } catch (e) {
         console.warn('[pdfEngine] Local pdfjs-dist import fallback:', e)
         const s = document.createElement('script')
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.mjs'
         document.head.appendChild(s)
         await new Promise((res, rej) => { s.onload = res; s.onerror = rej })
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
         return window.pdfjsLib
       }
     })()
@@ -660,9 +672,13 @@ export async function convertImagesToPdf(files, options = {}, onProgress) {
     const embeddedImage = await doc.embedPng(pngArrayBuffer)
 
     let targetWidth, targetHeight
+    const numericMargin = typeof margin === 'number'
+      ? Math.max(0, margin)
+      : (margin === 'none' || margin === '0' ? 0 : (margin === 'large' ? 36 : (margin === 'small' ? 10 : 20)))
+
     if (pageSize === 'FIT') {
-      targetWidth = naturalWidth + margin * 2
-      targetHeight = naturalHeight + margin * 2
+      targetWidth = naturalWidth + numericMargin * 2
+      targetHeight = naturalHeight + numericMargin * 2
     } else {
       const std = PAGE_SIZES[pageSize] || PAGE_SIZES.A4
       if (orientation === 'LANDSCAPE') {
@@ -684,15 +700,15 @@ export async function convertImagesToPdf(files, options = {}, onProgress) {
     }
 
     const page = doc.addPage([targetWidth, targetHeight])
-    const maxDrawWidth = targetWidth - margin * 2
-    const maxDrawHeight = targetHeight - margin * 2
+    const maxDrawWidth = targetWidth - numericMargin * 2
+    const maxDrawHeight = targetHeight - numericMargin * 2
 
     // Scale image while preserving aspect ratio
     const scale = Math.min(maxDrawWidth / naturalWidth, maxDrawHeight / naturalHeight)
     const drawWidth = naturalWidth * scale
     const drawHeight = naturalHeight * scale
-    const drawX = margin + (maxDrawWidth - drawWidth) / 2
-    const drawY = margin + (maxDrawHeight - drawHeight) / 2
+    const drawX = numericMargin + (maxDrawWidth - drawWidth) / 2
+    const drawY = numericMargin + (maxDrawHeight - drawHeight) / 2
 
     page.drawImage(embeddedImage, {
       x: drawX,
@@ -1053,7 +1069,7 @@ export async function convertXmlToPdf(xmlText, options = {}) {
 export async function renderPdfPagesToImages(file, format = 'image/png', dpi = 150, onProgress) {
   const pdfjs = await getPdfJs()
   const arrayBuffer = file instanceof ArrayBuffer ? file : await file.arrayBuffer()
-  const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise
+  const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer), isEvalSupported: false }).promise
 
   const totalPages = pdf.numPages
   const pages = []
@@ -1110,7 +1126,7 @@ export async function renderPdfPagesToImages(file, format = 'image/png', dpi = 1
 export async function generatePdfThumbnails(file, maxPages = 60, onProgress) {
   const pdfjs = await getPdfJs()
   const arrayBuffer = file instanceof ArrayBuffer ? file : await file.arrayBuffer()
-  const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise
+  const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer), isEvalSupported: false }).promise
 
   const totalPages = pdf.numPages
   const count = Math.min(totalPages, maxPages)
@@ -1702,7 +1718,7 @@ export async function unlockPdf(file, password, onProgress = null) {
 
   let pdf
   try {
-    const loadingTask = pdfjs.getDocument({ data: arrayBuffer, password })
+    const loadingTask = pdfjs.getDocument({ data: arrayBuffer, password, isEvalSupported: false })
     pdf = await loadingTask.promise
   } catch (err) {
     if (/password|incorrect/i.test(err?.message || '')) {
@@ -1766,7 +1782,7 @@ export async function redactPdfPages(file, redactionsByPage, onProgress = null) 
   if (onProgress) onProgress('Initializing permanent PDF redaction engine...')
   const pdfjs = await getPdfJs()
   const arrayBuffer = await file.arrayBuffer()
-  const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise
+  const pdf = await pdfjs.getDocument({ data: arrayBuffer, isEvalSupported: false }).promise
   const numPages = pdf.numPages
 
   const srcDoc = await safeLoadPdfDocument(arrayBuffer.slice(0), file.name)
@@ -2051,7 +2067,7 @@ export async function comparePdfs(fileA, fileB, onProgress) {
   const textA = []
   try {
     const bufA = await fileA.arrayBuffer()
-    const loadingTaskA = pdfjs.getDocument({ data: new Uint8Array(bufA) })
+    const loadingTaskA = pdfjs.getDocument({ data: new Uint8Array(bufA), isEvalSupported: false })
     const pdfA = await loadingTaskA.promise
     for (let i = 1; i <= Math.min(pdfA.numPages, 50); i++) {
       const page = await pdfA.getPage(i)
@@ -2066,7 +2082,7 @@ export async function comparePdfs(fileA, fileB, onProgress) {
   const textB = []
   try {
     const bufB = await fileB.arrayBuffer()
-    const loadingTaskB = pdfjs.getDocument({ data: new Uint8Array(bufB) })
+    const loadingTaskB = pdfjs.getDocument({ data: new Uint8Array(bufB), isEvalSupported: false })
     const pdfB = await loadingTaskB.promise
     for (let i = 1; i <= Math.min(pdfB.numPages, 50); i++) {
       const page = await pdfB.getPage(i)

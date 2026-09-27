@@ -63,22 +63,22 @@ async function getPdfJs() {
     _pdfjsPromise = (async () => {
       if (window.pdfjsLib) {
         _pdfjs = window.pdfjsLib
-        _pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+        _pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
         return _pdfjs
       }
       try {
         const pdfjs = await import('pdfjs-dist')
         _pdfjs = pdfjs.default || pdfjs
-        _pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+        _pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
         window.pdfjsLib = _pdfjs
         return _pdfjs
       } catch (err) {
         console.warn('[FileConverter] Local pdfjs import error, falling back:', err)
         const s = document.createElement('script')
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.mjs'
         document.head.appendChild(s)
         await new Promise((res, rej) => { s.onload = res; s.onerror = rej })
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
         _pdfjs = window.pdfjsLib
         return _pdfjs
       }
@@ -90,8 +90,9 @@ async function extractPdfText(ab) {
   const lib = await getPdfJs()
   const loadingTask = lib.getDocument({
     data: new Uint8Array(ab),
-    cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+    cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/cmaps/',
     cMapPacked: true,
+    isEvalSupported: false,
   })
   const pdf = await loadingTask.promise
   const pages = []

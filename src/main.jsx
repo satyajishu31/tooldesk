@@ -6,6 +6,18 @@ import { isNativeShell } from './utils/apiConfig'
 
 import { StatusBar } from '@capacitor/status-bar'
 
+// Polyfill Promise.withResolvers for broader compatibility (Safari < 17.4, older Android WebViews)
+if (typeof Promise.withResolvers === 'undefined') {
+  Promise.withResolvers = function () {
+    let resolve, reject
+    const promise = new Promise((res, rej) => {
+      resolve = res
+      reject = rej
+    })
+    return { promise, resolve, reject }
+  }
+}
+
 // Enable immediate :active tap feedback on touch devices (WebKit, Blink, Android WebView, iOS)
 if (typeof window !== 'undefined') {
   document.addEventListener('touchstart', () => {}, { passive: true })
