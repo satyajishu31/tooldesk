@@ -189,9 +189,9 @@ async function groqChat(key, model, messages, options = {}) {
         try {
           const parsed = JSON.parse(res.body)
           if (parsed?.choices?.[0]?.message?.content) {
-            let text = parsed.choices[0].message.content
-            text = text.replace(/<think>[\s\S]*?<\/think>\s*/gi, '').trim()
-            parsed.choices[0].message.content = text
+            let text = parsed.choices[0].message.content || ''
+            const stripped = text.replace(/<think>[\s\S]*?<\/think>\s*/gi, '').trim()
+            parsed.choices[0].message.content = stripped || text.replace(/<\/?think>/gi, '').trim()
             res.body = JSON.stringify(parsed)
           }
         } catch {}
