@@ -68,6 +68,15 @@ function isOriginAllowed(origin, event) {
 
   if (allowed.has(cleanOrigin)) return true
 
+  // Allow native app custom schemes (Capacitor iOS/Android, Tauri Desktop, Ionic)
+  if (
+    cleanOrigin.startsWith('capacitor://') ||
+    cleanOrigin.startsWith('tauri://') ||
+    cleanOrigin.startsWith('ionic://')
+  ) {
+    return true
+  }
+
   // Allow legitimate subdomains of the primary site domain if deployed
   if (process.env.URL) {
     try {

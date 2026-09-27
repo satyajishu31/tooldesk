@@ -2,6 +2,8 @@ import AppIcon from './AppIcon'
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { LayoutGrid, Sparkles, Info, Star, Clock, Download } from 'lucide-react'
+import { isDownloadAppAvailable } from '../utils/apiConfig'
 import { TOOLS } from '../constants'
 
 const TOOL_COUNT = TOOLS.length
@@ -83,6 +85,13 @@ export default function Navbar() {
     }
   ], [])
 
+  const mobileNavLinks = useMemo(() => [
+    { label: 'All Tools', id: 'tools', icon: LayoutGrid },
+    { label: 'Why ToolDesk', id: 'why', icon: Sparkles },
+    { label: 'About', id: 'about', icon: Info },
+    { label: 'Reviews', id: 'reviews', icon: Star },
+  ], [])
+
   const changeTheme = (t) => {
     setActiveTheme(t.name)
     try { localStorage.setItem('tooldesk-theme', t.name) } catch {}
@@ -127,6 +136,29 @@ export default function Navbar() {
   }, [])
 
   useEffect(() => { setMenuOpen(false); setSearchOpen(false); setQuery('') }, [location.pathname])
+
+  // Lock body scroll when mobile menu is open, restoring exact scroll position upon dismissal
+  useEffect(() => {
+    if (!menuOpen) return
+    const scrollY = window.scrollY
+    const prevOverflow = document.body.style.overflow
+    const prevPosition = document.body.style.position
+    const prevTop = document.body.style.top
+    const prevWidth = document.body.style.width
+
+    document.body.style.overflow = 'hidden'
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.width = '100%'
+
+    return () => {
+      document.body.style.overflow = prevOverflow
+      document.body.style.position = prevPosition
+      document.body.style.top = prevTop
+      document.body.style.width = prevWidth
+      window.scrollTo(0, scrollY)
+    }
+  }, [menuOpen])
 
   useEffect(() => {
     if (searchOpen) {
@@ -242,10 +274,11 @@ export default function Navbar() {
               window.dispatchEvent(new CustomEvent('tooldesk-open-history'))
             }}
             whileHover={{ y:-1 }}
-            style={{ padding:'7px 14px', borderRadius:999, fontSize:13.5, fontWeight:500, color:'#555', background:'none', border:'none', cursor:'pointer', fontFamily:'DM Sans,sans-serif', transition:'color .18s,background .18s', display:'flex', alignItems:'center', gap:5 }}
+            style={{ padding:'7px 14px', borderRadius:999, fontSize:13.5, fontWeight:500, color:'#555', background:'none', border:'none', cursor:'pointer', fontFamily:'DM Sans,sans-serif', transition:'color .18s,background .18s', display:'flex', alignItems:'center', gap:6 }}
             onMouseEnter={e=>{e.currentTarget.style.background='#f0f4ff';e.currentTarget.style.color='#4F8EF7'}}
             onMouseLeave={e=>{e.currentTarget.style.background='transparent';e.currentTarget.style.color='#555'}}>
-            🕒 History
+            <Clock size={13.5} strokeWidth={2} style={{ flexShrink: 0 }} />
+            <span>History</span>
           </motion.button>
           <motion.button onClick={openSearch} whileHover={{ scale:1.04 }} whileTap={{ scale:.93 }}
             style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 14px', borderRadius:999, border:'1px solid rgba(0,0,0,.07)', background:'rgba(0,0,0,.035)', backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)', cursor:'pointer', fontSize:13, color:'#777', fontFamily:'DM Sans,sans-serif', marginLeft:4, transition:'all .18s', boxShadow:'inset 0 1px 0 rgba(255,255,255,.85), 0 1px 2px rgba(0,0,0,.02)' }}
@@ -294,40 +327,42 @@ export default function Navbar() {
             </AnimatePresence>
           </div>
 
-          <motion.button
-            onClick={() => window.dispatchEvent(new CustomEvent('tooldesk-open-download'))}
-            onKeyDown={e => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                window.dispatchEvent(new CustomEvent('tooldesk-open-download'))
-              }
-            }}
-            whileHover={{ scale:1.04, y:-1 }}
-            whileTap={{ scale:.95 }}
-            aria-label="Download ToolDesk App"
-            aria-haspopup="dialog"
-            title="Download ToolDesk App (Windows, macOS, Linux, Android, iOS)"
-            style={{
-              marginLeft: 6,
-              padding: '8px 16px',
-              borderRadius: 999,
-              background: 'rgba(79,142,247,.1)',
-              color: 'var(--blue, #4F8EF7)',
-              border: '1px solid rgba(79,142,247,.22)',
-              fontFamily: 'DM Sans,sans-serif',
-              fontWeight: 600,
-              fontSize: 13,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              transition: 'all .18s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(79,142,247,.18)'; e.currentTarget.style.borderColor = 'var(--blue, #4F8EF7)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(79,142,247,.1)'; e.currentTarget.style.borderColor = 'rgba(79,142,247,.22)' }}>
-            <span>☁️</span>
-            <span>Download App</span>
-          </motion.button>
+          {isDownloadAppAvailable() && (
+            <motion.button
+              onClick={() => window.dispatchEvent(new CustomEvent('tooldesk-open-download'))}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  window.dispatchEvent(new CustomEvent('tooldesk-open-download'))
+                }
+              }}
+              whileHover={{ scale:1.04, y:-1 }}
+              whileTap={{ scale:.95 }}
+              aria-label="Download ToolDesk App"
+              aria-haspopup="dialog"
+              title="Download ToolDesk App (Windows, macOS, Linux, Android, iOS)"
+              style={{
+                marginLeft: 6,
+                padding: '8px 16px',
+                borderRadius: 999,
+                background: 'rgba(79,142,247,.1)',
+                color: 'var(--blue, #4F8EF7)',
+                border: '1px solid rgba(79,142,247,.22)',
+                fontFamily: 'DM Sans,sans-serif',
+                fontWeight: 600,
+                fontSize: 13,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all .18s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(79,142,247,.18)'; e.currentTarget.style.borderColor = 'var(--blue, #4F8EF7)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(79,142,247,.1)'; e.currentTarget.style.borderColor = 'rgba(79,142,247,.22)' }}>
+              <Download size={14} strokeWidth={2.2} />
+              <span>Download App</span>
+            </motion.button>
+          )}
 
           <motion.button onClick={() => scrollTo('tools')} whileHover={{ scale:1.04, y:-2 }} whileTap={{ scale:.96 }}
             style={{ marginLeft:6, padding:'9px 20px', borderRadius:999, background:'#0d0d1a', color:'#fff', border:'none', fontFamily:'DM Sans,sans-serif', fontWeight:600, fontSize:13.5, cursor:'pointer', boxShadow:'0 4px 14px rgba(13,13,26,.22)' }}>
@@ -370,7 +405,7 @@ export default function Navbar() {
               transition={{ duration: 0.18, ease:[.22,1,.36,1] }}
               style={{
                 position:'fixed',
-                top:76,
+                top: 'calc(74px + max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px)))',
                 left:12, right:12,
                 maxWidth:620,
                 minWidth:0,
@@ -509,36 +544,93 @@ export default function Navbar() {
       {/* ═══ MOBILE MENU ═══ */}
       <AnimatePresence>
         {menuOpen && (
-          <motion.div
-            initial={{ opacity:0, y:-8 }}
-            animate={{ opacity:1, y:0 }}
-            exit={{ opacity:0, y:-6 }}
-            transition={{ duration:.18, ease:[.22,1,.36,1] }}
-            style={{ position:'fixed', top:64, left:0, right:0, zIndex:998, background:'#ffffff', borderBottom:'1px solid rgba(0,0,0,.08)', padding:'12px 16px 18px', display:'flex', flexDirection:'column', gap:3, boxShadow:'0 14px 40px rgba(0,0,0,.10)' }}>
-            {[{label:'🛠 All Tools',id:'tools'},{label:'✨ Why ToolDesk',id:'why'},{label:'👋 About',id:'about'},{label:'⭐ Reviews',id:'reviews'}].map(l=>(
-              <button key={l.label} onClick={()=>scrollTo(l.id)}
-                style={{ padding:'13px 16px', borderRadius:12, fontSize:15, fontWeight:500, color:'#333', background:'none', border:'none', cursor:'pointer', textAlign:'left', fontFamily:'DM Sans,sans-serif', transition:'background .15s', touchAction:'manipulation' }}
-                onMouseEnter={e=>e.currentTarget.style.background='#f5f7ff'}
-                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                {l.label}
+          <>
+            {/* Backdrop behind mobile menu — tap to close */}
+            <motion.div
+              initial={{ opacity:0 }}
+              animate={{ opacity:1 }}
+              exit={{ opacity:0 }}
+              transition={{ duration: 0.15 }}
+              onClick={() => setMenuOpen(false)}
+              style={{
+                position: 'fixed',
+                top: 'calc(64px + max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px)))',
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(13, 13, 26, 0.28)',
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)',
+                zIndex: 997,
+              }}
+            />
+
+            <motion.div
+              initial={{ opacity:0, y:-8 }}
+              animate={{ opacity:1, y:0 }}
+              exit={{ opacity:0, y:-6 }}
+              transition={{ duration:.18, ease:[.22,1,.36,1] }}
+              style={{
+                position:'fixed',
+                top: 'calc(64px + max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px)))',
+                left:0, right:0,
+                zIndex:998,
+                background:'#ffffff',
+                borderBottom:'1px solid rgba(0,0,0,.08)',
+                padding:'12px 16px 18px',
+                display:'flex',
+                flexDirection:'column',
+                gap:3,
+                boxShadow:'0 14px 40px rgba(0,0,0,.10)',
+                maxHeight: 'calc(100dvh - (64px + max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px))))',
+                overflowY: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                paddingBottom: 'max(18px, env(safe-area-inset-bottom, 0px))',
+              }}>
+              {mobileNavLinks.map(l => (
+                <button key={l.id} onClick={()=>scrollTo(l.id)}
+                  style={{ padding:'12px 16px', borderRadius:12, fontSize:15, fontWeight:500, color:'#333', background:'none', border:'none', cursor:'pointer', textAlign:'left', fontFamily:'DM Sans,sans-serif', transition:'background .15s, color .15s', touchAction:'manipulation', display:'flex', alignItems:'center', gap:12 }}
+                  onMouseEnter={e=>{ e.currentTarget.style.background='#f5f7ff'; e.currentTarget.style.color='#4F8EF7' }}
+                  onMouseLeave={e=>{ e.currentTarget.style.background='transparent'; e.currentTarget.style.color='#333' }}>
+                  <l.icon size={18} strokeWidth={2} style={{ flexShrink:0, opacity:0.85 }} />
+                  <span>{l.label}</span>
+                </button>
+              ))}
+
+              <button onClick={() => {
+                setMenuOpen(false);
+                setTimeout(() => {
+                  window.dispatchEvent(new CustomEvent('tooldesk-open-history'))
+                }, 120)
+              }}
+                style={{ padding:'12px 16px', borderRadius:12, fontSize:15, fontWeight:500, color:'#4F8EF7', background:'rgba(79,142,247,.06)', border:'none', cursor:'pointer', textAlign:'left', fontFamily:'DM Sans,sans-serif', touchAction:'manipulation', display:'flex', alignItems:'center', gap:12, transition:'background .15s' }}
+                onMouseEnter={e=>e.currentTarget.style.background='rgba(79,142,247,.12)'}
+                onMouseLeave={e=>e.currentTarget.style.background='rgba(79,142,247,.06)'}>
+                <Clock size={18} strokeWidth={2} style={{ flexShrink:0 }} />
+                <span>History</span>
               </button>
-            ))}
-            <button onClick={() => {
-              setMenuOpen(false);
-              setTimeout(() => {
-                window.dispatchEvent(new CustomEvent('tooldesk-open-history'))
-              }, 120)
-            }}
-              style={{ padding:'13px 16px', borderRadius:12, fontSize:15, fontWeight:500, color:'#4F8EF7', background:'rgba(79,142,247,.06)', border:'none', cursor:'pointer', textAlign:'left', fontFamily:'DM Sans,sans-serif', touchAction:'manipulation', display:'flex', alignItems:'center', gap:8 }}
-              onMouseEnter={e=>e.currentTarget.style.background='rgba(79,142,247,.12)'}
-              onMouseLeave={e=>e.currentTarget.style.background='rgba(79,142,247,.06)'}>
-              🕒 History
-            </button>
-            <button onClick={()=>scrollTo('tools')}
-              style={{ marginTop:8, padding:'13px', borderRadius:12, background:'#0d0d1a', color:'#fff', border:'none', fontFamily:'DM Sans,sans-serif', fontWeight:600, fontSize:15, cursor:'pointer', touchAction:'manipulation' }}>
-              Explore All {TOOL_COUNT} Tools →
-            </button>
-          </motion.div>
+
+              {isDownloadAppAvailable() && (
+                <button onClick={() => {
+                  setMenuOpen(false);
+                  setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('tooldesk-open-download'))
+                  }, 120)
+                }}
+                  style={{ padding:'12px 16px', borderRadius:12, fontSize:15, fontWeight:500, color:'#333', background:'none', border:'none', cursor:'pointer', textAlign:'left', fontFamily:'DM Sans,sans-serif', touchAction:'manipulation', display:'flex', alignItems:'center', gap:12, transition:'background .15s, color .15s' }}
+                  onMouseEnter={e=>{ e.currentTarget.style.background='#f5f7ff'; e.currentTarget.style.color='#4F8EF7' }}
+                  onMouseLeave={e=>{ e.currentTarget.style.background='transparent'; e.currentTarget.style.color='#333' }}>
+                  <Download size={18} strokeWidth={2} style={{ flexShrink:0, opacity:0.85 }} />
+                  <span>Download App</span>
+                </button>
+              )}
+
+              <button onClick={()=>scrollTo('tools')}
+                style={{ marginTop:8, padding:'13px', borderRadius:12, background:'#0d0d1a', color:'#fff', border:'none', fontFamily:'DM Sans,sans-serif', fontWeight:600, fontSize:15, cursor:'pointer', touchAction:'manipulation', textAlign:'center', boxShadow:'0 4px 14px rgba(13,13,26,.18)' }}>
+                Explore All {TOOL_COUNT} Tools →
+              </button>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
 
@@ -612,7 +704,7 @@ export default function Navbar() {
             padding-right: max(12px, env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px)) !important;
             gap: 8px !important;
           }
-          .tooldesk-navbar-logo { height: 35px !important; }
+          .tooldesk-navbar-logo { height: 35.5px !important; }
         }
         @media (max-width:380px) {
           .tooldesk-nav-bar {
@@ -623,7 +715,7 @@ export default function Navbar() {
             padding-right: max(8px, env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px)) !important;
             gap: 6px !important;
           }
-          .tooldesk-navbar-logo { height: 32px !important; }
+          .tooldesk-navbar-logo { height: 34.5px !important; }
           .nav-mobile { gap: 4px !important; }
         }
         @media (max-width:560px) {

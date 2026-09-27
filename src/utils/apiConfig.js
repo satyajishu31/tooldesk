@@ -101,11 +101,28 @@ export function resolveApiUrl(endpoint) {
 }
 
 /**
- * Returns standardized request headers.
- * Uses standard headers only (e.g. Content-Type) to guarantee that browser & WebView
- * CORS preflight requests succeed against Netlify Edge without custom header rejection.
+ * Determines whether the "Download App" feature (modal, nav buttons, promo buttons)
+ * should be offered to the user.
+ *
+ * - Web Browser & PWA: Visible (users can download native desktop/mobile builds or install PWA)
+ * - Capacitor Native (Android / iOS): Hidden (app is already installed natively)
+ * - Tauri Native Desktop: Hidden (app is already installed natively)
  */
-export function getApiHeaders(customHeaders = {}) {
-  return { ...customHeaders }
+export function isDownloadAppAvailable() {
+  if (typeof window === 'undefined') return true
+  if (isNativeShell()) return false
+  return true
 }
 
+/**
+ * Returns standardized request headers.
+ * Sends X-ToolDesk-Client for verified native shells so Netlify serverless functions
+ * authenticate legitimate native requests even across strict CORS/WebView boundaries.
+ */
+export function getApiHeaders(customHeaders = {}) {
+  const headers = { ...customHeaders }
+  if (isNativeShell()) {
+    headers['X-ToolDesk-Client'] = 'native'
+  }
+  return headers
+}

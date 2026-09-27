@@ -336,6 +336,10 @@ export default function AIHelper() {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 placeholder={currentTool ? `Ask about ${currentTool.title}…` : 'Ask anything…'}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="sentences"
+                spellCheck={false}
                 style={{
                   flex: 1,
                   padding: '10px 14px',

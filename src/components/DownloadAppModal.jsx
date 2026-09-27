@@ -6,6 +6,7 @@ import {
   resolveArtifactUrl,
   CURRENT_RELEASE_VERSION,
 } from '../utils/releaseConfig'
+import { isDownloadAppAvailable } from '../utils/apiConfig'
 
 export function detectUserPlatform() {
   if (typeof navigator === 'undefined') return 'unknown'
@@ -142,6 +143,8 @@ function PlatformIcon({ id, size = 30 }) {
 }
 
 export default function DownloadAppModal({ isOpen, onClose }) {
+  if (!isDownloadAppAvailable()) return null
+
   const [platform, setPlatform] = useState('unknown')
   const [showAll, setShowAll] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState(null)

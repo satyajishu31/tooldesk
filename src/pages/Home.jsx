@@ -9,6 +9,7 @@ import AppIcon from '../components/AppIcon'
 import ReviewsSection from '../components/ReviewsSection'
 import ArchitectureShowcase from '../components/ArchitectureShowcase'
 import { getFavoriteTools } from '../utils/favorites'
+import { isDownloadAppAvailable } from '../utils/apiConfig'
 
 /* ─────────────────────────────────────────────────── */
 /*  ROTATING HEADLINE                                  */
@@ -1195,7 +1196,7 @@ export default function Home() {
               </svg>
             </RippleBtn>
 
-            {!isStandalone && (
+            {isDownloadAppAvailable() && !isStandalone && (
               <RippleBtn onClick={() => window.dispatchEvent(new CustomEvent('tooldesk-open-download'))}
                 className="hero-download-btn"
                 style={{ background:'rgba(255,255,255,0.85)', color:'#0d0d1a', padding:'12px 24px', borderRadius:999, fontFamily:'DM Sans,sans-serif', fontWeight:700, fontSize:14.5, border:'1.5px solid rgba(79,142,247,0.3)', backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)', boxShadow:'0 4px 16px rgba(79,142,247,0.12), inset 0 1px 0 #fff', maxWidth:'calc(100vw - 48px)', width:'fit-content', transition:'all .2s cubic-bezier(0.16, 1, 0.3, 1)', display:'inline-flex', alignItems:'center', gap:8, willChange:'transform' }}

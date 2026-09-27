@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Navbar from './components/Navbar'
 import AIHelper from './components/AIHelper'
 import LocalHistoryShelf from './components/LocalHistoryShelf'
+import { isDownloadAppAvailable } from './utils/apiConfig'
 
 /* ── Error Boundary ── */
 class ErrorBoundary extends Component {
@@ -282,7 +283,11 @@ export default function App() {
   const [downloadModalOpen, setDownloadModalOpen] = useState(false)
 
   useEffect(() => {
-    const handleOpen = () => setDownloadModalOpen(true)
+    const handleOpen = () => {
+      if (isDownloadAppAvailable()) {
+        setDownloadModalOpen(true)
+      }
+    }
     window.addEventListener('tooldesk-open-download', handleOpen)
     return () => window.removeEventListener('tooldesk-open-download', handleOpen)
   }, [])
@@ -318,12 +323,14 @@ export default function App() {
       </ErrorBoundary>
       <LocalHistoryShelf/>
       <AIHelper/>
-      <Suspense fallback={null}>
-        <DownloadAppModal
-          isOpen={downloadModalOpen}
-          onClose={() => setDownloadModalOpen(false)}
-        />
-      </Suspense>
+      {isDownloadAppAvailable() && (
+        <Suspense fallback={null}>
+          <DownloadAppModal
+            isOpen={downloadModalOpen}
+            onClose={() => setDownloadModalOpen(false)}
+          />
+        </Suspense>
+      )}
     </BrowserRouter>
   )
 }
