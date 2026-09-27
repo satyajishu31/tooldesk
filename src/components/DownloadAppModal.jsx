@@ -447,23 +447,50 @@ export default function DownloadAppModal({ isOpen, onClose }) {
     <AnimatePresence>
       {isOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1200 }}>
-          {/* Subtle ~30% Frosted Backdrop */}
+          {/* Hardware-accelerated CSS animations and instant pressable transitions */}
+          <style>{`
+            @keyframes tooldeskCloudFloat {
+              0%, 100% { transform: translateY(0); }
+              50% { transform: translateY(-3px); }
+            }
+            .tooldesk-cloud-icon {
+              animation: tooldeskCloudFloat 3.2s ease-in-out infinite;
+              will-change: transform;
+              transform: translateZ(0);
+            }
+            .tooldesk-shelf-card {
+              transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+              will-change: transform;
+            }
+            .tooldesk-shelf-card:hover {
+              transform: translateY(-1.5px) scale(1.02);
+              background-color: #ffffff !important;
+              box-shadow: 0 6px 18px rgba(0,0,0,0.07);
+            }
+            .tooldesk-shelf-card:active {
+              transform: scale(0.97);
+            }
+          `}</style>
+
+          {/* Lightweight Frosted Backdrop (Single 8px Blur Pass) */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.18 }}
             onClick={onClose}
             style={{
               position: 'fixed',
               inset: 0,
-              background: 'rgba(10, 12, 24, 0.52)',
-              backdropFilter: 'blur(16px) saturate(160%)',
-              WebkitBackdropFilter: 'blur(16px) saturate(160%)',
+              background: 'rgba(10, 12, 24, 0.58)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              willChange: 'opacity',
+              transform: 'translateZ(0)',
             }}
           />
 
-          {/* Centered Scrollable Viewport Container */}
+          {/* Centered Fixed Viewport Wrapper (Non-scrolling wrapper to prevent scroll contention) */}
           <div
             style={{
               position: 'fixed',
@@ -476,7 +503,7 @@ export default function DownloadAppModal({ isOpen, onClose }) {
               paddingLeft: 'max(clamp(10px, 3vw, 24px), env(safe-area-inset-left, 0px))',
               paddingRight: 'max(clamp(10px, 3vw, 24px), env(safe-area-inset-right, 0px))',
               pointerEvents: 'none',
-              overflowY: 'auto',
+              overflow: 'hidden',
               boxSizing: 'border-box',
             }}>
             <motion.div
@@ -484,41 +511,41 @@ export default function DownloadAppModal({ isOpen, onClose }) {
               role="dialog"
               aria-modal="true"
               aria-labelledby="tooldesk-download-title"
-              initial={{ opacity: 0, scale: 0.94, y: 16 }}
+              initial={{ opacity: 0, scale: 0.96, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 12 }}
-              transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+              exit={{ opacity: 0, scale: 0.97, y: 8 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               style={{
                 pointerEvents: 'auto',
                 width: '100%',
                 maxWidth: 510,
-                maxHeight: 'min(93vh, 740px)',
+                maxHeight: 'min(92vh, 740px)',
                 display: 'flex',
                 flexDirection: 'column',
-                background: 'rgba(255, 255, 255, 0.95)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
+                background: '#ffffff',
                 borderRadius: 26,
-                boxShadow: '0 32px 84px rgba(10, 14, 29, 0.28), 0 4px 20px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 1)',
-                border: '1px solid rgba(255, 255, 255, 0.85)',
+                boxShadow: '0 24px 64px rgba(10, 14, 29, 0.24), 0 4px 18px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 1)',
+                border: '1px solid rgba(226, 232, 240, 0.95)',
                 fontFamily: 'DM Sans, sans-serif',
                 boxSizing: 'border-box',
                 overflow: 'hidden',
                 margin: 'auto',
                 position: 'relative',
+                transform: 'translateZ(0)',
+                backfaceVisibility: 'hidden',
               }}>
 
-              {/* Ambient Glow Gradient */}
+              {/* Ambient Glow Gradient (Pure gradient, zero runtime filter overhead) */}
               <div style={{
                 position: 'absolute',
-                top: -70,
-                right: -70,
+                top: -60,
+                right: -60,
                 width: 240,
                 height: 240,
                 borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(79,142,247,0.2) 0%, rgba(156,111,222,0.12) 40%, transparent 70%)',
-                filter: 'blur(20px)',
+                background: 'radial-gradient(circle, rgba(79,142,247,0.14) 0%, rgba(156,111,222,0.08) 45%, transparent 70%)',
                 pointerEvents: 'none',
+                transform: 'translateZ(0)',
               }} />
 
               {/* Modal Header */}
@@ -533,12 +560,9 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                 zIndex: 2,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: '1 1 auto' }}>
-                  {/* Floating 3D Cloud Download Icon */}
-                  <motion.div
-                    animate={{ y: [0, -3, 0] }}
-                    transition={{ repeat: Infinity, duration: 3.2, ease: 'easeInOut' }}
-                    whileHover={{ scale: 1.08 }}
-                    whileTap={{ scale: 0.95 }}
+                  {/* Floating 3D Cloud Download Icon (CSS Compositor Accelerated) */}
+                  <div
+                    className="tooldesk-cloud-icon"
                     style={{
                       width: 44,
                       height: 44,
@@ -551,10 +575,13 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                       flexShrink: 0,
                       padding: 5,
                       boxShadow: '0 6px 18px rgba(79,142,247,0.18), inset 0 1px 0 rgba(255,255,255,0.95)',
+                      cursor: 'default',
                     }}>
                     <img
                       src="/download-logo.png"
                       alt="ToolDesk"
+                      loading="eager"
+                      decoding="async"
                       onError={e => {
                         if (!e.currentTarget.dataset.fallback) {
                           e.currentTarget.dataset.fallback = '1'
@@ -563,7 +590,7 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                       }}
                       style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
                     />
-                  </motion.div>
+                  </div>
 
                   <div style={{ minWidth: 0, flex: '1 1 auto' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -623,8 +650,18 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                 </motion.button>
               </div>
 
-              {/* Modal Body */}
-              <div style={{ padding: '16px 20px 28px', overflowY: 'auto', flex: 1, minHeight: 0, WebkitOverflowScrolling: 'touch', position: 'relative', zIndex: 1 }}>
+              {/* Modal Body (Single dedicated smooth-scrolling container with overscroll containment) */}
+              <div style={{
+                padding: '16px 20px 28px',
+                overflowY: 'auto',
+                flex: 1,
+                minHeight: 0,
+                WebkitOverflowScrolling: 'touch',
+                overscrollBehavior: 'contain',
+                willChange: 'scroll-position',
+                position: 'relative',
+                zIndex: 1,
+              }}>
 
                 {/* ═══ In-App Browser Warning ═══ */}
                 {inAppBrowser && (
@@ -1890,11 +1927,10 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                         download="ToolDesk.apk"
                         onClick={() => handleDownloadClick('shelf-apk', true)}
                         style={{ textDecoration: 'none' }}>
-                        <motion.div
-                          whileHover={{ scale: 1.02, background: '#ffffff', borderColor: '#16a34a' }}
-                          whileTap={{ scale: 0.97 }}
+                        <div
+                          className="tooldesk-shelf-card"
                           style={{
-                            background: 'rgba(255,255,255,0.85)',
+                            background: 'rgba(255,255,255,0.9)',
                             border: '1px solid rgba(22,163,74,0.3)',
                             borderRadius: 12,
                             padding: '8px 10px',
@@ -1910,7 +1946,7 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                               .apk • {platforms.find(p => p.id === 'android')?.formats.find(f => f.type === 'apk')?.size || '34 MB'} ⬇️
                             </div>
                           </div>
-                        </motion.div>
+                        </div>
                       </a>
                     ) : null}
 
@@ -1921,11 +1957,10 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                         download="ToolDesk.dmg"
                         onClick={() => handleDownloadClick('shelf-dmg', true)}
                         style={{ textDecoration: 'none' }}>
-                        <motion.div
-                          whileHover={{ scale: 1.02, background: '#ffffff', borderColor: '#232736' }}
-                          whileTap={{ scale: 0.97 }}
+                        <div
+                          className="tooldesk-shelf-card"
                           style={{
-                            background: 'rgba(255,255,255,0.85)',
+                            background: 'rgba(255,255,255,0.9)',
                             border: '1px solid rgba(0,0,0,0.15)',
                             borderRadius: 12,
                             padding: '8px 10px',
@@ -1941,12 +1976,13 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                               .dmg • {platforms.find(p => p.id === 'macos')?.formats.find(f => f.type === 'dmg')?.size || '91 MB'} ⬇️
                             </div>
                           </div>
-                        </motion.div>
+                        </div>
                       </a>
                     ) : null}
 
                     {/* Windows App */}
-                    <motion.div
+                    <div
+                      className="tooldesk-shelf-card"
                       onClick={() => {
                         const winFmt = platforms.find(p => p.id === 'windows')?.formats.find(f => f.status === 'available' && f.resolvedUrl)
                         if (winFmt) {
@@ -1955,10 +1991,8 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                           handlePwaInstall()
                         }
                       }}
-                      whileHover={{ scale: 1.02, background: '#ffffff', borderColor: '#0078D4' }}
-                      whileTap={{ scale: 0.97 }}
                       style={{
-                        background: 'rgba(255,255,255,0.85)',
+                        background: 'rgba(255,255,255,0.9)',
                         border: '1px solid rgba(0,120,212,0.25)',
                         borderRadius: 12,
                         padding: '8px 10px',
@@ -1972,10 +2006,11 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                         <div style={{ fontWeight: 800, fontSize: 11.5, color: '#0d0d1a', lineHeight: 1.25 }}>Windows App</div>
                         <div style={{ fontSize: 10.5, color: '#0078D4', fontWeight: 700 }}>Desktop ⚡</div>
                       </div>
-                    </motion.div>
+                    </div>
 
                     {/* iOS / Web Universal */}
-                    <motion.div
+                    <div
+                      className="tooldesk-shelf-card"
                       onClick={() => {
                         if (platform === 'ios') {
                           setShowIosSafariGuide(prev => !prev)
@@ -1983,10 +2018,8 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                           handlePwaInstall()
                         }
                       }}
-                      whileHover={{ scale: 1.02, background: '#ffffff', borderColor: '#6366F1' }}
-                      whileTap={{ scale: 0.97 }}
                       style={{
-                        background: 'rgba(255,255,255,0.85)',
+                        background: 'rgba(255,255,255,0.9)',
                         border: '1px solid rgba(99,102,241,0.25)',
                         borderRadius: 12,
                         padding: '8px 10px',
@@ -2004,7 +2037,7 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                           {platform === 'ios' ? 'Home Screen ➕' : 'Instant ⚡'}
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   </div>
 
                   {/* Inline iOS Safari installation helper */}
