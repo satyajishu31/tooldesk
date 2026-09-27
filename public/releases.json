@@ -121,10 +121,10 @@
           "label": "Direct Android APK (.apk)",
           "arch": "arm64-v8a, armeabi-v7a, x86_64",
           "filename": "ToolDesk.apk",
-          "size": "42 MB",
+          "size": "34 MB",
           "status": "available",
           "url": "/releases/android/ToolDesk.apk",
-          "checksum": "849e404e91c505da40a4e2bdf6974c667214ccda5218606ebdc8830ef48499a4",
+          "checksum": "71c771fcd172613c8cf43c12ec987fbe806c6314783e402d6471f5ffb1e1ba44",
           "recommended": true,
           "note": "Official direct standalone binary. Sideload on any Android 8.0+ device."
         },
