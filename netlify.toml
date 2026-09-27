@@ -107,11 +107,55 @@
     Cache-Control = "public, max-age=31536000, immutable"
 
 
-# Direct release route pass-through
+# Direct release redirects to GitHub Releases v1.0.1
 [[redirects]]
-  from = "/releases/*"
-  to = "/releases/:splat"
-  status = 200
+  from = "/releases/android/ToolDesk.apk"
+  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.1/ToolDesk.apk"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/releases/android/ToolDesk.aab"
+  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.1/ToolDesk.aab"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/releases/macos/ToolDesk.dmg"
+  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.1/ToolDesk-macos-arm64.dmg"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/releases/macos/ToolDesk-macOS.zip"
+  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.1/ToolDesk-macos-arm64.zip"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/releases/windows/ToolDesk-Setup.exe"
+  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.1/ToolDesk-Setup.exe"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/releases/windows/ToolDesk.msi"
+  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.1/ToolDesk.msi"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/releases/linux/ToolDesk.AppImage"
+  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.1/ToolDesk.AppImage"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/releases/linux/ToolDesk.deb"
+  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.1/ToolDesk.deb"
+  status = 302
+  force = true
+
 
 # SPA fallback
 [[redirects]]
