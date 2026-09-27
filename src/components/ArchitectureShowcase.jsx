@@ -1,5 +1,4 @@
 import React, { memo } from 'react'
-import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { TOOLS } from '../constants'
 
@@ -632,8 +631,18 @@ export default memo(function ArchitectureShowcase() {
             </div>
           </div>
 
-          <Link
-            to="/tools"
+          <a
+            href="#tools"
+            onClick={(e) => {
+              const el = document.getElementById('tools')
+              if (el) {
+                e.preventDefault()
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                try {
+                  window.history.pushState(null, '', '#tools')
+                } catch {}
+              }
+            }}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -649,6 +658,7 @@ export default memo(function ArchitectureShowcase() {
               boxShadow: '0 6px 20px rgba(79, 142, 247, 0.35)',
               transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
               flexShrink: 0,
+              cursor: 'pointer',
             }}
             onMouseEnter={e => {
               e.currentTarget.style.transform = 'translateY(-2px)'
@@ -664,7 +674,7 @@ export default memo(function ArchitectureShowcase() {
               <line x1="5" y1="12" x2="19" y2="12" />
               <polyline points="12 5 19 12 12 19" />
             </svg>
-          </Link>
+          </a>
         </motion.div>
       </div>
     </section>

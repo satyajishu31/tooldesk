@@ -10,6 +10,7 @@ const BASE_URL = 'http://localhost:4173'
 
 const ROUTES_TO_TEST = [
   '/',
+  '/tools',
   '/tools/password',
   '/tools/wordcount',
   '/tools/textcase',

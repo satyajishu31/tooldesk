@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useState, Component } from 'react'
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Navbar from './components/Navbar'
 import AIHelper from './components/AIHelper'
@@ -113,10 +113,27 @@ const SystemInfo        = lazy(() => import('./pages/tools/SystemInfo'))
 const CountryFinder     = lazy(() => import('./pages/tools/CountryFinder'))
 const DownloadAppModal  = lazy(() => import('./components/DownloadAppModal'))
 
-/* ── Scroll to top on route change ── */
+/* ── Scroll to top on route change (or smooth scroll to target hash) ── */
 function ScrollTop() {
-  const { pathname } = useLocation()
-  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  const { pathname, hash } = useLocation()
+  useEffect(() => {
+    if (hash) {
+      const targetId = hash.replace('#', '')
+      const el = document.getElementById(targetId)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        return
+      }
+      const timer = setTimeout(() => {
+        const retryEl = document.getElementById(targetId)
+        if (retryEl) {
+          retryEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }, 150)
+      return () => clearTimeout(timer)
+    }
+    window.scrollTo(0, 0)
+  }, [pathname, hash])
   return null
 }
 
@@ -237,6 +254,7 @@ function AnimatedRoutes() {
     <AnimatePresence mode="wait" initial={false}>
       <Routes location={location} key={location.pathname}>
         <Route path="/"                        element={<Home/>}/>
+        <Route path="/tools"                   element={<Navigate to="/#tools" replace/>}/>
         <Route path="/tools/password"          element={<PasswordGenerator/>}/>
         <Route path="/tools/wordcount"         element={<WordCounter/>}/>
         <Route path="/tools/textcase"          element={<TextCaseConverter/>}/>
