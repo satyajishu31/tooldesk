@@ -10,6 +10,8 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // Register native bridge plugin BEFORE super.onCreate so it is bound into Capacitor from frame 0
+        registerPlugin(ToolDeskNativeBridgePlugin.class);
         super.onCreate(savedInstanceState);
 
         // Ensure edge-to-edge layout is active and properly dispatch insets to WebView
@@ -39,22 +41,20 @@ public class MainActivity extends BridgeActivity {
             return windowInsets;
         });
 
-        registerNativeBridge();
+        registerNativeInterface();
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        registerNativeBridge();
+        registerNativeInterface();
     }
 
-    private void registerNativeBridge() {
+    private void registerNativeInterface() {
         if (getBridge() != null && getBridge().getWebView() != null) {
-            getBridge().getWebView().post(() -> {
-                try {
-                    getBridge().getWebView().addJavascriptInterface(new ToolDeskNativeBridge(this), "ToolDeskNativeBridge");
-                } catch (Exception ignored) {}
-            });
+            try {
+                getBridge().getWebView().addJavascriptInterface(new ToolDeskNativeBridge(this), "ToolDeskNativeBridge");
+            } catch (Exception ignored) {}
         }
     }
 }

@@ -12,7 +12,7 @@
 import { resolveApiUrl } from './apiConfig.js'
 import { safeFetchJSON } from './safeFetch.js'
 
-export const CURRENT_RELEASE_VERSION = '1.0.3'
+export const CURRENT_RELEASE_VERSION = '1.0.4'
 export const CURRENT_RELEASE_DATE = '2026-09-28'
 export const MINIMUM_SUPPORTED_VERSION = '1.0.0'
 export const GITHUB_REPO_DEFAULT = 'tooldesk/tooldesk'
@@ -25,7 +25,7 @@ export const DEFAULT_RELEASE_CONFIG = {
   version: CURRENT_RELEASE_VERSION,
   releaseDate: CURRENT_RELEASE_DATE,
   minimumSupportedVersion: MINIMUM_SUPPORTED_VERSION,
-  notes: 'ToolDesk 1.0.3 universal release. 32+ offline developer and creative tools with zero telemetry.',
+  notes: 'ToolDesk 1.0.4 release. 32+ offline developer and creative tools with zero telemetry.',
   platforms: {
     windows: {
       name: 'Windows',
@@ -42,7 +42,7 @@ export const DEFAULT_RELEASE_CONFIG = {
           size: '25 MB',
           status: 'available',
           envKey: 'VITE_WINDOWS_EXE_URL',
-          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.3/ToolDesk-Setup.exe',
+          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.4/ToolDesk-Setup.exe',
           checksum: '178a8ca83e3be70e5c4369ca4dc69fb4631164711a089ba944b4b324c71a978b',
           recommended: true
         },
@@ -54,7 +54,7 @@ export const DEFAULT_RELEASE_CONFIG = {
           size: '25 MB',
           status: 'available',
           envKey: 'VITE_WINDOWS_MSI_URL',
-          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.3/ToolDesk.msi',
+          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.4/ToolDesk.msi',
           checksum: '996f9c22d2e21f3064163ae82f4b350b001bdbf1e51667f17987191bb771a1fc',
           recommended: false
         }
@@ -75,7 +75,7 @@ export const DEFAULT_RELEASE_CONFIG = {
           size: '27 MB',
           status: 'available',
           envKey: 'VITE_MAC_DMG_ARM64_URL',
-          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.3/ToolDesk-macos-arm64.dmg',
+          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.4/ToolDesk-macos-arm64.dmg',
           checksum: '8cc9a2dc644a4bb5d835f7fd053087f03f11ff93aac0069c3887c4d5649f4979',
           recommended: true
         },
@@ -87,7 +87,7 @@ export const DEFAULT_RELEASE_CONFIG = {
           size: '27 MB',
           status: 'available',
           envKey: 'VITE_MAC_DMG_X64_URL',
-          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.3/ToolDesk-macos-x64.dmg',
+          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.4/ToolDesk-macos-x64.dmg',
           checksum: '05f59afdaee39944cb4fdee8eccb67364c22e42ca1216fd4be273a71be9bf739',
           recommended: false
         },
@@ -99,7 +99,7 @@ export const DEFAULT_RELEASE_CONFIG = {
           size: '26 MB',
           status: 'available',
           envKey: 'VITE_MAC_APP_URL',
-          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.3/ToolDesk-macos-arm64.zip',
+          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.4/ToolDesk-macos-arm64.zip',
           checksum: 'b87d236435299b0f8aa3ef81c39043f6ea762309be74e931220421bb5a40cce0',
           recommended: false
         }
@@ -120,7 +120,7 @@ export const DEFAULT_RELEASE_CONFIG = {
           size: '104 MB',
           status: 'available',
           envKey: 'VITE_LINUX_APPIMAGE_URL',
-          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.3/ToolDesk.AppImage',
+          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.4/ToolDesk.AppImage',
           checksum: '91b7d58f142604254607f06d614eb12ec829a5436bef5ca38f81a9fdc08c5cd9',
           recommended: true
         },
@@ -132,7 +132,7 @@ export const DEFAULT_RELEASE_CONFIG = {
           size: '25 MB',
           status: 'available',
           envKey: 'VITE_LINUX_DEB_URL',
-          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.3/ToolDesk.deb',
+          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.4/ToolDesk.deb',
           checksum: '1e7e5a1f5736c355879fe3aa13ae064e3191fd265164bc520d28d289da44db81',
           recommended: false
         }
@@ -153,7 +153,7 @@ export const DEFAULT_RELEASE_CONFIG = {
           size: '43 MB',
           status: 'available',
           envKey: 'VITE_ANDROID_APK_URL',
-          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.3/ToolDesk.apk',
+          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.4/ToolDesk.apk',
           checksum: '6917123d112619bc109325691a4ea2e6e25e5b473f9008db1887ecfd98aca5f6',
           recommended: true,
           note: 'Direct standalone binary. Sideload on any Android device.'
@@ -166,7 +166,7 @@ export const DEFAULT_RELEASE_CONFIG = {
           size: '34 MB',
           status: 'store-bundle',
           envKey: 'VITE_ANDROID_AAB_URL',
-          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.3/ToolDesk.aab',
+          url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.0.4/ToolDesk.aab',
           checksum: '675b59f389b896e761e520699ec6d230e79d86630ddd5534476821caf3fc2be5',
           recommended: false,
           note: 'Official Play Store publishing package'

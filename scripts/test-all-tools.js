@@ -544,7 +544,7 @@ test('Download Logic 12: Installed iOS app - Download App hidden in iOS Capacito
   }
 })
 
-test('Release Integrity: Release version 1.0.3 canonical consistency across files', () => {
+test('Release Integrity: Release version 1.0.4 canonical consistency across files', () => {
   const pkg = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf8'))
   const releasesJson = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'public/releases.json'), 'utf8'))
   const tauriConf = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'src-tauri/tauri.conf.json'), 'utf8'))
@@ -552,19 +552,19 @@ test('Release Integrity: Release version 1.0.3 canonical consistency across file
   const gradle = fs.readFileSync(path.resolve(process.cwd(), 'android/app/build.gradle'), 'utf8')
   const pbxproj = fs.readFileSync(path.resolve(process.cwd(), 'ios/App/App.xcodeproj/project.pbxproj'), 'utf8')
 
-  assert.equal(pkg.version, '1.0.3', 'package.json version must be 1.0.3')
-  assert.equal(releasesJson.version, '1.0.3', 'public/releases.json version must be 1.0.3')
-  assert.equal(DEFAULT_RELEASE_CONFIG.version, '1.0.3', 'DEFAULT_RELEASE_CONFIG.version must be 1.0.3')
-  assert.equal(CURRENT_RELEASE_VERSION, '1.0.3', 'CURRENT_RELEASE_VERSION must be 1.0.3')
-  assert.equal(tauriConf.version, '1.0.3', 'tauri.conf.json version must be 1.0.3')
-  assert(cargoToml.includes('version = "1.0.3"'), 'Cargo.toml must have version 1.0.3')
-  assert(gradle.includes('versionName "1.0.3"'), 'Android build.gradle must have versionName "1.0.3"')
-  assert(gradle.includes('versionCode 4'), 'Android build.gradle must have versionCode 4')
-  assert(pbxproj.includes('MARKETING_VERSION = 1.0.3;'), 'iOS pbxproj must have MARKETING_VERSION = 1.0.3')
-  assert(pbxproj.includes('CURRENT_PROJECT_VERSION = 4;'), 'iOS pbxproj must have CURRENT_PROJECT_VERSION = 4')
+  assert.equal(pkg.version, '1.0.4', 'package.json version must be 1.0.4')
+  assert.equal(releasesJson.version, '1.0.4', 'public/releases.json version must be 1.0.4')
+  assert.equal(DEFAULT_RELEASE_CONFIG.version, '1.0.4', 'DEFAULT_RELEASE_CONFIG.version must be 1.0.4')
+  assert.equal(CURRENT_RELEASE_VERSION, '1.0.4', 'CURRENT_RELEASE_VERSION must be 1.0.4')
+  assert.equal(tauriConf.version, '1.0.4', 'tauri.conf.json version must be 1.0.4')
+  assert(cargoToml.includes('version = "1.0.4"'), 'Cargo.toml must have version 1.0.4')
+  assert(gradle.includes('versionName "1.0.4"'), 'Android build.gradle must have versionName "1.0.4"')
+  assert(gradle.includes('versionCode 5'), 'Android build.gradle must have versionCode 5')
+  assert(pbxproj.includes('MARKETING_VERSION = 1.0.4;'), 'iOS pbxproj must have MARKETING_VERSION = 1.0.4')
+  assert(pbxproj.includes('CURRENT_PROJECT_VERSION = 5;'), 'iOS pbxproj must have CURRENT_PROJECT_VERSION = 5')
 })
 
-test('Release Integrity: Tag v1.0.0, v1.0.1, v1.0.2 remain permanently immutable', () => {
+test('Release Integrity: Tag v1.0.0, v1.0.1, v1.0.2, v1.0.3 remain permanently immutable', () => {
   const checkTag = (tag, expectedHash) => {
     let resolved = ''
     try {
@@ -582,9 +582,10 @@ test('Release Integrity: Tag v1.0.0, v1.0.1, v1.0.2 remain permanently immutable
   checkTag('v1.0.0', '580276d1e07a925e9447f745213ed291895bbfa2')
   checkTag('v1.0.1', 'c39722e5e7f0740529a92f4776d7088f9860cb3f')
   checkTag('v1.0.2', '66e6dbd1f5f669bf219405b397c7f40c58190da2')
+  checkTag('v1.0.3', 'e8d1b6c8522ea02d942a084419de814698d60319')
 })
 
-test('Release Integrity: Release metadata download URLs reference v1.0.3 and not older releases', () => {
+test('Release Integrity: Release metadata download URLs reference v1.0.4 and not older releases', () => {
   const releasesRaw = fs.readFileSync(path.resolve(process.cwd(), 'public/releases.json'), 'utf8')
   const configRaw = fs.readFileSync(path.resolve(process.cwd(), 'src/utils/releaseConfig.js'), 'utf8')
 
@@ -594,8 +595,10 @@ test('Release Integrity: Release metadata download URLs reference v1.0.3 and not
   assert(!configRaw.includes('/releases/download/v1.0.1/'), 'releaseConfig.js must NOT contain download URLs pointing to v1.0.1')
   assert(!releasesRaw.includes('/releases/download/v1.0.2/'), 'releases.json must NOT contain download URLs pointing to v1.0.2')
   assert(!configRaw.includes('/releases/download/v1.0.2/'), 'releaseConfig.js must NOT contain download URLs pointing to v1.0.2')
-  assert(releasesRaw.includes('/releases/download/v1.0.3/'), 'releases.json MUST contain download URLs pointing to v1.0.3')
-  assert(configRaw.includes('/releases/download/v1.0.3/'), 'releaseConfig.js MUST contain download URLs pointing to v1.0.3')
+  assert(!releasesRaw.includes('/releases/download/v1.0.3/'), 'releases.json must NOT contain download URLs pointing to v1.0.3')
+  assert(!configRaw.includes('/releases/download/v1.0.3/'), 'releaseConfig.js must NOT contain download URLs pointing to v1.0.3')
+  assert(releasesRaw.includes('/releases/download/v1.0.4/'), 'releases.json MUST contain download URLs pointing to v1.0.4')
+  assert(configRaw.includes('/releases/download/v1.0.4/'), 'releaseConfig.js MUST contain download URLs pointing to v1.0.4')
 })
 
 test('Branding: Logo assets existence and optimization across formats', () => {
@@ -695,9 +698,9 @@ test('AI UX & Architecture: Malformed and standard AI response handling', () => 
   assert.equal(emptyRes.error, 'Empty response')
 })
 
-test('Service Worker: Cache version matches v1.0.3 and precaches robot asset', () => {
+test('Service Worker: Cache version matches v1.0.4 and precaches robot asset', () => {
   const swCode = fs.readFileSync(path.resolve(process.cwd(), 'public/sw.js'), 'utf8')
-  assert(swCode.includes("SW_VERSION = 'v1.0.3'"), 'sw.js SW_VERSION must be v1.0.3')
+  assert(swCode.includes("SW_VERSION = 'v1.0.4'"), 'sw.js SW_VERSION must be v1.0.4')
   assert(swCode.includes("CACHE_NAME = `tooldesk-pwa-${SW_VERSION}`"), 'sw.js CACHE_NAME must use SW_VERSION')
   assert(swCode.includes('/robot-assistant-64.webp'), 'sw.js must precache /robot-assistant-64.webp')
   assert(swCode.includes('/logo.png'), 'sw.js must precache /logo.png')
@@ -731,15 +734,73 @@ test('Download Engine: Native Android Bridge interface contract validation', () 
   const javaCode = fs.readFileSync(javaBridgePath, 'utf8')
   assert(javaCode.includes('@JavascriptInterface'), 'Bridge must expose @JavascriptInterface')
   assert(javaCode.includes('saveFileToDownloads('), 'Bridge must implement saveFileToDownloads')
+  assert(javaCode.includes('saveCacheFileToDownloads('), 'Bridge must implement saveCacheFileToDownloads for large files')
   assert(javaCode.includes('MediaStore.Downloads'), 'Bridge must use modern MediaStore.Downloads API')
   assert(javaCode.includes('Environment.DIRECTORY_DOWNLOADS'), 'Bridge must target Downloads folder')
   assert(javaCode.includes('ToolDesk'), 'Bridge must create ToolDesk subfolder')
+  assert(javaCode.includes('IS_PENDING'), 'Bridge must toggle IS_PENDING (1 during write, 0 on commit)')
+  assert(javaCode.includes('openOutputStream'), 'Bridge must write via ContentResolver.openOutputStream')
+  assert(javaCode.includes('openFileDescriptor'), 'Bridge must verify written file size')
   assert(javaCode.includes('MediaScannerConnection.scanFile'), 'Bridge must index newly saved files with MediaScanner')
   assert(javaCode.includes('Toast.makeText'), 'Bridge must show native user feedback toast')
 
+  const pluginPath = path.resolve(process.cwd(), 'android/app/src/main/java/com/tooldesk/app/ToolDeskNativeBridgePlugin.java')
+  assert(fs.existsSync(pluginPath), 'ToolDeskNativeBridgePlugin.java must exist')
+  const pluginCode = fs.readFileSync(pluginPath, 'utf8')
+  assert(pluginCode.includes('@CapacitorPlugin(name = "ToolDeskNativeBridge")'), 'Capacitor plugin must declare ToolDeskNativeBridge')
+  assert(pluginCode.includes('@PluginMethod'), 'Plugin must expose @PluginMethod')
+  assert(pluginCode.includes('saveFileToDownloads(PluginCall call)'), 'Plugin must implement saveFileToDownloads')
+
   const mainActivity = fs.readFileSync(path.resolve(process.cwd(), 'android/app/src/main/java/com/tooldesk/app/MainActivity.java'), 'utf8')
+  assert(mainActivity.includes('ToolDeskNativeBridgePlugin.class'), 'MainActivity must import and register ToolDeskNativeBridgePlugin')
+  assert(mainActivity.includes('registerPlugin(ToolDeskNativeBridgePlugin.class)'), 'MainActivity must register plugin on startup')
   assert(mainActivity.includes('ToolDeskNativeBridge'), 'MainActivity must register ToolDeskNativeBridge')
   assert(mainActivity.includes('addJavascriptInterface'), 'MainActivity must register bridge with addJavascriptInterface')
+})
+
+test('Download Engine: Structured JSON response contract for native bridge', () => {
+  const javaBridgePath = path.resolve(process.cwd(), 'android/app/src/main/java/com/tooldesk/app/ToolDeskNativeBridge.java')
+  const javaCode = fs.readFileSync(javaBridgePath, 'utf8')
+  assert(javaCode.includes('.put("success", true)'), 'Native bridge must return explicit success: true')
+  assert(javaCode.includes('.put("filename",'), 'Native bridge must return filename in result')
+  assert(javaCode.includes('.put("path",'), 'Native bridge must return relative path in result')
+  assert(javaCode.includes('.put("uri",'), 'Native bridge must return content URI in result')
+  assert(javaCode.includes('.put("size",'), 'Native bridge must return written byte size in result')
+  assert(javaCode.includes('.put("success", false)'), 'Native bridge must return explicit success: false on failure')
+  assert(javaCode.includes('.put("error",'), 'Native bridge must return exact error reason on failure')
+})
+
+test('Download Engine: Android download action strictly bypasses Share sheet', () => {
+  const fileSaverCode = fs.readFileSync(path.resolve(process.cwd(), 'src/utils/fileSaver.js'), 'utf8')
+
+  // Extract saveAndroidNative function body
+  const androidFuncMatch = fileSaverCode.match(/async function saveAndroidNative[\s\S]*?\n\}/)
+  assert(androidFuncMatch, 'saveAndroidNative function must exist in fileSaver.js')
+  const androidFunc = androidFuncMatch[0]
+
+  assert(!androidFunc.includes('Share.share'), 'saveAndroidNative MUST NEVER call Share.share')
+  assert(!androidFunc.includes('@capacitor/share'), 'saveAndroidNative MUST NOT import @capacitor/share')
+  assert(androidFunc.includes('saveFileToDownloads'), 'saveAndroidNative must call saveFileToDownloads')
+  assert(androidFunc.includes("Saved to Downloads/ToolDesk/"), 'saveAndroidNative must emit success notification with path')
+  assert(androidFunc.includes("Couldn't save this file to Downloads"), 'saveAndroidNative must emit error on failure without opening share sheet')
+
+  // Verify that saveFileWithFallback never converts Android download to Share
+  assert(fileSaverCode.includes("platform === 'android'"), 'fileSaver must branch specifically on android')
+  assert(fileSaverCode.includes('return saveAndroidNative(blob, safeFilename, resolvedMime)'), 'Android must exclusively route to saveAndroidNative')
+
+  // Verify explicit shareFile function exists separately for actual share intent
+  assert(fileSaverCode.includes('export async function shareFile('), 'shareFile must be an exported separate function')
+})
+
+test('Download Engine: Platform isolation and fallbacks preserve Web, iOS, and Tauri', () => {
+  const fileSaverCode = fs.readFileSync(path.resolve(process.cwd(), 'src/utils/fileSaver.js'), 'utf8')
+  // iOS uses @capacitor/share for "Save to Files"
+  assert(fileSaverCode.includes("platform === 'ios'"), 'fileSaver must branch specifically on ios')
+  assert(fileSaverCode.includes('@capacitor/filesystem'), 'iOS must use @capacitor/filesystem')
+  // Web & Tauri use standard DOM Anchor
+  assert(fileSaverCode.includes('document.createElement(\'a\')'), 'Web/Tauri must use anchor element')
+  assert(fileSaverCode.includes('URL.createObjectURL(blob)'), 'Web/Tauri must create object URL')
+  assert(fileSaverCode.includes('a.click()'), 'Web/Tauri must trigger click on anchor')
 })
 
 test('Download Engine: MIME type and extension mapping validation', () => {

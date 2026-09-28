@@ -1,8 +1,8 @@
 {
-  "version": "1.0.3",
+  "version": "1.0.4",
   "releaseDate": "2026-09-28",
   "minimumSupportedVersion": "1.0.0",
-  "name": "ToolDesk v1.0.3 — Universal Release",
+  "name": "ToolDesk v1.0.4 — Universal Release",
   "notes": "Official release of ToolDesk v1.0.3: native Android MediaStore download engine, mobile viewport and option clipping fixes, optimized keystroke reactivity in AI Assistant, and universal native sync.",
   "platforms": {
     "windows": {
@@ -19,7 +19,7 @@
           "filename": "ToolDesk-Setup.exe",
           "size": "25 MB",
           "status": "available",
-          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.3/ToolDesk-Setup.exe",
+          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.4/ToolDesk-Setup.exe",
           "checksum": "178a8ca83e3be70e5c4369ca4dc69fb4631164711a089ba944b4b324c71a978b",
           "recommended": true
         },
@@ -30,7 +30,7 @@
           "filename": "ToolDesk.msi",
           "size": "25 MB",
           "status": "available",
-          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.3/ToolDesk.msi",
+          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.4/ToolDesk.msi",
           "checksum": "996f9c22d2e21f3064163ae82f4b350b001bdbf1e51667f17987191bb771a1fc",
           "recommended": false
         }
@@ -50,7 +50,7 @@
           "filename": "ToolDesk-macos-arm64.dmg",
           "size": "27 MB",
           "status": "available",
-          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.3/ToolDesk-macos-arm64.dmg",
+          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.4/ToolDesk-macos-arm64.dmg",
           "checksum": "8cc9a2dc644a4bb5d835f7fd053087f03f11ff93aac0069c3887c4d5649f4979",
           "recommended": true
         },
@@ -61,7 +61,7 @@
           "filename": "ToolDesk-macos-x64.dmg",
           "size": "27 MB",
           "status": "available",
-          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.3/ToolDesk-macos-x64.dmg",
+          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.4/ToolDesk-macos-x64.dmg",
           "checksum": "05f59afdaee39944cb4fdee8eccb67364c22e42ca1216fd4be273a71be9bf739",
           "recommended": false
         },
@@ -72,7 +72,7 @@
           "filename": "ToolDesk-macos-arm64.zip",
           "size": "26 MB",
           "status": "available",
-          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.3/ToolDesk-macos-arm64.zip",
+          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.4/ToolDesk-macos-arm64.zip",
           "checksum": "b87d236435299b0f8aa3ef81c39043f6ea762309be74e931220421bb5a40cce0",
           "recommended": false
         }
@@ -92,7 +92,7 @@
           "filename": "ToolDesk.AppImage",
           "size": "104 MB",
           "status": "available",
-          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.3/ToolDesk.AppImage",
+          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.4/ToolDesk.AppImage",
           "checksum": "91b7d58f142604254607f06d614eb12ec829a5436bef5ca38f81a9fdc08c5cd9",
           "recommended": true
         },
@@ -103,7 +103,7 @@
           "filename": "ToolDesk.deb",
           "size": "25 MB",
           "status": "available",
-          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.3/ToolDesk.deb",
+          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.4/ToolDesk.deb",
           "checksum": "1e7e5a1f5736c355879fe3aa13ae064e3191fd265164bc520d28d289da44db81",
           "recommended": false
         }
@@ -123,7 +123,7 @@
           "filename": "ToolDesk.apk",
           "size": "43 MB",
           "status": "available",
-          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.3/ToolDesk.apk",
+          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.4/ToolDesk.apk",
           "checksum": "6917123d112619bc109325691a4ea2e6e25e5b473f9008db1887ecfd98aca5f6",
           "recommended": true,
           "note": "Official direct standalone binary. Sideload on any Android 8.0+ device."
@@ -135,7 +135,7 @@
           "filename": "ToolDesk.aab",
           "size": "34 MB",
           "status": "store-bundle",
-          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.3/ToolDesk.aab",
+          "url": "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.4/ToolDesk.aab",
           "checksum": "675b59f389b896e761e520699ec6d230e79d86630ddd5534476821caf3fc2be5",
           "recommended": false,
           "note": "Play Store publishing bundle"

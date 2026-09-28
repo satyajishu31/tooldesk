@@ -86,11 +86,104 @@ function emitFeedback(status, message, filename) {
 }
 
 /**
+ * Dedicated Native Android MediaStore Direct Save.
+ *
+ * Guarantees direct save to Downloads/ToolDesk/ without triggering the Android Share Sheet.
+ * Supports memory-safe cache streaming for large files (>2MB) to prevent heap spikes.
+ */
+async function saveAndroidNative(blob, safeFilename, resolvedMime) {
+  let base64Cache = null
+
+  // 1. Check if Capacitor Plugin or JavascriptInterface is available
+  const capPlugin = window.Capacitor?.Plugins?.ToolDeskNativeBridge
+  const jsInterface = typeof window !== 'undefined' ? window.ToolDeskNativeBridge : null
+
+  if (!capPlugin && !jsInterface) {
+    console.error('Neither Capacitor plugin nor JavascriptInterface ToolDeskNativeBridge is available on Android')
+    emitFeedback('error', "Couldn't save this file to Downloads. Please try again.", safeFilename)
+    return false
+  }
+
+  // 2. Large File Optimization (> 2MB): Stream via temporary cache file to avoid heap/IPC overhead
+  if (blob.size > 2 * 1024 * 1024) {
+    try {
+      const { Filesystem, Directory } = await import('@capacitor/filesystem')
+      if (Filesystem && typeof Filesystem.writeFile === 'function') {
+        base64Cache = await blobToBase64(blob)
+        const tempName = `temp_${Date.now()}_${safeFilename}`
+        const writeRes = await Filesystem.writeFile({
+          path: tempName,
+          data: base64Cache,
+          directory: Directory.Cache,
+        })
+        const cachePath = writeRes.uri || writeRes.path
+
+        if (cachePath) {
+          let res = null
+          if (capPlugin && typeof capPlugin.saveFileToDownloads === 'function') {
+            res = await capPlugin.saveFileToDownloads({
+              cachePath,
+              filename: safeFilename,
+              mimeType: resolvedMime,
+              openShare: false
+            })
+          } else if (jsInterface && typeof jsInterface.saveCacheFileToDownloads === 'function') {
+            const raw = jsInterface.saveCacheFileToDownloads(cachePath, safeFilename, resolvedMime)
+            res = typeof raw === 'string' ? JSON.parse(raw || '{}') : raw
+          }
+
+          if (res && res.success) {
+            emitFeedback('success', `Saved to Downloads/ToolDesk/${res.filename || safeFilename}`, safeFilename)
+            return true
+          }
+        }
+      }
+    } catch (streamErr) {
+      console.warn('Large file streaming fallback failed, trying direct memory bridge:', streamErr)
+    }
+  }
+
+  // 3. Direct Memory Save via base64
+  try {
+    if (!base64Cache) {
+      base64Cache = await blobToBase64(blob)
+    }
+
+    let res = null
+    if (capPlugin && typeof capPlugin.saveFileToDownloads === 'function') {
+      res = await capPlugin.saveFileToDownloads({
+        base64Data: base64Cache,
+        filename: safeFilename,
+        mimeType: resolvedMime,
+        openShare: false
+      })
+    } else if (jsInterface && typeof jsInterface.saveFileToDownloads === 'function') {
+      const raw = jsInterface.saveFileToDownloads(base64Cache, safeFilename, resolvedMime, false)
+      res = typeof raw === 'string' ? JSON.parse(raw || '{}') : raw
+    }
+
+    if (res && res.success) {
+      emitFeedback('success', `Saved to Downloads/ToolDesk/${res.filename || safeFilename}`, safeFilename)
+      return true
+    } else {
+      const err = res?.error || "Couldn't save this file to Downloads."
+      console.error('Android MediaStore save error:', err)
+      emitFeedback('error', "Couldn't save this file to Downloads. Please try again.", safeFilename)
+      return false
+    }
+  } catch (nativeErr) {
+    console.error('Android native save exception:', nativeErr)
+    emitFeedback('error', "Couldn't save this file to Downloads. Please try again.", safeFilename)
+    return false
+  }
+}
+
+/**
  * Smart, cross-platform file download engine for ToolDesk:
  * 
- * 1. Android APK (Capacitor Native):
- *    - Uses native ToolDeskNativeBridge via MediaStore.Downloads (Downloads/ToolDesk folder).
- *    - Falls back to @capacitor/filesystem + @capacitor/share if bridge is unattached.
+ * 1. Android APK:
+ *    - Direct save to Downloads/ToolDesk/ via MediaStore.Downloads.
+ *    - Strict download behavior: NEVER opens the Android Share Sheet for download action.
  * 2. iOS Native App (Capacitor Native):
  *    - Uses @capacitor/filesystem + @capacitor/share to trigger native "Save to Files" dialog.
  * 3. Tauri Desktop App:
@@ -155,58 +248,48 @@ export async function saveFileWithFallback(blobOrContent, filename, mimeType = '
     safeFilename = `${safeFilename}.${MIME_TO_EXT[resolvedMime]}`
   }
 
-  // 3. CAPACITOR ANDROID NATIVE STRATEGY
+  // 3. CAPACITOR MOBILE PLATFORM STRATEGY
   if (isCapacitor()) {
     const platform = getPlatform()
 
-    // 3A. Android: Try high-performance direct MediaStore bridge first
-    if (platform === 'android' && typeof window !== 'undefined' && window.ToolDeskNativeBridge?.saveFileToDownloads) {
+    // 3A. Android: Direct MediaStore Save ONLY (NEVER open Share Sheet)
+    if (platform === 'android') {
+      return saveAndroidNative(blob, safeFilename, resolvedMime)
+    }
+
+    // 3B. iOS: Native "Save to Files" via System Share Sheet
+    if (platform === 'ios') {
       try {
+        const { Filesystem, Directory } = await import('@capacitor/filesystem')
         if (!base64Cache) {
           base64Cache = await blobToBase64(blob)
         }
-        const rawRes = window.ToolDeskNativeBridge.saveFileToDownloads(base64Cache, safeFilename, resolvedMime, false)
-        const parsed = JSON.parse(rawRes || '{}')
-        if (parsed.success) {
-          emitFeedback('success', `Saved ${safeFilename} to Downloads/ToolDesk`, safeFilename)
+
+        const writeRes = await Filesystem.writeFile({
+          path: safeFilename,
+          data: base64Cache,
+          directory: Directory.Cache,
+        })
+
+        const { Share } = await import('@capacitor/share')
+        if (Share && typeof Share.share === 'function') {
+          await Share.share({
+            title: safeFilename,
+            text: `ToolDesk: ${safeFilename}`,
+            url: writeRes.uri,
+            dialogTitle: `Save ${safeFilename}`,
+          })
+          emitFeedback('success', `Saved ${safeFilename}`, safeFilename)
           return true
         }
-      } catch (bridgeErr) {
-        console.warn('Native bridge save failed, trying @capacitor/filesystem fallback:', bridgeErr)
-      }
-    }
 
-    // 3B. Capacitor Native Fallback (@capacitor/filesystem & @capacitor/share) for Android and iOS
-    try {
-      const { Filesystem, Directory } = await import('@capacitor/filesystem')
-      if (!base64Cache) {
-        base64Cache = await blobToBase64(blob)
-      }
-
-      // Write file into Cache or Documents directory
-      const writeRes = await Filesystem.writeFile({
-        path: safeFilename,
-        data: base64Cache,
-        directory: Directory.Cache,
-      })
-
-      // On iOS or when needed, present native system share/save sheet
-      const { Share } = await import('@capacitor/share')
-      if (Share && typeof Share.share === 'function') {
-        await Share.share({
-          title: safeFilename,
-          text: `ToolDesk: ${safeFilename}`,
-          url: writeRes.uri,
-          dialogTitle: `Save ${safeFilename}`,
-        })
-        emitFeedback('success', `Exported ${safeFilename}`, safeFilename)
+        emitFeedback('success', `Saved ${safeFilename}`, safeFilename)
         return true
+      } catch (iosErr) {
+        console.error('iOS download error:', iosErr)
+        emitFeedback('error', `Failed to save ${safeFilename}`, safeFilename)
+        return false
       }
-
-      emitFeedback('success', `Saved ${safeFilename}`, safeFilename)
-      return true
-    } catch (capErr) {
-      console.warn('Capacitor filesystem/share fallback failed, trying DOM download:', capErr)
     }
   }
 
@@ -243,4 +326,53 @@ export async function saveFileWithFallback(blobOrContent, filename, mimeType = '
  */
 export async function downloadFile({ blob, filename, mimeType, options = {} }) {
   return saveFileWithFallback(blob, filename, mimeType)
+}
+
+/**
+ * Explicit Share Action (separated cleanly from Download)
+ */
+export async function shareFile({ blob, filename, mimeType, title = '' }) {
+  if (typeof window === 'undefined') return false
+
+  let safeFilename = String(filename || 'tooldesk-share')
+    .replace(/[/\\?%*:|"<>]/g, '_')
+    .trim()
+
+  try {
+    if (isCapacitor()) {
+      const { Filesystem, Directory } = await import('@capacitor/filesystem')
+      const base64 = await blobToBase64(blob)
+      const writeRes = await Filesystem.writeFile({
+        path: safeFilename,
+        data: base64,
+        directory: Directory.Cache,
+      })
+
+      const { Share } = await import('@capacitor/share')
+      if (Share && typeof Share.share === 'function') {
+        await Share.share({
+          title: title || safeFilename,
+          text: `Shared from ToolDesk: ${safeFilename}`,
+          url: writeRes.uri,
+          dialogTitle: `Share ${safeFilename}`,
+        })
+        return true
+      }
+    }
+
+    if (navigator.share) {
+      const file = new File([blob], safeFilename, { type: mimeType || blob.type })
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: title || safeFilename,
+          text: `Shared from ToolDesk: ${safeFilename}`,
+        })
+        return true
+      }
+    }
+  } catch (e) {
+    console.warn('Share action failed or cancelled:', e)
+  }
+  return false
 }

@@ -26,17 +26,22 @@ async function main() {
   }
 
   const repo = 'satyajishu31/tooldesk';
-  const tag = 'v1.0.3';
-  const releaseName = 'ToolDesk v1.0.3';
-  const notes = fs.readFileSync(path.resolve(process.cwd(), 'releases/SHA256SUMS.txt'), 'utf8');
+  const pkg = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf8'));
+  const version = pkg.version;
+  const tag = `v${version}`;
+  const releaseName = `ToolDesk v${version}`;
+  const notes = fs.existsSync(path.resolve(process.cwd(), 'releases/SHA256SUMS.txt'))
+    ? fs.readFileSync(path.resolve(process.cwd(), 'releases/SHA256SUMS.txt'), 'utf8')
+    : '';
 
-  const releaseBody = `## ToolDesk v1.0.3 — Master Native Download Engine & Mobile Responsiveness Release
+  const releaseBody = `## ToolDesk v${version} — Direct Android MediaStore Save & Native Download Engine
 
 ### Highlights:
-- **Global Android APK Download Engine:** Full native MediaStore.Downloads bridge (\`ToolDeskNativeBridge.java\`) with fallback for Capacitor Filesystem/Share. Resolves download button failures across all tools including Images to PDF, Image Converter, Compressor, Resizer, QR codes, and text exports.
-- **Mobile Responsive Layout Fixes:** Eliminated button and action row clipping on mobile viewports. Dynamic stacking for PDF option grids (Page Size, Orientation) prevents text truncation ("Standard A...", "Auto (Matc...").
-- **AI Assistant Keystroke Optimization:** Isolated input state in \`ChatInputForm\` eliminates lag during typing. Added \`AbortController\` cancellation to eliminate race conditions.
-- **Brand & Visual Integrity:** Maintained design lock (Syne/DM Sans fonts, brand colors, transparent speech-bubble robot assistant, Framer Motion animations).
+- **Direct Android Downloads (Zero Share Fallback):** Resolved the critical Android download bug where download actions inadvertently invoked the Android Share sheet. Download actions now exclusively write directly into \`Downloads/ToolDesk/\` via Android MediaStore (\`MediaStore.Downloads\`) with \`IS_PENDING\` transaction safety.
+- **Dual Native Bridge Architecture:** Implemented official Capacitor Plugin registration (\`ToolDeskNativeBridgePlugin.java\`) alongside WebView \`addJavascriptInterface\` in \`MainActivity.java\`, guaranteeing synchronous bridge availability from frame 0.
+- **Large Output Stream Handling:** Added temporary cache chunk streaming (\`saveCacheFileToDownloads\`) for payloads >2MB, eliminating WebView heap spikes and JNI base64 transaction bottlenecks.
+- **Strict Share Isolation:** Share sheet is preserved solely for explicit user-triggered Share actions via \`shareFile()\`.
+- **Cross-Platform Parity:** Verified seamless download routing across Android APK, iOS (Save to Files), Web DOM Anchor (60-second object URL retention), and Desktop Tauri.
 
 ### SHA-256 Checksum Manifest:
 \`\`\`
