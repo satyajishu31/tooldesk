@@ -83,9 +83,7 @@ ${notes}
     { name: 'ToolDesk.apk', filePath: 'releases/android/ToolDesk.apk', contentType: 'application/vnd.android.package-archive' },
     { name: 'ToolDesk.aab', filePath: 'releases/android/ToolDesk.aab', contentType: 'application/octet-stream' },
     { name: 'ToolDesk-macos-arm64.dmg', filePath: 'releases/macos/ToolDesk-macos-arm64.dmg', contentType: 'application/x-apple-diskimage' },
-    { name: 'ToolDesk.dmg', filePath: 'releases/macos/ToolDesk.dmg', contentType: 'application/x-apple-diskimage' },
     { name: 'ToolDesk-macos-arm64.zip', filePath: 'releases/macos/ToolDesk-macos-arm64.zip', contentType: 'application/zip' },
-    { name: 'ToolDesk-macOS.zip', filePath: 'releases/macos/ToolDesk-macOS.zip', contentType: 'application/zip' },
     { name: 'SHA256SUMS.txt', filePath: 'releases/SHA256SUMS.txt', contentType: 'text/plain' }
   ];
 
