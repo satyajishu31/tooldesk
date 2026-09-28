@@ -34,14 +34,17 @@ async function main() {
     ? fs.readFileSync(path.resolve(process.cwd(), 'releases/SHA256SUMS.txt'), 'utf8')
     : '';
 
-  const releaseBody = `## ToolDesk v${version} — Direct Android MediaStore Save & Native Download Engine
+  const releaseBody = `## ToolDesk v${version} — Next-Generation Master Upgrade
 
 ### Highlights:
-- **Direct Android Downloads (Zero Share Fallback):** Resolved the critical Android download bug where download actions inadvertently invoked the Android Share sheet. Download actions now exclusively write directly into \`Downloads/ToolDesk/\` via Android MediaStore (\`MediaStore.Downloads\`) with \`IS_PENDING\` transaction safety.
-- **Dual Native Bridge Architecture:** Implemented official Capacitor Plugin registration (\`ToolDeskNativeBridgePlugin.java\`) alongside WebView \`addJavascriptInterface\` in \`MainActivity.java\`, guaranteeing synchronous bridge availability from frame 0.
-- **Large Output Stream Handling:** Added temporary cache chunk streaming (\`saveCacheFileToDownloads\`) for payloads >2MB, eliminating WebView heap spikes and JNI base64 transaction bottlenecks.
-- **Strict Share Isolation:** Share sheet is preserved solely for explicit user-triggered Share actions via \`shareFile()\`.
-- **Cross-Platform Parity:** Verified seamless download routing across Android APK, iOS (Save to Files), Web DOM Anchor (60-second object URL retention), and Desktop Tauri.
+- **Universal Local History Engine:** Centralized IndexedDB \`tooldesk\` database. Safe metadata sanitization, string bounding, zero secret leakage. Fixed historical sanitizer bug: decoupled tool name validation from payload validation (allows safe masked passwords \`•••••••• (16 chars)\` while strictly rejecting raw passwords, API keys, private keys, and raw bcrypt hashes).
+- **Universal File Engine & Workspace:** Unified \`createOutput\` file engine with MIME/extension validation and local metadata workspace. Supports in-app file preview (PDF, images, TXT, JSON, CSV, SRT, VTT) with zero unnecessary binary bloat.
+- **Universal Job & Batch Engine:** Deterministic state machine (\`idle\`, \`queued\`, \`running\`, \`progress\`, \`completed\`, \`failed\`, \`cancelled\`, \`retrying\`), concurrency control with mobile-safe throttles, \`AbortController\` cancellation, and batch ZIP export.
+- **Smart Search & Command Palette:** Intent-aware search matching (\`Cmd/Ctrl+K\`), tracking recent tools and starred favorites without layout churn.
+- **Preset Engine:** Custom tool presets with built-in presets for Image Compressor, PDF Toolkit, and Resizer.
+- **AI Streaming & Contextual Copilot:** Progressive streaming response rendering, Stop, Regenerate, Copy actions, and compact in-tool contextual suggestion banners.
+- **Android MediaStore Direct Save Preserved:** Retained the robust v1.0.4 direct save to \`Downloads/ToolDesk/\` via Android MediaStore (\`IS_PENDING\` transactions) with zero Share sheet fallback.
+- **Absolute Visual & Architectural Lock:** Syne & DM Sans typography, brand colors, cards, robot assistant mascot artwork, and Framer Motion animation language 100% preserved.
 
 ### SHA-256 Checksum Manifest:
 \`\`\`
