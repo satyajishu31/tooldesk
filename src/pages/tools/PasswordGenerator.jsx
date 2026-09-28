@@ -204,6 +204,15 @@ export default function PasswordGenerator() {
   const doGenPassphrase = useCallback(() => genPassphrase(wordCount, sep, capitalize), [wordCount, sep, capitalize])
   const doGenPIN        = useCallback(() => genPassword(pinLen, { digits:true, upper:false, lower:false, symbols:false, noAmbig:false }), [pinLen])
 
+  const bits = useMemo(() => {
+    if (mode === 'password')   return entropy(len, opts)
+    if (mode === 'passphrase') return wordCount * Math.log2(WORDS.length)
+    if (mode === 'pin')        return pinLen * Math.log2(10)
+    return 0
+  }, [mode, len, opts, wordCount, pinLen])
+
+  const str = strengthInfo(Math.round(bits))
+
   const generate = useCallback(() => {
     if (mode === 'password')   { const p = doGenPassword();   setPw(p); if(p) { setHist(h => [p,...h.filter(x=>x!==p)].slice(0,20)) } }
     if (mode === 'passphrase') { const p = doGenPassphrase(); setPw(p); if(p) { setHist(h => [p,...h.filter(x=>x!==p)].slice(0,20)) } }
@@ -227,15 +236,6 @@ export default function PasswordGenerator() {
 
   // auto-generate on mode change
   useEffect(() => { generate() }, [mode])
-
-  const bits = useMemo(() => {
-    if (mode === 'password')   return entropy(len, opts)
-    if (mode === 'passphrase') return wordCount * Math.log2(WORDS.length)
-    if (mode === 'pin')        return pinLen * Math.log2(10)
-    return 0
-  }, [mode, len, opts, wordCount, pinLen])
-
-  const str = strengthInfo(Math.round(bits))
 
   const CHECKS = [
     { k:'upper',   label:'Uppercase A–Z' },

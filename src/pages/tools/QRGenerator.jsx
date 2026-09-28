@@ -288,7 +288,7 @@ export default function QRGenerator() {
     }
   }, [location.search, location.hash, location.pathname])
 
-  const generate = useCallback((addToHistory = true) => {
+  const generate = useCallback((shouldAddToHistory = true) => {
     const qrValue = buildQRValue()
     if (!qrValue || !qrValue.trim()) {
       setQrUrl('')
@@ -310,7 +310,7 @@ export default function QRGenerator() {
       }
       setError('')
       setQrUrl(dataUrl)
-      if (addToHistory) {
+      if (shouldAddToHistory) {
         setHist(h => {
           const updated = [{
             url: dataUrl, label: qrValue.slice(0, 40) + (qrValue.length > 40 ? '…' : ''),

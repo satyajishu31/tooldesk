@@ -163,6 +163,10 @@ export default function ImageCompressor() {
     setHistory(h => [{quality, fmt:outFmt, size:compSize, src:previewSrc, scale}, ...h.slice(0,4)])
   }, [previewSrc, compSize, quality, outFmt, scale])
 
+  const saved   = origSize && compSize ? Math.max(0, Math.round((1 - compSize/origSize)*100)) : 0
+  const newW    = Math.round(origW * scale / 100)
+  const newH    = Math.round(origH * scale / 100)
+
   const download = useCallback(() => {
     const im = img
     const c = canvasRef.current
@@ -192,10 +196,6 @@ export default function ImageCompressor() {
       })
     } catch {}
   }, [img, outFmt, quality, scale, fmtInfo, origName, origSize, compSize, saved])
-
-  const saved   = origSize && compSize ? Math.max(0, Math.round((1 - compSize/origSize)*100)) : 0
-  const newW    = Math.round(origW * scale / 100)
-  const newH    = Math.round(origH * scale / 100)
 
   const handleChainedImage = useCallback(async (payload) => {
     if (!payload) return
