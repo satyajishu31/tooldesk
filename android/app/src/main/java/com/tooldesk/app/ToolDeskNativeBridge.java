@@ -42,7 +42,10 @@ public class ToolDeskNativeBridge {
     public String saveFileToDownloads(String base64Data, String filename, String mimeType, boolean openShare) {
         try {
             if (base64Data == null || base64Data.trim().isEmpty()) {
-                return "{\"success\":false,\"error\":\"Binary data is empty\"}";
+                JSONObject err = new JSONObject();
+                err.put("success", false);
+                err.put("error", "Binary data is empty");
+                return err.toString();
             }
 
             // Strip data: URI header if present
@@ -54,12 +57,20 @@ public class ToolDeskNativeBridge {
 
             byte[] bytes = Base64.decode(cleanB64, Base64.DEFAULT);
             if (bytes == null || bytes.length == 0) {
-                return "{\"success\":false,\"error\":\"Failed to decode binary content\"}";
+                JSONObject err = new JSONObject();
+                err.put("success", false);
+                err.put("error", "Failed to decode binary content");
+                return err.toString();
             }
 
             return saveStreamToDownloads(new ByteArrayInputStream(bytes), bytes.length, filename, mimeType, openShare, null);
         } catch (Exception e) {
-            return "{\"success\":false,\"error\":\"" + (e.getMessage() != null ? e.getMessage().replace("\"", "\\\"") : "Error processing data") + "\"}";
+            JSONObject err = new JSONObject();
+            try {
+                err.put("success", false);
+                err.put("error", e.getMessage() != null ? e.getMessage() : "Error processing data");
+            } catch (Exception ignored) {}
+            return err.toString();
         }
     }
 
@@ -67,7 +78,10 @@ public class ToolDeskNativeBridge {
     public String saveCacheFileToDownloads(String cacheFilePath, String filename, String mimeType) {
         try {
             if (cacheFilePath == null || cacheFilePath.trim().isEmpty()) {
-                return "{\"success\":false,\"error\":\"Cache file path is empty\"}";
+                JSONObject err = new JSONObject();
+                err.put("success", false);
+                err.put("error", "Cache file path is empty");
+                return err.toString();
             }
 
             String cleanPath = cacheFilePath.trim();
@@ -77,7 +91,10 @@ public class ToolDeskNativeBridge {
 
             File sourceFile = new File(cleanPath);
             if (!sourceFile.exists() || !sourceFile.canRead()) {
-                return "{\"success\":false,\"error\":\"Cache file does not exist or cannot be read: " + cleanPath.replace("\"", "\\\"") + "\"}";
+                JSONObject err = new JSONObject();
+                err.put("success", false);
+                err.put("error", "Cache file does not exist or cannot be read: " + cleanPath);
+                return err.toString();
             }
 
             long totalBytes = sourceFile.length();
@@ -85,7 +102,12 @@ public class ToolDeskNativeBridge {
                 return saveStreamToDownloads(fis, totalBytes, filename, mimeType, false, sourceFile);
             }
         } catch (Exception e) {
-            return "{\"success\":false,\"error\":\"" + (e.getMessage() != null ? e.getMessage().replace("\"", "\\\"") : "Error processing cache file") + "\"}";
+            JSONObject err = new JSONObject();
+            try {
+                err.put("success", false);
+                err.put("error", e.getMessage() != null ? e.getMessage() : "Error processing cache file");
+            } catch (Exception ignored) {}
+            return err.toString();
         }
     }
 
@@ -111,12 +133,18 @@ public class ToolDeskNativeBridge {
                 fileUri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
 
                 if (fileUri == null) {
-                    return "{\"success\":false,\"error\":\"Could not create MediaStore entry in Downloads\"}";
+                    JSONObject err = new JSONObject();
+                    err.put("success", false);
+                    err.put("error", "Could not create MediaStore entry in Downloads");
+                    return err.toString();
                 }
 
                 try (OutputStream os = resolver.openOutputStream(fileUri)) {
                     if (os == null) {
-                        return "{\"success\":false,\"error\":\"Could not open MediaStore output stream\"}";
+                        JSONObject err = new JSONObject();
+                        err.put("success", false);
+                        err.put("error", "Could not open MediaStore output stream");
+                        return err.toString();
                     }
                     byte[] buffer = new byte[16384];
                     int read;
@@ -131,6 +159,19 @@ public class ToolDeskNativeBridge {
                 values.put(MediaStore.MediaColumns.IS_PENDING, 0);
                 resolver.update(fileUri, values, null, null);
 
+                // Query the actual committed display name from MediaStore (which handles duplicate suffixes like " (1)")
+                try (Cursor cursor = resolver.query(fileUri, new String[]{MediaStore.MediaColumns.DISPLAY_NAME}, null, null, null)) {
+                    if (cursor != null && cursor.moveToFirst()) {
+                        int nameIdx = cursor.getColumnIndex(MediaStore.MediaColumns.DISPLAY_NAME);
+                        if (nameIdx >= 0) {
+                            String actualName = cursor.getString(nameIdx);
+                            if (actualName != null && !actualName.trim().isEmpty()) {
+                                safeName = actualName;
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {}
+
                 // Verify written file size via openFileDescriptor
                 try (ParcelFileDescriptor pfd = resolver.openFileDescriptor(fileUri, "r")) {
                     if (pfd != null && pfd.getStatSize() > 0) {
@@ -144,7 +185,25 @@ public class ToolDeskNativeBridge {
                     //noinspection ResultOfMethodCallIgnored
                     toolDeskDir.mkdirs();
                 }
+
                 targetFile = new File(toolDeskDir, safeName);
+                // Safe duplicate filename handling on legacy Android (< API 29)
+                if (targetFile.exists()) {
+                    String base = safeName;
+                    String ext = "";
+                    int dotIndex = safeName.lastIndexOf('.');
+                    if (dotIndex != -1) {
+                        base = safeName.substring(0, dotIndex);
+                        ext = safeName.substring(dotIndex);
+                    }
+                    int count = 1;
+                    while (targetFile.exists()) {
+                        targetFile = new File(toolDeskDir, base + " (" + count + ")" + ext);
+                        count++;
+                    }
+                    safeName = targetFile.getName();
+                }
+
                 try (FileOutputStream fos = new FileOutputStream(targetFile)) {
                     byte[] buffer = new byte[16384];
                     int read;

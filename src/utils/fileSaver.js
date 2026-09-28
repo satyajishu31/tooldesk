@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core'
 import { isCapacitor, isTauri, getPlatform } from './apiConfig.js'
 
 /**
@@ -95,7 +96,7 @@ async function saveAndroidNative(blob, safeFilename, resolvedMime) {
   let base64Cache = null
 
   // 1. Check if Capacitor Plugin or JavascriptInterface is available
-  const capPlugin = window.Capacitor?.Plugins?.ToolDeskNativeBridge
+  const capPlugin = Capacitor?.Plugins?.ToolDeskNativeBridge || window.Capacitor?.Plugins?.ToolDeskNativeBridge
   const jsInterface = typeof window !== 'undefined' ? window.ToolDeskNativeBridge : null
 
   if (!capPlugin && !jsInterface) {
@@ -248,16 +249,18 @@ export async function saveFileWithFallback(blobOrContent, filename, mimeType = '
     safeFilename = `${safeFilename}.${MIME_TO_EXT[resolvedMime]}`
   }
 
-  // 3. CAPACITOR MOBILE PLATFORM STRATEGY
+  // 3. ANDROID NATIVE DIRECT MEDIASTORE STRATEGY (NEVER open Share Sheet)
+  const platform = getPlatform()
+  const isAndroidNative = (isCapacitor() && platform === 'android') ||
+    Boolean(Capacitor?.Plugins?.ToolDeskNativeBridge || window.Capacitor?.Plugins?.ToolDeskNativeBridge || (typeof window !== 'undefined' && window.ToolDeskNativeBridge))
+
+  if (isAndroidNative) {
+    return saveAndroidNative(blob, safeFilename, resolvedMime)
+  }
+
+  // 4. CAPACITOR MOBILE (iOS) STRATEGY
   if (isCapacitor()) {
-    const platform = getPlatform()
-
-    // 3A. Android: Direct MediaStore Save ONLY (NEVER open Share Sheet)
-    if (platform === 'android') {
-      return saveAndroidNative(blob, safeFilename, resolvedMime)
-    }
-
-    // 3B. iOS: Native "Save to Files" via System Share Sheet
+    // iOS: Native "Save to Files" via System Share Sheet
     if (platform === 'ios') {
       try {
         const { Filesystem, Directory } = await import('@capacitor/filesystem')
