@@ -221,6 +221,7 @@ export default function AIHelper() {
   const abortControllerRef = useRef(null)
   const requestIdRef = useRef(0)
   const copyTimerRef = useRef(null)
+  const streamIntervalRef = useRef(null)
 
   useEffect(() => {
     return () => {
@@ -229,6 +230,9 @@ export default function AIHelper() {
       }
       if (copyTimerRef.current) {
         clearTimeout(copyTimerRef.current)
+      }
+      if (streamIntervalRef.current) {
+        clearInterval(streamIntervalRef.current)
       }
     }
   }, [])
@@ -279,6 +283,10 @@ export default function AIHelper() {
       abortControllerRef.current.abort()
       abortControllerRef.current = null
     }
+    if (streamIntervalRef.current) {
+      clearInterval(streamIntervalRef.current)
+      streamIntervalRef.current = null
+    }
     setLoading(false)
   }, [])
 
@@ -295,6 +303,10 @@ export default function AIHelper() {
 
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
+    }
+    if (streamIntervalRef.current) {
+      clearInterval(streamIntervalRef.current)
+      streamIntervalRef.current = null
     }
     const controller = new AbortController()
     abortControllerRef.current = controller
@@ -329,14 +341,20 @@ export default function AIHelper() {
         if (words.length > 8) {
           setMessages(prev => [...prev, { role: 'assistant', content: words.slice(0, 3).join(' ') }])
           let currentWordIdx = 3
-          const streamInterval = setInterval(() => {
+          streamIntervalRef.current = setInterval(() => {
             if (reqId !== requestIdRef.current) {
-              clearInterval(streamInterval)
+              if (streamIntervalRef.current) {
+                clearInterval(streamIntervalRef.current)
+                streamIntervalRef.current = null
+              }
               return
             }
             currentWordIdx += 3
             if (currentWordIdx >= words.length) {
-              clearInterval(streamInterval)
+              if (streamIntervalRef.current) {
+                clearInterval(streamIntervalRef.current)
+                streamIntervalRef.current = null
+              }
               setMessages(prev => {
                 const next = [...prev]
                 next[next.length - 1] = { role: 'assistant', content: finalResponse }
