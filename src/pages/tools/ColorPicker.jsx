@@ -4,6 +4,7 @@ import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { useCopy } from '../../hooks'
 import { TOOLS } from '../../constants'
 import { safeFetchJSON } from '../../utils/safeFetch'
+import { addToHistory } from '../../utils/history'
 
 const tool = TOOLS.find(t => t.id === 'colorpicker')
 
@@ -198,7 +199,12 @@ export default function ColorPicker(){
   const [hslS,setS]           = useState(91)
   const [hslL,setL]           = useState(64)
   const [palette,setPalette]  = useState([])
-  const [history,setHistory]  = useState([])
+  const [history,setHistory]  = useState(() => {
+    try {
+      const raw = localStorage.getItem('tooldesk_color_history')
+      return raw ? JSON.parse(raw) : []
+    } catch { return [] }
+  })
   const [aiLoading,setAiLoad] = useState(false)
   const [aiPalettes,setAiPal] = useState([])
   const [aiError,setAiErr]    = useState('')
@@ -241,18 +247,45 @@ export default function ColorPicker(){
     setHex(short)
     const r=hexToRgb(short)
     if(r){const hs=rgbToHsl(r);setH(hs.h);setS(hs.s);setL(hs.l)}
-    setHistory(prev=>[short,...prev.filter(x=>x!==short)].slice(0,20))
+    setHistory(prev=>{
+      const updated = [short,...prev.filter(x=>x!==short)].slice(0,20)
+      try { localStorage.setItem('tooldesk_color_history', JSON.stringify(updated)) } catch {}
+      return updated
+    })
   },[])
 
   const applyHsl = useCallback((h,s,l)=>{
     setH(h);setS(s);setL(l)
     const newHex=rgbToHex(hslToRgb(h,s,l))
     setHex(newHex)
-    setHistory(prev=>[newHex,...prev.filter(x=>x!==newHex)].slice(0,20))
+    setHistory(prev=>{
+      const updated = [newHex,...prev.filter(x=>x!==newHex)].slice(0,20)
+      try { localStorage.setItem('tooldesk_color_history', JSON.stringify(updated)) } catch {}
+      return updated
+    })
   },[])
 
-  const cp=(text,key)=>{setLC(key);copy(text)}
-  const addToPalette=()=>{if(!palette.includes(hex)&&palette.length<16)setPalette(p=>[...p,hex])}
+  const cp=(text,key)=>{
+    setLC(key)
+    copy(text)
+    addToHistory({
+      tool: 'Color Picker',
+      label: `Copied ${key || 'Color'}: ${text}`,
+      value: text,
+      category: 'Design'
+    })
+  }
+  const addToPalette=()=>{
+    if(!palette.includes(hex)&&palette.length<16){
+      setPalette(p=>[...p,hex])
+      addToHistory({
+        tool: 'Color Picker',
+        label: `Saved Palette Color: ${hex}`,
+        value: hex,
+        category: 'Design'
+      })
+    }
+  }
 
   /* Eye-dropper */
   const eyeDrop=async()=>{

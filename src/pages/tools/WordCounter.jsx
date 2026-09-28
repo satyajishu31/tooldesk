@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useCallback, useDeferredValue } from 'react'
+import React, { useState, useMemo, useRef, useCallback, useDeferredValue, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Type, Hash, Scissors, MessageSquare, Pilcrow, ArrowLeftRight, Lightbulb, BookOpen, FileText, Brain, Sparkles, RefreshCw, AlertCircle, CheckCircle2, ChevronRight, BarChart3, Feather } from 'lucide-react'
 import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
@@ -7,6 +7,7 @@ import { TOOLS } from '../../constants'
 import { SummarizePanel } from '../../components/AIPanel'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import { safeFetchJSON } from '../../utils/safeFetch'
+import { addToHistory } from '../../utils/history'
 
 const tool = TOOLS.find(t => t.id === 'wordcount')
 
@@ -207,6 +208,23 @@ export default function WordCounter() {
     if (!findQ || !findQ.trim()) return
     setText(t => t.split(findQ).join(replaceQ))
   }, [findQ, replaceQ])
+
+  useEffect(() => {
+    if (!stats.words || stats.words < 5) return
+    const timer = setTimeout(() => {
+      try {
+        addToHistory({
+          tool: 'Word Counter',
+          label: `${stats.words.toLocaleString()} words`,
+          value: `${stats.chars.toLocaleString()} chars · ${stats.sentences} sentences`,
+          action: 'Counted',
+          category: 'text',
+          metadata: { words: stats.words, chars: stats.chars, sentences: stats.sentences, paragraphs: stats.paragraphs }
+        })
+      } catch {}
+    }, 1500)
+    return () => clearTimeout(timer)
+  }, [stats.words, stats.chars, stats.sentences, stats.paragraphs])
 
   const BOXES = [
     { label:'Words',       value:stats.words,          Icon:Type },

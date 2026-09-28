@@ -3,6 +3,7 @@ import ToolShell, { ToolCard } from '../../components/ToolShell'
 import { useCopy } from '../../hooks'
 import { TOOLS, UNIT_CATEGORIES } from '../../constants'
 import { UnitExplainPanel } from '../../components/AIPanel'
+import { addToHistory } from '../../utils/history'
 
 const tool = TOOLS.find(t => t.id === 'units')
 
@@ -45,7 +46,12 @@ export default function UnitConverter() {
   const [to,    setTo]    = useState('ft')
   const [value, setValue] = useState('1')
   const [copied, copy]    = useCopy()
-  const [history, setHist]= useState([])
+  const [history, setHist]= useState(() => {
+    try {
+      const raw = localStorage.getItem('tooldesk_units_history')
+      return raw ? JSON.parse(raw) : []
+    } catch { return [] }
+  })
 
   const result = useMemo(() => convert(value, cat, from, to), [value, cat, from, to])
 
@@ -83,10 +89,20 @@ export default function UnitConverter() {
     if (!value || isNaN(parseFloat(value)) || result === '—') return
     const timer = setTimeout(() => {
       setHist(h => {
+        let updated
         if (h[0] && h[0].from === from && h[0].to === to && h[0].cat === cat) {
-          return [{ from, to, value, result, cat, ts: Date.now() }, ...h.slice(1)]
+          updated = [{ from, to, value, result, cat, ts: Date.now() }, ...h.slice(1)]
+        } else {
+          updated = [{ from, to, value, result, cat, ts: Date.now() }, ...h.slice(0, 7)]
         }
-        return [{ from, to, value, result, cat, ts: Date.now() }, ...h.slice(0, 7)]
+        try { localStorage.setItem('tooldesk_units_history', JSON.stringify(updated)) } catch {}
+        return updated
+      })
+      addToHistory({
+        tool: 'Unit Converter',
+        label: `${cat}: ${value} ${from} → ${result} ${to}`,
+        value: `${value} ${from} = ${result} ${to}`,
+        category: 'Math'
       })
     }, 800)
     return () => clearTimeout(timer)

@@ -4,6 +4,7 @@ import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { useCopy } from '../../hooks'
 import { TOOLS } from '../../constants'
 import { safeFetchJSON, safeTimeoutSignal } from '../../utils/safeFetch'
+import { addToHistory } from '../../utils/history'
 
 const tool = TOOLS.find(t => t.id === 'currency')
 
@@ -68,7 +69,12 @@ export default function CurrencyConverter() {
   const [rateDate,  setRateDate]  = useState('offline')
   const [loading,   setLoading]   = useState(false)
   const [apiStatus, setApiStatus] = useState('idle') // idle|loading|live|error
-  const [history,   setHistory]   = useState([])
+  const [history,   setHistory]   = useState(() => {
+    try {
+      const raw = localStorage.getItem('tooldesk_currency_history')
+      return raw ? JSON.parse(raw) : []
+    } catch { return [] }
+  })
   const [multiShow, setMultiShow] = useState(false)
   const [copied,    copy]         = useCopy()
   const fetchedBase = useRef(null)
@@ -171,10 +177,20 @@ export default function CurrencyConverter() {
     if (!parseFloat(amount) || result === '—' || result === '0') return
     const timer = setTimeout(() => {
       setHistory(h => {
+        let updated
         if (h[0] && h[0].from === from && h[0].to === to) {
-          return [{ from, to, amount, result, ts: Date.now() }, ...h.slice(1)]
+          updated = [{ from, to, amount, result, ts: Date.now() }, ...h.slice(1)]
+        } else {
+          updated = [{ from, to, amount, result, ts: Date.now() }, ...h.slice(0, 9)]
         }
-        return [{ from, to, amount, result, ts: Date.now() }, ...h.slice(0, 9)]
+        try { localStorage.setItem('tooldesk_currency_history', JSON.stringify(updated)) } catch {}
+        return updated
+      })
+      addToHistory({
+        tool: 'Currency Converter',
+        label: `${amount} ${from} → ${result} ${to}`,
+        value: `${amount} ${from} = ${result} ${to}`,
+        category: 'Finance'
       })
     }, 800)
     return () => clearTimeout(timer)

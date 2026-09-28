@@ -544,7 +544,7 @@ test('Download Logic 12: Installed iOS app - Download App hidden in iOS Capacito
   }
 })
 
-test('Release Integrity: Release version 1.0.4 canonical consistency across files', () => {
+test('Release Integrity: Release version 1.1.0 canonical consistency across files', () => {
   const pkg = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf8'))
   const releasesJson = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'public/releases.json'), 'utf8'))
   const tauriConf = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'src-tauri/tauri.conf.json'), 'utf8'))
@@ -552,19 +552,19 @@ test('Release Integrity: Release version 1.0.4 canonical consistency across file
   const gradle = fs.readFileSync(path.resolve(process.cwd(), 'android/app/build.gradle'), 'utf8')
   const pbxproj = fs.readFileSync(path.resolve(process.cwd(), 'ios/App/App.xcodeproj/project.pbxproj'), 'utf8')
 
-  assert.equal(pkg.version, '1.0.4', 'package.json version must be 1.0.4')
-  assert.equal(releasesJson.version, '1.0.4', 'public/releases.json version must be 1.0.4')
-  assert.equal(DEFAULT_RELEASE_CONFIG.version, '1.0.4', 'DEFAULT_RELEASE_CONFIG.version must be 1.0.4')
-  assert.equal(CURRENT_RELEASE_VERSION, '1.0.4', 'CURRENT_RELEASE_VERSION must be 1.0.4')
-  assert.equal(tauriConf.version, '1.0.4', 'tauri.conf.json version must be 1.0.4')
-  assert(cargoToml.includes('version = "1.0.4"'), 'Cargo.toml must have version 1.0.4')
-  assert(gradle.includes('versionName "1.0.4"'), 'Android build.gradle must have versionName "1.0.4"')
-  assert(gradle.includes('versionCode 5'), 'Android build.gradle must have versionCode 5')
-  assert(pbxproj.includes('MARKETING_VERSION = 1.0.4;'), 'iOS pbxproj must have MARKETING_VERSION = 1.0.4')
-  assert(pbxproj.includes('CURRENT_PROJECT_VERSION = 5;'), 'iOS pbxproj must have CURRENT_PROJECT_VERSION = 5')
+  assert.equal(pkg.version, '1.1.0', 'package.json version must be 1.1.0')
+  assert.equal(releasesJson.version, '1.1.0', 'public/releases.json version must be 1.1.0')
+  assert.equal(DEFAULT_RELEASE_CONFIG.version, '1.1.0', 'DEFAULT_RELEASE_CONFIG.version must be 1.1.0')
+  assert.equal(CURRENT_RELEASE_VERSION, '1.1.0', 'CURRENT_RELEASE_VERSION must be 1.1.0')
+  assert.equal(tauriConf.version, '1.1.0', 'tauri.conf.json version must be 1.1.0')
+  assert(cargoToml.includes('version = "1.1.0"'), 'Cargo.toml must have version 1.1.0')
+  assert(gradle.includes('versionName "1.1.0"'), 'Android build.gradle must have versionName "1.1.0"')
+  assert(gradle.includes('versionCode 6'), 'Android build.gradle must have versionCode 6')
+  assert(pbxproj.includes('MARKETING_VERSION = 1.1.0;'), 'iOS pbxproj must have MARKETING_VERSION = 1.1.0')
+  assert(pbxproj.includes('CURRENT_PROJECT_VERSION = 6;'), 'iOS pbxproj must have CURRENT_PROJECT_VERSION = 6')
 })
 
-test('Release Integrity: Tag v1.0.0, v1.0.1, v1.0.2, v1.0.3 remain permanently immutable', () => {
+test('Release Integrity: Tag v1.0.0, v1.0.1, v1.0.2, v1.0.3, v1.0.4 remain permanently immutable', () => {
   const checkTag = (tag, expectedHash) => {
     let resolved = ''
     try {
@@ -583,9 +583,10 @@ test('Release Integrity: Tag v1.0.0, v1.0.1, v1.0.2, v1.0.3 remain permanently i
   checkTag('v1.0.1', 'c39722e5e7f0740529a92f4776d7088f9860cb3f')
   checkTag('v1.0.2', '66e6dbd1f5f669bf219405b397c7f40c58190da2')
   checkTag('v1.0.3', 'e8d1b6c8522ea02d942a084419de814698d60319')
+  checkTag('v1.0.4', '550d09b469d70a23632d894104b8a370353ecea9')
 })
 
-test('Release Integrity: Release metadata download URLs reference v1.0.4 and not older releases', () => {
+test('Release Integrity: Release metadata download URLs reference v1.1.0 and not older releases', () => {
   const releasesRaw = fs.readFileSync(path.resolve(process.cwd(), 'public/releases.json'), 'utf8')
   const configRaw = fs.readFileSync(path.resolve(process.cwd(), 'src/utils/releaseConfig.js'), 'utf8')
 
@@ -597,8 +598,10 @@ test('Release Integrity: Release metadata download URLs reference v1.0.4 and not
   assert(!configRaw.includes('/releases/download/v1.0.2/'), 'releaseConfig.js must NOT contain download URLs pointing to v1.0.2')
   assert(!releasesRaw.includes('/releases/download/v1.0.3/'), 'releases.json must NOT contain download URLs pointing to v1.0.3')
   assert(!configRaw.includes('/releases/download/v1.0.3/'), 'releaseConfig.js must NOT contain download URLs pointing to v1.0.3')
-  assert(releasesRaw.includes('/releases/download/v1.0.4/'), 'releases.json MUST contain download URLs pointing to v1.0.4')
-  assert(configRaw.includes('/releases/download/v1.0.4/'), 'releaseConfig.js MUST contain download URLs pointing to v1.0.4')
+  assert(!releasesRaw.includes('/releases/download/v1.0.4/'), 'releases.json must NOT contain download URLs pointing to v1.0.4')
+  assert(!configRaw.includes('/releases/download/v1.0.4/'), 'releaseConfig.js must NOT contain download URLs pointing to v1.0.4')
+  assert(releasesRaw.includes('/releases/download/v1.1.0/'), 'releases.json MUST contain download URLs pointing to v1.1.0')
+  assert(configRaw.includes('/releases/download/v1.1.0/'), 'releaseConfig.js MUST contain download URLs pointing to v1.1.0')
 })
 
 test('Branding: Logo assets existence and optimization across formats', () => {
@@ -698,9 +701,9 @@ test('AI UX & Architecture: Malformed and standard AI response handling', () => 
   assert.equal(emptyRes.error, 'Empty response')
 })
 
-test('Service Worker: Cache version matches v1.0.4 and precaches robot asset', () => {
+test('Service Worker: Cache version matches v1.1.0 and precaches robot asset', () => {
   const swCode = fs.readFileSync(path.resolve(process.cwd(), 'public/sw.js'), 'utf8')
-  assert(swCode.includes("SW_VERSION = 'v1.0.4'"), 'sw.js SW_VERSION must be v1.0.4')
+  assert(swCode.includes("SW_VERSION = 'v1.1.0'"), 'sw.js SW_VERSION must be v1.1.0')
   assert(swCode.includes("CACHE_NAME = `tooldesk-pwa-${SW_VERSION}`"), 'sw.js CACHE_NAME must use SW_VERSION')
   assert(swCode.includes('/robot-assistant-64.webp'), 'sw.js must precache /robot-assistant-64.webp')
   assert(swCode.includes('/logo.png'), 'sw.js must precache /logo.png')

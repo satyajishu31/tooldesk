@@ -80,6 +80,16 @@ function HasherTab() {
         output = await bcrypt.hash(text, salt)
       }
       setHash(output)
+      try {
+        addToHistory({
+          tool: 'Bcrypt Generator',
+          label: `Bcrypt Hash (Cost: ${rounds})`,
+          value: `Calculated with cost factor ${rounds}`,
+          action: 'Generated',
+          category: 'security',
+          metadata: { rounds }
+        })
+      } catch {}
     } finally { setLoading(false) }
   }
 
@@ -186,6 +196,16 @@ function VerifierTab() {
         match = await bcrypt.compare(plainToVerify, trimmedHash)
       }
       setResult(match ? 'match' : 'nomatch')
+      try {
+        addToHistory({
+          tool: 'Bcrypt Generator',
+          label: 'Bcrypt Verification',
+          value: match ? 'Hash verification matched' : 'Hash verification mismatched',
+          action: 'Verified',
+          category: 'security',
+          metadata: { match: Boolean(match) }
+        })
+      } catch {}
     } catch { setResult('invalid') } finally { setLoading(false) }
   }
 
@@ -299,6 +319,16 @@ function BatchTab() {
       setProgress(Math.round(((i+1)/safeLines.length)*100))
       await new Promise(r => setTimeout(r, 0)) // yield UI
     }
+    try {
+      addToHistory({
+        tool: 'Bcrypt Generator',
+        label: `Batch Bcrypt (${safeLines.length} items)`,
+        value: `Batch processed ${safeLines.length} items (Cost: ${rounds})`,
+        action: 'Batch Generated',
+        category: 'security',
+        metadata: { count: safeLines.length, rounds }
+      })
+    } catch {}
     setLoading(false)
   }
 

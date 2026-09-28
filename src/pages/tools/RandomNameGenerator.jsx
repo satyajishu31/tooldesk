@@ -5,6 +5,7 @@ import { useCopy } from '../../hooks'
 import { TOOLS } from '../../constants'
 import { safeFetchJSON } from '../../utils/safeFetch'
 import { saveFileWithFallback } from '../../utils/fileSaver'
+import { addToHistory } from '../../utils/history'
 /* ─── Import the full data pack ─── */
 import { D, FLAGS } from './generatorData.js'
 
@@ -356,6 +357,16 @@ export default function RandomNameGenerator() {
       const result = Array.from({ length: count }, () => generateName(country, gender))
         .filter(Boolean)
       setNames(result)
+      try {
+        addToHistory({
+          tool: 'Random Name Generator',
+          label: `${count} Names (${country === 'random' ? 'International' : country})`,
+          value: result[0]?.full ? `${result[0].full} + ${result.length - 1} more` : `${result.length} names`,
+          action: 'Generated',
+          category: 'generator',
+          metadata: { count, country, gender }
+        })
+      } catch {}
       setLoading(false)
       timerRef.current = null
     }, 180)

@@ -6,6 +6,7 @@ import { saveFileWithFallback } from '../../utils/fileSaver'
 import { safeFetchJSON, safeTimeoutSignal } from '../../utils/safeFetch'
 import { resolveApiUrl, getApiHeaders } from '../../utils/apiConfig'
 import { useCopy } from '../../hooks'
+import { addToHistory, getToolHistory } from '../../utils/history'
 
 const tool = TOOLS.find(t => t.id === 'thumbnail')
 
@@ -338,6 +339,27 @@ export default function SocialMediaThumbnail() {
   const inputRef = useRef()
   const [copied, copy] = useCopy()
 
+  useEffect(() => {
+    let active = true
+    const loadHist = () => {
+      getToolHistory('YouTube Thumbnail', 8).then(items => {
+        if (active && items) {
+          setHistory(items.map(it => ({
+            platform: it.metadata?.platform || 'youtube',
+            id: it.metadata?.id || '',
+            url: it.metadata?.url || it.label
+          })).filter(h => h.id))
+        }
+      })
+    }
+    loadHist()
+    window.addEventListener('tooldesk-history-updated', loadHist)
+    return () => {
+      active = false
+      window.removeEventListener('tooldesk-history-updated', loadHist)
+    }
+  }, [])
+
   /* AI Viral Titles & Thumbnail Concept Studio */
   const [aiTopic, setAiTopic] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
@@ -396,6 +418,14 @@ export default function SocialMediaThumbnail() {
         setThumbs(results)
         setMediaId(id)
         setHistory(h => [{ platform: platform.id, id, url }, ...h.filter(x => x.id !== id)].slice(0, 6))
+        addToHistory({
+          tool: 'YouTube Thumbnail',
+          label: `${platform.name}: ${id}`,
+          value: `Extracted ${results.length} thumbnails`,
+          action: 'Extracted',
+          category: 'media',
+          metadata: { platform: platform.id, id, url }
+        })
       }
     } catch(e) {
       setError('Failed to fetch thumbnails. Check the URL and try again.')

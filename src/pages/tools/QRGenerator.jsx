@@ -7,6 +7,7 @@ import { TOOLS } from '../../constants'
 import { generateQRDataURL, generateQRSVG } from '../../utils/qrCode'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import { safeFetchJSON } from '../../utils/safeFetch'
+import { addToHistory } from '../../utils/history'
 
 const QRScanner = lazy(() => import('./QRScanner'))
 const BarcodeTool = lazy(() => import('./BarcodeTool'))
@@ -50,7 +51,12 @@ export default function QRGenerator() {
   const [qrUrl,   setQrUrl] = useState('')
   const [loading, setLoad]  = useState(false)
   const [error,   setError] = useState('')
-  const [history, setHist]  = useState([])
+  const [history, setHist]  = useState(() => {
+    try {
+      const raw = localStorage.getItem('tooldesk_qr_history')
+      return raw ? JSON.parse(raw) : []
+    } catch { return [] }
+  })
   const [copied,  copy]     = useCopy()
 
   /* WiFi & vCard extra fields */
@@ -305,10 +311,20 @@ export default function QRGenerator() {
       setError('')
       setQrUrl(dataUrl)
       if (addToHistory) {
-        setHist(h => [{
-          url: dataUrl, label: qrValue.slice(0, 40) + (qrValue.length > 40 ? '…' : ''),
-          mode, size, ts: new Date().toLocaleTimeString()
-        }, ...h.slice(0, 7)])
+        setHist(h => {
+          const updated = [{
+            url: dataUrl, label: qrValue.slice(0, 40) + (qrValue.length > 40 ? '…' : ''),
+            mode, size, ts: new Date().toLocaleTimeString()
+          }, ...h.filter(x => x.label !== qrValue.slice(0, 40)).slice(0, 7)]
+          try { localStorage.setItem('tooldesk_qr_history', JSON.stringify(updated)) } catch {}
+          return updated
+        })
+        addToHistory({
+          tool: 'QR & Barcode Studio',
+          label: `QR Code (${mode.toUpperCase()})`,
+          value: qrValue.slice(0, 80),
+          category: 'Generate'
+        })
       }
     } catch (err) {
       setError(err?.message || 'Input exceeds QR Code capacity.')
@@ -331,8 +347,15 @@ export default function QRGenerator() {
 
   const downloadPng = async () => {
     if (!qrUrl) return
+    const qrValue = buildQRValue()
     const filename = `qrcode-${mode || 'code'}.png`
     saveFileWithFallback(qrUrl, filename, 'image/png')
+    addToHistory({
+      tool: 'QR & Barcode Studio',
+      label: `Downloaded PNG (${mode.toUpperCase()})`,
+      value: qrValue.slice(0, 80),
+      category: 'Generate'
+    })
   }
 
   const downloadSvg = async () => {
@@ -349,6 +372,12 @@ export default function QRGenerator() {
     const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' })
     const filename = `qrcode-${mode || 'code'}.svg`
     saveFileWithFallback(blob, filename, 'image/svg+xml')
+    addToHistory({
+      tool: 'QR & Barcode Studio',
+      label: `Downloaded SVG (${mode.toUpperCase()})`,
+      value: qrValue.slice(0, 80),
+      category: 'Generate'
+    })
   }
 
   return (

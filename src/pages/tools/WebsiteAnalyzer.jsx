@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, memo } from 'react'
+import React, { useState, useCallback, useRef, memo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { useCopy } from '../../hooks'
@@ -8,6 +8,7 @@ import { TOOLS } from '../../constants'
 import SafeImage from '../../components/SafeImage'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import { SEOSuggestPanel, DeepWebPanel } from '../../components/AIPanel'
+import { addToHistory, getToolHistory } from '../../utils/history'
 
 const tool = TOOLS.find(t => t.id === 'websiteanalyzer')
 
@@ -86,6 +87,27 @@ export default function WebsiteAnalyzer() {
   const [promptLoading,setPromptLoad]  = useState(false)
   const [promptError,  setPromptError] = useState('')
 
+  useEffect(() => {
+    let active = true
+    const loadHist = () => {
+      getToolHistory('Website Analyzer', 8).then(items => {
+        if (active && items) {
+          setHistory(items.map(it => ({
+            url: it.metadata?.url || it.label,
+            score: it.metadata?.score || it.value,
+            ts: it.timestamp || ''
+          })))
+        }
+      })
+    }
+    loadHist()
+    window.addEventListener('tooldesk-history-updated', loadHist)
+    return () => {
+      active = false
+      window.removeEventListener('tooldesk-history-updated', loadHist)
+    }
+  }, [])
+
   const generateRecreationPrompt = useCallback(async () => {
     if (!data) return
     setPromptLoad(true); setPromptError('')
@@ -124,6 +146,14 @@ export default function WebsiteAnalyzer() {
       setData(res)
       setHistory(h => [{ url:res.url, score:res.seoScore, ts:new Date().toLocaleTimeString() },
         ...h.filter(x=>x.url!==res.url).slice(0,6)])
+      addToHistory({
+        tool: 'Website Analyzer',
+        label: safeHostname(res.url),
+        value: `SEO: ${res.seoScore}/100`,
+        action: 'Analyzed',
+        category: 'web',
+        metadata: { url: res.url, score: res.seoScore }
+      })
     }
     setLoad(false)
   }, [url])

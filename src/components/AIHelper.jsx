@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, memo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLocation } from 'react-router-dom'
+import { Copy, Check, RotateCcw, Square } from 'lucide-react'
 import { safeFetchJSON } from '../utils/safeFetch'
 import { TOOLS } from '../constants'
 
@@ -82,7 +83,7 @@ function getSuggestions(tool) {
 }
 
 /* ── Isolated Chat Input: isolates input state from whole panel re-renders ── */
-const ChatInputForm = memo(function ChatInputForm({ onSend, loading, placeholder }) {
+const ChatInputForm = memo(function ChatInputForm({ onSend, onStop, loading, placeholder }) {
   const [localInput, setLocalInput] = useState('')
 
   const handleSubmit = (e) => {
@@ -121,27 +122,52 @@ const ChatInputForm = memo(function ChatInputForm({ onSend, loading, placeholder
           boxSizing: 'border-box',
         }}
       />
-      <button
-        type="submit"
-        disabled={!localInput.trim() || loading}
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: '50%',
-          background: localInput.trim() && !loading ? 'var(--blue, #4F8EF7)' : '#e2e5ec',
-          color: '#ffffff',
-          border: 'none',
-          cursor: localInput.trim() && !loading ? 'pointer' : 'default',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 16,
-          flexShrink: 0,
-          boxSizing: 'border-box',
-          transition: 'background .15s',
-        }}>
-        ➔
-      </button>
+      {loading ? (
+        <button
+          type="button"
+          onClick={onStop}
+          title="Stop response"
+          aria-label="Stop response"
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: '50%',
+            background: '#ef4444',
+            color: '#ffffff',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            boxSizing: 'border-box',
+            transition: 'background .15s',
+          }}>
+          <Square size={13} fill="#ffffff" />
+        </button>
+      ) : (
+        <button
+          type="submit"
+          disabled={!localInput.trim()}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: '50%',
+            background: localInput.trim() ? 'var(--blue, #4F8EF7)' : '#e2e5ec',
+            color: '#ffffff',
+            border: 'none',
+            cursor: localInput.trim() ? 'pointer' : 'default',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 16,
+            flexShrink: 0,
+            boxSizing: 'border-box',
+            transition: 'background .15s',
+          }}>
+          ➔
+        </button>
+      )}
     </form>
   )
 })
@@ -188,23 +214,28 @@ export default function AIHelper() {
     { role: 'assistant', content: getWelcomeMessage(currentTool) }
   ])
   const [loading, setLoading]   = useState(false)
+  const [copiedIndex, setCopiedIndex] = useState(null)
   const chatEndRef = useRef(null)
   const panelRef = useRef(null)
   const prevPathRef = useRef(location.pathname)
   const abortControllerRef = useRef(null)
   const requestIdRef = useRef(0)
+  const copyTimerRef = useRef(null)
 
   useEffect(() => {
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort()
       }
+      if (copyTimerRef.current) {
+        clearTimeout(copyTimerRef.current)
+      }
     }
   }, [])
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, loading])
 
   // Handle Escape key and outside click to dismiss
   useEffect(() => {
@@ -227,7 +258,7 @@ export default function AIHelper() {
     }
   }, [isOpen])
 
-  // Context-aware context shifting and nudge effect
+  // Context-aware context shifting
   useEffect(() => {
     if (prevPathRef.current !== location.pathname) {
       prevPathRef.current = location.pathname
@@ -243,11 +274,25 @@ export default function AIHelper() {
     }
   }, [location.pathname, isOpen, currentTool, messages.length])
 
+  const stopRequest = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
+    setLoading(false)
+  }, [])
+
+  const copyMessage = useCallback((text, idx) => {
+    navigator.clipboard?.writeText(text)
+    setCopiedIndex(idx)
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
+    copyTimerRef.current = setTimeout(() => setCopiedIndex(null), 2000)
+  }, [])
+
   const sendText = useCallback(async (text) => {
     const cleanText = typeof text === 'string' ? text.trim() : ''
     if (!cleanText) return
 
-    // Cancel prior in-flight request
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
     }
@@ -267,14 +312,49 @@ export default function AIHelper() {
         signal: controller.signal,
         body: JSON.stringify({
           tool: 'aiHelper',
-          payload: { messages: history, currentPage: currentPageLabel }
+          payload: {
+            messages: history,
+            currentPage: currentPageLabel,
+            toolContext: currentTool ? { id: currentTool.id, title: currentTool.title, category: currentTool.cat } : null
+          }
         })
-      }, 15000)
+      }, 25000)
 
       if (controller.signal.aborted || reqId !== requestIdRef.current) return
 
-      if (data?.response || data?.result) {
-        setMessages(prev => [...prev, { role: 'assistant', content: data.response || data.result }])
+      const finalResponse = data?.response || data?.result
+      if (finalResponse) {
+        // Progressive token streaming simulation for buttery-smooth reading
+        const words = finalResponse.split(' ')
+        if (words.length > 8) {
+          setMessages(prev => [...prev, { role: 'assistant', content: words.slice(0, 3).join(' ') }])
+          let currentWordIdx = 3
+          const streamInterval = setInterval(() => {
+            if (reqId !== requestIdRef.current) {
+              clearInterval(streamInterval)
+              return
+            }
+            currentWordIdx += 3
+            if (currentWordIdx >= words.length) {
+              clearInterval(streamInterval)
+              setMessages(prev => {
+                const next = [...prev]
+                next[next.length - 1] = { role: 'assistant', content: finalResponse }
+                return next
+              })
+              setLoading(false)
+            } else {
+              setMessages(prev => {
+                const next = [...prev]
+                next[next.length - 1] = { role: 'assistant', content: words.slice(0, currentWordIdx).join(' ') }
+                return next
+              })
+            }
+          }, 35)
+          return
+        } else {
+          setMessages(prev => [...prev, { role: 'assistant', content: finalResponse }])
+        }
       } else if (data?.error) {
         setMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${data.error}` }])
       } else {
@@ -290,7 +370,18 @@ export default function AIHelper() {
         setLoading(false)
       }
     }
-  }, [messages, currentPageLabel])
+  }, [messages, currentPageLabel, currentTool])
+
+  const regenerateLast = useCallback(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'user') {
+        const text = messages[i].content
+        setMessages(prev => prev.slice(0, i))
+        sendText(text)
+        break
+      }
+    }
+  }, [messages, sendText])
 
   const suggestions = getSuggestions(currentTool)
 
@@ -317,9 +408,9 @@ export default function AIHelper() {
               position: 'fixed',
               bottom: 'calc(90px + env(safe-area-inset-bottom, 0px))',
               right: 'calc(20px + env(safe-area-inset-right, 0px))',
-              width: 330,
+              width: 340,
               maxWidth: 'calc(100vw - 32px)',
-              height: 430,
+              height: 440,
               maxHeight: '70vh',
               background: '#ffffff',
               borderRadius: 22,
@@ -388,29 +479,75 @@ export default function AIHelper() {
                   alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
                   maxWidth: '88%',
                   display: 'flex',
-                  gap: 8,
-                  alignItems: 'flex-start'
+                  flexDirection: 'column',
+                  gap: 4
                 }}>
-                  {m.role !== 'user' && (
-                    <img
-                      src="/robot-assistant-64.webp"
-                      alt="Assistant"
-                      style={{ width: 22, height: 22, objectFit: 'contain', flexShrink: 0, marginTop: 4 }}
-                      onError={e => { e.currentTarget.src = '/robot-assistant-64.png' }}
-                    />
-                  )}
-                  <div style={{
-                    padding: '10px 14px',
-                    borderRadius: m.role === 'user' ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
-                    background: m.role === 'user' ? 'var(--blue, #4F8EF7)' : '#ffffff',
-                    color: m.role === 'user' ? '#ffffff' : '#1e293b',
-                    fontSize: 13.5,
-                    lineHeight: 1.62,
-                    boxShadow: m.role === 'user' ? '0 2px 8px rgba(79,142,247,0.2)' : '0 2px 6px rgba(0,0,0,0.04)',
-                    border: m.role === 'user' ? 'none' : '1px solid rgba(0,0,0,0.05)'
-                  }}>
-                    {m.content}
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                    {m.role !== 'user' && (
+                      <img
+                        src="/robot-assistant-64.webp"
+                        alt="Assistant"
+                        style={{ width: 22, height: 22, objectFit: 'contain', flexShrink: 0, marginTop: 4 }}
+                        onError={e => { e.currentTarget.src = '/robot-assistant-64.png' }}
+                      />
+                    )}
+                    <div style={{
+                      padding: '10px 14px',
+                      borderRadius: m.role === 'user' ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
+                      background: m.role === 'user' ? 'var(--blue, #4F8EF7)' : '#ffffff',
+                      color: m.role === 'user' ? '#ffffff' : '#1e293b',
+                      fontSize: 13.5,
+                      lineHeight: 1.62,
+                      boxShadow: m.role === 'user' ? '0 2px 8px rgba(79,142,247,0.2)' : '0 2px 6px rgba(0,0,0,0.04)',
+                      border: m.role === 'user' ? 'none' : '1px solid rgba(0,0,0,0.05)'
+                    }}>
+                      {m.content}
+                    </div>
                   </div>
+
+                  {m.role === 'assistant' && idx > 0 && (
+                    <div style={{ display: 'flex', gap: 8, paddingLeft: 30 }}>
+                      <button
+                        onClick={() => copyMessage(m.content, idx)}
+                        style={{
+                          border: 'none',
+                          background: 'transparent',
+                          color: copiedIndex === idx ? '#16a34a' : '#94a3b8',
+                          fontSize: 11,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 3,
+                          padding: 0
+                        }}
+                      >
+                        {copiedIndex === idx ? <Check size={11} /> : <Copy size={11} />}
+                        {copiedIndex === idx ? 'Copied' : 'Copy'}
+                      </button>
+
+                      {idx === messages.length - 1 && !loading && (
+                        <button
+                          onClick={regenerateLast}
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            color: '#94a3b8',
+                            fontSize: 11,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 3,
+                            padding: 0
+                          }}
+                        >
+                          <RotateCcw size={11} />
+                          Regenerate
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
               {loading && (
@@ -443,6 +580,7 @@ export default function AIHelper() {
             {/* Input Form — isolated component prevents re-rendering chat messages while typing */}
             <ChatInputForm
               onSend={sendText}
+              onStop={stopRequest}
               loading={loading}
               placeholder={currentTool ? `Ask about ${currentTool.title}…` : 'Ask anything…'}
             />

@@ -5,6 +5,7 @@ import { useCopy } from '../../hooks'
 import { TOOLS } from '../../constants'
 import { safeFetchJSON } from '../../utils/safeFetch'
 import { saveFileWithFallback } from '../../utils/fileSaver'
+import { addToHistory } from '../../utils/history'
 
 const tool = TOOLS.find(t => t.id === 'gradient')
 
@@ -668,6 +669,16 @@ export default function GradientGenerator() {
         ctx.fillRect(0,0,1200,630)
       }
       saveFileWithFallback(canvas.toDataURL('image/png'), 'gradient.png', 'image/png')
+      try {
+        addToHistory({
+          tool: 'Gradient Generator',
+          label: `${type} gradient`,
+          value: `${stops.slice(0, 3).join(' → ')} (${angle}°)`,
+          action: 'Exported',
+          category: 'media',
+          metadata: { type, stops, angle }
+        })
+      } catch {}
     } catch (e) {
       console.error('Gradient PNG generation error:', e)
     }

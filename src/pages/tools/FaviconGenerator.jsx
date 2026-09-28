@@ -4,6 +4,7 @@ import ToolShell, { ToolCard } from '../../components/ToolShell'
 import { TOOLS } from '../../constants'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import { safeFetchJSON } from '../../utils/safeFetch'
+import { addToHistory } from '../../utils/history'
 
 const tool = TOOLS.find(t => t.id === 'favicon')
 
@@ -99,6 +100,16 @@ function downloadAt(mainCanvas, sz, name = 'favicon') {
   ctx.drawImage(mainCanvas, 0, 0, sz, sz)
   const dataURL = tmp.toDataURL('image/png')
   saveFileWithFallback(dataURL, `${name}-${sz}x${sz}.png`, 'image/png')
+  try {
+    addToHistory({
+      tool: 'Favicon Generator',
+      label: `${name}-${sz}x${sz}.png`,
+      value: `PNG Favicon (${sz}×${sz})`,
+      action: 'Exported',
+      category: 'media',
+      metadata: { size: sz, format: 'png' }
+    })
+  } catch {}
 }
 
 /* ── Standards-compliant multi-resolution binary .ico generator (RFC / MS-ICO) ── */
@@ -155,6 +166,16 @@ async function downloadIco(mainCanvas, name = 'favicon') {
   if (!mainCanvas) return
   const blob = await generateIcoBlob(mainCanvas, [16, 32, 48])
   saveFileWithFallback(blob, `${name}.ico`, 'image/x-icon')
+  try {
+    addToHistory({
+      tool: 'Favicon Generator',
+      label: `${name}.ico`,
+      value: 'Multi-resolution Windows ICO (16, 32, 48)',
+      action: 'Exported',
+      category: 'media',
+      metadata: { format: 'ico' }
+    })
+  } catch {}
 }
 
 /* ── Checkerboard preview wrapper ── */
@@ -309,6 +330,16 @@ export default function FaviconGenerator() {
     if (!aiSvg) return
     const blob = new Blob([aiSvg], { type: 'image/svg+xml;charset=utf-8' })
     saveFileWithFallback(blob, 'favicon.svg', 'image/svg+xml')
+    try {
+      addToHistory({
+        tool: 'Favicon Generator',
+        label: 'favicon.svg',
+        value: 'Scalable Vector Favicon',
+        action: 'Exported',
+        category: 'media',
+        metadata: { format: 'svg' }
+      })
+    } catch {}
   }
 
   const safeBaseName = mode === 'ai' ? 'ai-favicon' : ((typeof text === 'string' ? text.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 8) : '') || 'favicon')

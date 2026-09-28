@@ -7,6 +7,7 @@ import GeometricBackground from './GeometricBackground'
 import AppIcon from './AppIcon'
 import { getToolPrivacyTier } from '../utils/privacyTier'
 import { isToolFavorite, toggleToolFavorite } from '../utils/favorites'
+import { recordRecentTool } from '../utils/recentTools'
 
 /* ── Spring presets ── */
 const SPRING_ENTER = { type:'spring', stiffness:320, damping:28, mass:.8 }
@@ -42,6 +43,7 @@ export default function ToolShell({ tool, children }) {
 
   useEffect(() => {
     setFavorite(isToolFavorite(tool.id))
+    recordRecentTool(tool.id)
     const onFavChanged = () => setFavorite(isToolFavorite(tool.id))
     window.addEventListener('tooldesk-favorites-changed', onFavChanged)
     return () => window.removeEventListener('tooldesk-favorites-changed', onFavChanged)

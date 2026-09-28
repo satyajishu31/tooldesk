@@ -4,6 +4,7 @@ import ToolShell, { ToolCard } from '../../components/ToolShell'
 import { useCopy } from '../../hooks'
 import { TOOLS } from '../../constants'
 import { safeFetchJSON } from '../../utils/safeFetch'
+import { addToHistory } from '../../utils/history'
 
 const tool = TOOLS.find(t => t.id === 'aspectratio')
 
@@ -357,6 +358,24 @@ export default function AspectRatioCalculator() {
   const megapixels= ((width * height) / 1_000_000).toFixed(1)
 
   const matched = COMMON.find(r => rw === r.w && rh === r.h)
+
+  /* Debounced history tracking on stabilized calculation */
+  useEffect(() => {
+    if (!width || !height || width <= 0 || height <= 0) return
+    const timer = setTimeout(() => {
+      try {
+        addToHistory({
+          tool: 'Aspect Ratio',
+          label: `${width}×${height} → ${ratio}`,
+          value: `${decimal} (${matched?.note || 'Custom'})`,
+          action: 'Calculated',
+          category: 'calculator',
+          metadata: { width, height, ratio, decimal }
+        })
+      } catch {}
+    }, 1200)
+    return () => clearTimeout(timer)
+  }, [width, height, ratio, decimal, matched])
 
   /* Load image and auto-detect dimensions */
   const loadImage = useCallback(f => {

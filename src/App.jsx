@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Navbar from './components/Navbar'
 import AIHelper from './components/AIHelper'
 import LocalHistoryShelf from './components/LocalHistoryShelf'
+import FilePreviewModal from './components/FilePreviewModal'
 import { isDownloadAppAvailable } from './utils/apiConfig'
 
 /* ── Error Boundary ── */
@@ -341,6 +342,7 @@ export default function App() {
       </ErrorBoundary>
       <LocalHistoryShelf/>
       <AIHelper/>
+      <FilePreviewModal/>
       {isDownloadAppAvailable() && (
         <Suspense fallback={null}>
           <DownloadAppModal

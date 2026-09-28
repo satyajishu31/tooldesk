@@ -5,6 +5,8 @@ import { TOOLS } from '../../constants'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import ChainedInputBanner from '../../components/ChainedInputBanner'
 import ToolChainingBar from '../../components/ToolChainingBar'
+import { addToHistory } from '../../utils/history'
+import { getPresets } from '../../utils/presets'
 
 const tool = TOOLS.find(t => t.id === 'imgcompress')
 
@@ -54,6 +56,8 @@ export default function ImageCompressor() {
   const canvasRef   = useRef(null)
   const debounceRef = useRef(null)
   const prevUrlRef  = useRef(null)
+
+  const presets = useMemo(() => getPresets('imgcompress'), [])
 
   useEffect(() => {
     return () => {
@@ -177,7 +181,17 @@ export default function ImageCompressor() {
     const ext = fmtInfo?.ext || (outFmt === 'image/jpeg' ? 'jpg' : outFmt === 'image/png' ? 'png' : 'webp')
     const base = (origName || 'image').replace(/\.[^.]+$/, '')
     saveFileWithFallback(dataURL, `${base}_q${quality}_${scale}pct.${ext}`, fmtInfo?.mime || outFmt)
-  }, [img, outFmt, quality, scale, fmtInfo, origName])
+    try {
+      addToHistory({
+        tool: 'Image Compressor',
+        label: origName || 'image',
+        value: `${fmt(origSize)} → ${fmt(compSize)} (${saved}% saved)`,
+        action: 'Compressed',
+        category: 'media',
+        metadata: { originalSize: origSize, compressedSize: compSize, saved, quality, format: ext }
+      })
+    } catch {}
+  }, [img, outFmt, quality, scale, fmtInfo, origName, origSize, compSize, saved])
 
   const saved   = origSize && compSize ? Math.max(0, Math.round((1 - compSize/origSize)*100)) : 0
   const newW    = Math.round(origW * scale / 100)
@@ -251,6 +265,31 @@ export default function ImageCompressor() {
           {/* Main controls */}
           <Reveal delay={.04}>
             <ToolCard style={{marginBottom:16}}>
+              {/* Presets */}
+              {presets?.length > 0 && (
+                <div style={{marginBottom:18}}>
+                  <label style={{fontSize:11,fontWeight:700,color:'#888',textTransform:'uppercase',
+                    letterSpacing:'.6px',display:'block',marginBottom:8}}>⚡ Quick Presets</label>
+                  <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                    {presets.map(p=>(
+                      <motion.button key={p.id} type="button" whileTap={{scale:.96}}
+                        onClick={()=>{
+                          if (p.values?.quality) setQuality(p.values.quality)
+                          if (p.values?.format) setOutFmt(p.values.format)
+                          if (p.values?.scale) setScale(p.values.scale)
+                        }}
+                        style={{padding:'6px 12px',borderRadius:8,fontSize:12,fontWeight:600,
+                          cursor:'pointer',border:'1px solid rgba(0,0,0,.08)',
+                          background:'#fafbff',color:'#334155',transition:'all .15s'}}
+                        onMouseEnter={e=>e.currentTarget.style.borderColor='#4F8EF7'}
+                        onMouseLeave={e=>e.currentTarget.style.borderColor='rgba(0,0,0,.08)'}>
+                        {p.name}
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Format */}
               <div style={{marginBottom:18}}>
                 <label style={{fontSize:11,fontWeight:700,color:'#888',textTransform:'uppercase',

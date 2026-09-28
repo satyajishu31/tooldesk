@@ -212,7 +212,18 @@ export default function PasswordGenerator() {
       const list = Array.from({ length: bulk }, () => genPassword(bulkLen, opts))
       setBulkList(list)
     }
-  }, [mode, doGenPassword, doGenPassphrase, doGenPIN, bulk, bulkLen, opts])
+    try {
+      const countLabel = mode === 'passphrase' ? `${wordCount} words` : mode === 'pin' ? `${pinLen}-digit` : `${len}-char`
+      addToHistory({
+        tool: 'Password Generator',
+        label: `${countLabel} ${str.label} Password`,
+        value: `•••••••••••••••• (${countLabel})`,
+        action: 'Generated',
+        category: 'security',
+        metadata: { length: mode === 'passphrase' ? wordCount : mode === 'pin' ? pinLen : len, strength: str.label }
+      })
+    } catch {}
+  }, [mode, doGenPassword, doGenPassphrase, doGenPIN, bulk, bulkLen, opts, wordCount, pinLen, len, str.label])
 
   // auto-generate on mode change
   useEffect(() => { generate() }, [mode])

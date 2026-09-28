@@ -4,6 +4,7 @@ import ToolShell, { ToolCard } from '../../components/ToolShell'
 import { TOOLS } from '../../constants'
 import { DocSummaryPanel, ContractAuditorPanel } from '../../components/AIPanel'
 import { saveFileWithFallback } from '../../utils/fileSaver'
+import { addToHistory } from '../../utils/history'
 import {
   formatBytes,
   PAGE_SIZES,
@@ -825,6 +826,16 @@ export default function PDFToolkit() {
   // ── Download Helpers ──
   const downloadBlob = async (blob, name) => {
     await saveFileWithFallback(blob, name, blob.type || 'application/pdf')
+    try {
+      addToHistory({
+        tool: 'PDF Toolkit',
+        label: name || 'document.pdf',
+        value: `${activeAction?.label || 'Processed PDF'} (${formatBytes(blob.size)})`,
+        action: 'Exported',
+        category: 'pdf',
+        metadata: { filename: name, size: blob.size, action: activeAction?.id }
+      })
+    } catch {}
   }
 
   const downloadAllZip = async () => {

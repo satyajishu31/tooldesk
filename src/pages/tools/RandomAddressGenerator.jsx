@@ -5,6 +5,7 @@ import { useCopy } from '../../hooks'
 import { TOOLS } from '../../constants'
 import { D, FLAGS } from './generatorData.js'
 import { saveFileWithFallback } from '../../utils/fileSaver'
+import { addToHistory } from '../../utils/history'
 
 const tool = TOOLS.find(t => t.id === 'randaddress')
 
@@ -652,7 +653,18 @@ export default function RandomAddressGenerator() {
     if (timerRef.current) clearTimeout(timerRef.current)
     setLoading(true)
     timerRef.current = setTimeout(() => {
-      setAddrs(Array.from({ length: count }, () => generateAddress(country)).filter(Boolean))
+      const result = Array.from({ length: count }, () => generateAddress(country)).filter(Boolean)
+      setAddrs(result)
+      try {
+        addToHistory({
+          tool: 'Random Address Generator',
+          label: `${count} Addresses (${country === 'random' ? 'International' : country})`,
+          value: result[0]?.street ? `${result[0].street}, ${result[0].city}` : `${result.length} addresses`,
+          action: 'Generated',
+          category: 'generator',
+          metadata: { count, country }
+        })
+      } catch {}
       setLoading(false)
       timerRef.current = null
     }, 180)

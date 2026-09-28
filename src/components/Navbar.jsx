@@ -5,6 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { LayoutGrid, Sparkles, Info, Star, Clock, Download } from 'lucide-react'
 import { isDownloadAppAvailable } from '../utils/apiConfig'
 import { TOOLS } from '../constants'
+import { smartSearchTools } from '../utils/smartSearch'
+import { getSyncRecentTools } from '../utils/recentTools'
+import { getFavoriteTools } from '../utils/favorites'
 
 const TOOL_COUNT = TOOLS.length
 
@@ -199,14 +202,18 @@ export default function Navbar() {
   }, [location.pathname, navigate])
 
   const results = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return []
-    return TOOLS.filter(t =>
-      t.title.toLowerCase().includes(q) ||
-      t.cat.toLowerCase().includes(q) ||
-      t.desc.toLowerCase().includes(q)
-    ).slice(0, 8)
+    return smartSearchTools(query, 10)
   }, [query])
+
+  const recentToolsList = useMemo(() => {
+    const ids = getSyncRecentTools()
+    return ids.map(id => TOOLS.find(t => t.id === id)).filter(Boolean).slice(0, 4)
+  }, [searchOpen])
+
+  const favoriteToolsList = useMemo(() => {
+    const ids = getFavoriteTools()
+    return ids.map(id => TOOLS.find(t => t.id === id)).filter(Boolean).slice(0, 4)
+  }, [searchOpen])
 
   const openSearch  = () => { setMenuOpen(false); setSearchOpen(true) }
   const closeSearch = () => { setSearchOpen(false); setQuery('') }
@@ -517,6 +524,48 @@ export default function Navbar() {
                         </div>
                       ))}
                     </div>
+
+                    {/* Recent Tools if available */}
+                    {recentToolsList.length > 0 && (
+                      <div style={{ marginBottom: 16 }}>
+                        <div style={{ fontSize:12, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'.6px', marginBottom:8, display:'flex', alignItems:'center', gap:5 }}>
+                          <Clock size={13} style={{ color: '#4F8EF7' }} />
+                          Recent Tools
+                        </div>
+                        <div className="popular-tools-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+                          {recentToolsList.map(t => (
+                            <Link key={t.id} to={t.path} onClick={closeSearch}
+                              style={{ display:'flex', alignItems:'center', gap:9, padding:'10px 12px', borderRadius:12, background:'rgba(79,142,247,.06)', border:'1px solid rgba(79,142,247,.16)', textDecoration:'none', transition:'background .14s', minWidth:0 }}
+                              onMouseEnter={e=>e.currentTarget.style.background='rgba(79,142,247,.12)'}
+                              onMouseLeave={e=>e.currentTarget.style.background='rgba(79,142,247,.06)'}>
+                              <AppIcon src={t.icon} alt={t.title} size={24}/>
+                              <span style={{ fontSize:13.5, fontWeight:600, color:'#1e293b', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', minWidth:0, flex:1 }}>{t.title}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Favorite Tools if available */}
+                    {favoriteToolsList.length > 0 && (
+                      <div style={{ marginBottom: 16 }}>
+                        <div style={{ fontSize:12, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'.6px', marginBottom:8, display:'flex', alignItems:'center', gap:5 }}>
+                          <Star size={13} style={{ color: '#d97706' }} />
+                          Starred Tools
+                        </div>
+                        <div className="popular-tools-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+                          {favoriteToolsList.map(t => (
+                            <Link key={t.id} to={t.path} onClick={closeSearch}
+                              style={{ display:'flex', alignItems:'center', gap:9, padding:'10px 12px', borderRadius:12, background:'rgba(217,119,6,.06)', border:'1px solid rgba(217,119,6,.18)', textDecoration:'none', transition:'background .14s', minWidth:0 }}
+                              onMouseEnter={e=>e.currentTarget.style.background='rgba(217,119,6,.12)'}
+                              onMouseLeave={e=>e.currentTarget.style.background='rgba(217,119,6,.06)'}>
+                              <AppIcon src={t.icon} alt={t.title} size={24}/>
+                              <span style={{ fontSize:13.5, fontWeight:600, color:'#1e293b', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', minWidth:0, flex:1 }}>{t.title}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     <div style={{ fontSize:12, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'.6px', marginBottom:12 }}>
                       Popular Tools

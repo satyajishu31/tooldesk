@@ -6,6 +6,7 @@ import { TOOLS } from '../../constants'
 import { RewritePanel } from '../../components/AIPanel'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import { safeFetchJSON } from '../../utils/safeFetch'
+import { addToHistory } from '../../utils/history'
 
 const tool = TOOLS.find(t => t.id === 'textcase')
 
@@ -115,7 +116,21 @@ export default function TextCaseConverter() {
   const results = useMemo(() => CASES.map(c => ({ ...c, out: c.fn(deferredInput) })), [deferredInput])
   const filtered = filter ? results.filter(r => r.label.toLowerCase().includes(filter.toLowerCase())) : results
 
-  const handleCopy = (text, id) => { setLastCopied(id); copy(text) }
+  const handleCopy = (text, id) => {
+    setLastCopied(id)
+    copy(text)
+    try {
+      const caseItem = CASES.find(c => c.id === id)
+      addToHistory({
+        tool: 'Text Case',
+        label: `${caseItem?.label || id} Conversion`,
+        value: text.length > 40 ? `${text.slice(0, 40)}…` : text,
+        action: 'Copied',
+        category: 'text',
+        metadata: { caseId: id, length: text.length }
+      })
+    } catch {}
+  }
 
   const wordCount = input.trim() ? input.trim().split(/\s+/).length : 0
   const charCount = input.length
