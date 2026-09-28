@@ -219,6 +219,24 @@ let fetchPromise = null
  * Safely resolves download URLs by checking environment overrides first,
  * then manifest URLs, then predictable GitHub release paths.
  */
+/**
+ * Same-origin proxy paths for download artifacts.
+ * Browsers silently ignore the `download` attribute on cross-origin <a> tags,
+ * so we route through Netlify's same-origin redirects which set
+ * `Content-Disposition: attachment` headers for reliable downloads.
+ */
+const SAME_ORIGIN_PROXY_PATHS = {
+  'ToolDesk.apk':              '/releases/android/ToolDesk.apk',
+  'ToolDesk.aab':              '/releases/android/ToolDesk.aab',
+  'ToolDesk-macos-arm64.dmg':  '/releases/macos/ToolDesk.dmg',
+  'ToolDesk-macos-x64.dmg':    '/releases/macos/ToolDesk.dmg',
+  'ToolDesk-macos-arm64.zip':  '/releases/macos/ToolDesk-macOS.zip',
+  'ToolDesk-Setup.exe':        '/releases/windows/ToolDesk-Setup.exe',
+  'ToolDesk.msi':              '/releases/windows/ToolDesk.msi',
+  'ToolDesk.AppImage':         '/releases/linux/ToolDesk.AppImage',
+  'ToolDesk.deb':              '/releases/linux/ToolDesk.deb',
+}
+
 export function resolveArtifactUrl(platformId, format, manifest = DEFAULT_RELEASE_CONFIG) {
   if (!platformId || !format) return ''
 
@@ -234,7 +252,12 @@ export function resolveArtifactUrl(platformId, format, manifest = DEFAULT_RELEAS
     }
   }
 
-  // 2. Explicit manifest URL if available and status is available
+  // 2. Same-origin proxy path (preferred for reliable downloads with Content-Disposition headers)
+  if (format.filename && format.status === 'available' && SAME_ORIGIN_PROXY_PATHS[format.filename]) {
+    return SAME_ORIGIN_PROXY_PATHS[format.filename]
+  }
+
+  // 3. Explicit manifest URL if available and status is available
   if (format.url && format.status === 'available') {
     // If it's a relative path to Netlify release staging, resolve via resolveApiUrl
     if (format.url.startsWith('/')) {
@@ -243,7 +266,7 @@ export function resolveArtifactUrl(platformId, format, manifest = DEFAULT_RELEAS
     return sanitizeUrl(format.url)
   }
 
-  // 3. GitHub Releases predictable asset URL if repository is configured
+  // 4. GitHub Releases predictable asset URL if repository is configured
   const githubRepo = (typeof import.meta !== 'undefined' && import.meta?.env?.VITE_GITHUB_REPO) || ''
   if (githubRepo && format.filename && format.status === 'available') {
     const version = manifest.version || CURRENT_RELEASE_VERSION

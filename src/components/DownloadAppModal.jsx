@@ -351,10 +351,21 @@ export default function DownloadAppModal({ isOpen, onClose }) {
     }
   }
 
-  // Trigger download with responsive feedback state
+  // Trigger download with responsive feedback state and explicit direct trigger
   const handleDownloadClick = useCallback((id, url) => {
-    if (!url) return
+    if (!url || typeof url !== 'string') return
     setDownloadingId(id)
+
+    // Fail-safe programmatic download trigger for mobile browsers & WebViews
+    // Ensures download begins even if touch gestures or in-app webviews interfered with anchor navigation
+    try {
+      if (typeof window !== 'undefined' && url && !url.startsWith('#')) {
+        setTimeout(() => {
+          window.location.assign(url)
+        }, 120)
+      }
+    } catch {}
+
     setTimeout(() => {
       setDownloadingId('')
     }, 3200)
@@ -469,6 +480,20 @@ export default function DownloadAppModal({ isOpen, onClose }) {
             }
             .tooldesk-shelf-card:active {
               transform: scale(0.97);
+            }
+            .tooldesk-action-btn {
+              transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), filter 0.15s ease, box-shadow 0.15s ease;
+              will-change: transform;
+              -webkit-tap-highlight-color: transparent;
+              touch-action: manipulation;
+            }
+            .tooldesk-action-btn:hover {
+              transform: translateY(-1px) scale(1.015);
+              filter: brightness(1.05);
+            }
+            .tooldesk-action-btn:active {
+              transform: scale(0.975);
+              filter: brightness(0.95);
             }
           `}</style>
 
@@ -1213,14 +1238,13 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                     return (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         {androidPrimary && androidPrimary.resolvedUrl && (
-                          <motion.a
+                          <a
                             key={androidPrimary.type}
                             href={androidPrimary.resolvedUrl}
                             download={androidPrimary.filename || 'ToolDesk.apk'}
+                            rel="noopener noreferrer"
                             onClick={() => handleDownloadClick('android-apk', androidPrimary.resolvedUrl)}
-                            role="button"
-                            whileHover={{ scale: 1.02, y: -1 }}
-                            whileTap={{ scale: 0.97 }}
+                            className="tooldesk-action-btn"
                             style={{
                               position: 'relative',
                               overflow: 'hidden',
@@ -1251,7 +1275,7 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                                 Standalone Sideload • {androidPrimary.size} • Full Offline
                               </div>
                             </div>
-                          </motion.a>
+                          </a>
                         )}
 
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, flexWrap: 'wrap', fontSize: 11.5, color: '#15803d', fontWeight: 600, padding: '0 4px' }}>
@@ -1921,64 +1945,74 @@ export default function DownloadAppModal({ isOpen, onClose }) {
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8 }}>
                     {/* Android APK */}
-                    {platforms.find(p => p.id === 'android')?.formats.find(f => f.type === 'apk')?.resolvedUrl ? (
-                      <a
-                        href={platforms.find(p => p.id === 'android')?.formats.find(f => f.type === 'apk')?.resolvedUrl}
-                        download="ToolDesk.apk"
-                        onClick={() => handleDownloadClick('shelf-apk', true)}
-                        style={{ textDecoration: 'none' }}>
-                        <div
-                          className="tooldesk-shelf-card"
-                          style={{
-                            background: 'rgba(255,255,255,0.9)',
-                            border: '1px solid rgba(22,163,74,0.3)',
-                            borderRadius: 12,
-                            padding: '8px 10px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            cursor: 'pointer',
-                          }}>
-                          <PlatformIcon id="android" size={26} />
-                          <div style={{ minWidth: 0, flex: 1 }}>
-                            <div style={{ fontWeight: 800, fontSize: 11.5, color: '#0d0d1a', lineHeight: 1.25 }}>Android APK</div>
-                            <div style={{ fontSize: 10.5, color: '#16a34a', fontWeight: 700 }}>
-                              .apk • {platforms.find(p => p.id === 'android')?.formats.find(f => f.type === 'apk')?.size || '34 MB'} ⬇️
+                    {(() => {
+                      const apkFmt = platforms.find(p => p.id === 'android')?.formats.find(f => f.type === 'apk' && f.resolvedUrl)
+                      if (!apkFmt) return null
+                      return (
+                        <a
+                          href={apkFmt.resolvedUrl}
+                          download={apkFmt.filename || 'ToolDesk.apk'}
+                          rel="noopener noreferrer"
+                          onClick={() => handleDownloadClick('shelf-apk', apkFmt.resolvedUrl)}
+                          style={{ textDecoration: 'none' }}>
+                          <div
+                            className="tooldesk-shelf-card"
+                            style={{
+                              background: 'rgba(255,255,255,0.9)',
+                              border: '1px solid rgba(22,163,74,0.3)',
+                              borderRadius: 12,
+                              padding: '8px 10px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                              cursor: 'pointer',
+                            }}>
+                            <PlatformIcon id="android" size={26} />
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div style={{ fontWeight: 800, fontSize: 11.5, color: '#0d0d1a', lineHeight: 1.25 }}>Android APK</div>
+                              <div style={{ fontSize: 10.5, color: '#16a34a', fontWeight: 700 }}>
+                                {downloadingId === 'shelf-apk' ? 'Downloading…' : `.apk • ${apkFmt.size || '42 MB'} ⬇️`}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </a>
-                    ) : null}
+                        </a>
+                      )
+                    })()}
 
                     {/* macOS DMG */}
-                    {platforms.find(p => p.id === 'macos')?.formats.find(f => f.type === 'dmg')?.resolvedUrl ? (
-                      <a
-                        href={platforms.find(p => p.id === 'macos')?.formats.find(f => f.type === 'dmg')?.resolvedUrl}
-                        download="ToolDesk.dmg"
-                        onClick={() => handleDownloadClick('shelf-dmg', true)}
-                        style={{ textDecoration: 'none' }}>
-                        <div
-                          className="tooldesk-shelf-card"
-                          style={{
-                            background: 'rgba(255,255,255,0.9)',
-                            border: '1px solid rgba(0,0,0,0.15)',
-                            borderRadius: 12,
-                            padding: '8px 10px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            cursor: 'pointer',
-                          }}>
-                          <PlatformIcon id="macos" size={26} />
-                          <div style={{ minWidth: 0, flex: 1 }}>
-                            <div style={{ fontWeight: 800, fontSize: 11.5, color: '#0d0d1a', lineHeight: 1.25 }}>macOS DMG</div>
-                            <div style={{ fontSize: 10.5, color: '#2563eb', fontWeight: 700 }}>
-                              .dmg • {platforms.find(p => p.id === 'macos')?.formats.find(f => f.type === 'dmg')?.size || '91 MB'} ⬇️
+                    {(() => {
+                      const dmgFmt = platforms.find(p => p.id === 'macos')?.formats.find(f => f.type === 'dmg' && f.resolvedUrl)
+                      if (!dmgFmt) return null
+                      return (
+                        <a
+                          href={dmgFmt.resolvedUrl}
+                          download={dmgFmt.filename || 'ToolDesk.dmg'}
+                          rel="noopener noreferrer"
+                          onClick={() => handleDownloadClick('shelf-dmg', dmgFmt.resolvedUrl)}
+                          style={{ textDecoration: 'none' }}>
+                          <div
+                            className="tooldesk-shelf-card"
+                            style={{
+                              background: 'rgba(255,255,255,0.9)',
+                              border: '1px solid rgba(0,0,0,0.15)',
+                              borderRadius: 12,
+                              padding: '8px 10px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                              cursor: 'pointer',
+                            }}>
+                            <PlatformIcon id="macos" size={26} />
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div style={{ fontWeight: 800, fontSize: 11.5, color: '#0d0d1a', lineHeight: 1.25 }}>macOS DMG</div>
+                              <div style={{ fontSize: 10.5, color: '#2563eb', fontWeight: 700 }}>
+                                {downloadingId === 'shelf-dmg' ? 'Downloading…' : `.dmg • ${dmgFmt.size || '26 MB'} ⬇️`}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </a>
-                    ) : null}
+                        </a>
+                      )
+                    })()}
 
                     {/* Windows App */}
                     <div
@@ -2589,10 +2623,10 @@ export default function DownloadAppModal({ isOpen, onClose }) {
                       <div><strong>Packaging:</strong> Tauri 2.0 (macOS, Windows, Linux) • Capacitor 8.5 (Android, iOS)</div>
                       <div style={{ marginTop: 4 }}><strong>Checksums (SHA-256):</strong></div>
                       <div style={{ fontFamily: 'monospace', fontSize: 10, wordBreak: 'break-all', marginTop: 2 }}>
-                        macOS DMG: ccbe4d36d53830b2715baf2d31ac93de1ef60ba7d069d36299d15d62796f9911<br />
-                        macOS App ZIP: 45106a67b46dd410eeca22dea078fac4d94238e51ae720137376b8083aabb19d<br />
-                        Android APK: 6fae98202c292751f4b8c440c010f30cbfa5d309487f5f171931f7231105a945<br />
-                        Android AAB: 9bd27368bbaaf9ff227b23d6f5557821776001bd081993c4062fc95a39532347
+                        macOS DMG: e96b8b1b9837a18a4cb2d13ff00d058136d85b96dd5cbdae447f6af3715e029c<br />
+                        macOS App ZIP: 4f733f3e815837796a64387c8765cbe8692d0ccd5cbdfdc8e1f42115e23f6765<br />
+                        Android APK: 9521c4ab8467e0528deee7352810a60a39fe673bd4a31aaa4f1cbbff918eaf9f<br />
+                        Android AAB: cf5b150e64cbcdb18a332f81eed13477c117c726e851c9fa841fad0afd2a6443
                       </div>
                     </motion.div>
                   )}
