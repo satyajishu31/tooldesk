@@ -96,7 +96,8 @@ async function saveAndroidNative(blob, safeFilename, resolvedMime) {
   let base64Cache = null
 
   // 1. Check if Capacitor Plugin or JavascriptInterface is available
-  const capPlugin = Capacitor?.Plugins?.ToolDeskNativeBridge || window.Capacitor?.Plugins?.ToolDeskNativeBridge
+  const hasPlugin = Boolean(Capacitor?.isPluginAvailable && Capacitor.isPluginAvailable('ToolDeskNativeBridge'))
+  const capPlugin = hasPlugin ? (Capacitor?.Plugins?.ToolDeskNativeBridge || window.Capacitor?.Plugins?.ToolDeskNativeBridge) : null
   const jsInterface = typeof window !== 'undefined' ? window.ToolDeskNativeBridge : null
 
   if (!capPlugin && !jsInterface) {
@@ -251,8 +252,9 @@ export async function saveFileWithFallback(blobOrContent, filename, mimeType = '
 
   // 3. ANDROID NATIVE DIRECT MEDIASTORE STRATEGY (NEVER open Share Sheet)
   const platform = getPlatform()
+  const hasPlugin = Boolean(Capacitor?.isPluginAvailable && Capacitor.isPluginAvailable('ToolDeskNativeBridge'))
   const isAndroidNative = (isCapacitor() && platform === 'android') ||
-    Boolean(Capacitor?.Plugins?.ToolDeskNativeBridge || window.Capacitor?.Plugins?.ToolDeskNativeBridge || (typeof window !== 'undefined' && window.ToolDeskNativeBridge))
+    Boolean(hasPlugin || (typeof window !== 'undefined' && window.ToolDeskNativeBridge))
 
   if (isAndroidNative) {
     return saveAndroidNative(blob, safeFilename, resolvedMime)

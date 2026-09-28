@@ -26,7 +26,7 @@ export function isTauri() {
 
 export function isCapacitor() {
   if (typeof window === 'undefined') return false
-  if (Boolean(window.androidBridge || window.webkit?.messageHandlers?.bridge || window.ToolDeskNativeBridge || window.Capacitor?.Plugins?.ToolDeskNativeBridge || Capacitor?.Plugins?.ToolDeskNativeBridge)) return true
+  if (Boolean(window.androidBridge || window.webkit?.messageHandlers?.bridge || window.ToolDeskNativeBridge || (Capacitor?.isPluginAvailable && Capacitor.isPluginAvailable('ToolDeskNativeBridge')))) return true
   try {
     if (Capacitor && typeof Capacitor.isNativePlatform === 'function' && Capacitor.isNativePlatform()) {
       return true
@@ -49,7 +49,7 @@ export function isCapacitor() {
 export function getPlatform() {
   if (typeof window === 'undefined') return 'server'
   if (isTauri()) return 'desktop'
-  if (Boolean(window.ToolDeskNativeBridge || window.Capacitor?.Plugins?.ToolDeskNativeBridge || Capacitor?.Plugins?.ToolDeskNativeBridge)) return 'android'
+  if (Boolean(window.ToolDeskNativeBridge || (Capacitor?.isPluginAvailable && Capacitor.isPluginAvailable('ToolDeskNativeBridge')))) return 'android'
   if (isCapacitor()) {
     try {
       const cp = Capacitor?.getPlatform?.()
