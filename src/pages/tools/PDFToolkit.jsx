@@ -824,16 +824,7 @@ export default function PDFToolkit() {
 
   // ── Download Helpers ──
   const downloadBlob = async (blob, name) => {
-    try {
-      await saveFileWithFallback(blob, name, blob.type || 'application/pdf')
-    } catch {
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = name
-      a.click()
-      URL.revokeObjectURL(url)
-    }
+    await saveFileWithFallback(blob, name, blob.type || 'application/pdf')
   }
 
   const downloadAllZip = async () => {
@@ -1483,7 +1474,7 @@ export default function PDFToolkit() {
             <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 13.5, color: '#1a1a2e', marginBottom: 12 }}>
               ⚙️ Layout Options
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>
+            <div className="pdf-options-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: 12 }}>
               <div>
                 <label className="lbl">Page Size</label>
                 <select className="inp sel" value={imgPageSize} onChange={e => setImgPageSize(e.target.value)}>
@@ -2065,7 +2056,7 @@ export default function PDFToolkit() {
             )}
 
             {/* Signature placement controls */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
+            <div className="pdf-options-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: 12 }}>
               <div>
                 <label className="lbl">Target Page</label>
                 <select className="inp sel" value={sigPage} onChange={e => setSigPage(+e.target.value)}>

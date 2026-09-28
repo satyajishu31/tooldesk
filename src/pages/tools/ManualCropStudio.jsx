@@ -616,9 +616,9 @@ export default function ManualCropStudio({ embeddedImg = null, onEmbeddedExport 
 
             {/* Exact Pixel Coordinates Form Inputs */}
             <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 120px), 1fr))',
               gap: 10, padding: 14, background: '#fafbff', borderRadius: 12,
-              border: '1px solid rgba(79,142,247,.12)', marginBottom: 18
+              border: '1px solid rgba(79,142,247,.12)', marginBottom: 18, width: '100%', boxSizing: 'border-box'
             }}>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: '#666', display: 'block', marginBottom: 4 }}>

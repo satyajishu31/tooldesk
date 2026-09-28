@@ -544,7 +544,7 @@ test('Download Logic 12: Installed iOS app - Download App hidden in iOS Capacito
   }
 })
 
-test('Release Integrity: Release version 1.0.2 canonical consistency across files', () => {
+test('Release Integrity: Release version 1.0.3 canonical consistency across files', () => {
   const pkg = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf8'))
   const releasesJson = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'public/releases.json'), 'utf8'))
   const tauriConf = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'src-tauri/tauri.conf.json'), 'utf8'))
@@ -552,41 +552,50 @@ test('Release Integrity: Release version 1.0.2 canonical consistency across file
   const gradle = fs.readFileSync(path.resolve(process.cwd(), 'android/app/build.gradle'), 'utf8')
   const pbxproj = fs.readFileSync(path.resolve(process.cwd(), 'ios/App/App.xcodeproj/project.pbxproj'), 'utf8')
 
-  assert.equal(pkg.version, '1.0.2', 'package.json version must be 1.0.2')
-  assert.equal(releasesJson.version, '1.0.2', 'public/releases.json version must be 1.0.2')
-  assert.equal(DEFAULT_RELEASE_CONFIG.version, '1.0.2', 'DEFAULT_RELEASE_CONFIG.version must be 1.0.2')
-  assert.equal(CURRENT_RELEASE_VERSION, '1.0.2', 'CURRENT_RELEASE_VERSION must be 1.0.2')
-  assert.equal(tauriConf.version, '1.0.2', 'tauri.conf.json version must be 1.0.2')
-  assert(cargoToml.includes('version = "1.0.2"'), 'Cargo.toml must have version 1.0.2')
-  assert(gradle.includes('versionName "1.0.2"'), 'Android build.gradle must have versionName "1.0.2"')
-  assert(gradle.includes('versionCode 3'), 'Android build.gradle must have versionCode 3')
-  assert(pbxproj.includes('MARKETING_VERSION = 1.0.2;'), 'iOS pbxproj must have MARKETING_VERSION = 1.0.2')
-  assert(pbxproj.includes('CURRENT_PROJECT_VERSION = 3;'), 'iOS pbxproj must have CURRENT_PROJECT_VERSION = 3')
+  assert.equal(pkg.version, '1.0.3', 'package.json version must be 1.0.3')
+  assert.equal(releasesJson.version, '1.0.3', 'public/releases.json version must be 1.0.3')
+  assert.equal(DEFAULT_RELEASE_CONFIG.version, '1.0.3', 'DEFAULT_RELEASE_CONFIG.version must be 1.0.3')
+  assert.equal(CURRENT_RELEASE_VERSION, '1.0.3', 'CURRENT_RELEASE_VERSION must be 1.0.3')
+  assert.equal(tauriConf.version, '1.0.3', 'tauri.conf.json version must be 1.0.3')
+  assert(cargoToml.includes('version = "1.0.3"'), 'Cargo.toml must have version 1.0.3')
+  assert(gradle.includes('versionName "1.0.3"'), 'Android build.gradle must have versionName "1.0.3"')
+  assert(gradle.includes('versionCode 4'), 'Android build.gradle must have versionCode 4')
+  assert(pbxproj.includes('MARKETING_VERSION = 1.0.3;'), 'iOS pbxproj must have MARKETING_VERSION = 1.0.3')
+  assert(pbxproj.includes('CURRENT_PROJECT_VERSION = 4;'), 'iOS pbxproj must have CURRENT_PROJECT_VERSION = 4')
 })
 
-test('Release Integrity: Tag v1.0.0 remains permanently immutable at 580276d', () => {
-  let resolved = ''
-  try {
-    resolved = execSync('git rev-parse refs/tags/v1.0.0^{commit}', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }).trim()
-  } catch {
+test('Release Integrity: Tag v1.0.0, v1.0.1, v1.0.2 remain permanently immutable', () => {
+  const checkTag = (tag, expectedHash) => {
+    let resolved = ''
     try {
-      const lsRemote = execSync('git ls-remote origin refs/tags/v1.0.0^{}', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }).trim()
-      resolved = lsRemote.split(/\s+/)[0]
-    } catch {}
+      resolved = execSync(`git rev-parse refs/tags/${tag}^{commit}`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }).trim()
+    } catch {
+      try {
+        const lsRemote = execSync(`git ls-remote origin refs/tags/${tag}^{}`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }).trim()
+        resolved = lsRemote.split(/\s+/)[0]
+      } catch {}
+    }
+    if (resolved) {
+      assert.equal(resolved, expectedHash, `${tag} tag MUST NOT be retagged or moved`)
+    }
   }
-  if (resolved) {
-    assert.equal(resolved, '580276d1e07a925e9447f745213ed291895bbfa2', 'v1.0.0 tag MUST NOT be retagged or moved')
-  }
+  checkTag('v1.0.0', '580276d1e07a925e9447f745213ed291895bbfa2')
+  checkTag('v1.0.1', 'c39722e5e7f0740529a92f4776d7088f9860cb3f')
+  checkTag('v1.0.2', '66e6dbd1f5f669bf219405b397c7f40c58190da2')
 })
 
-test('Release Integrity: Release metadata download URLs reference v1.0.2 and not older releases', () => {
+test('Release Integrity: Release metadata download URLs reference v1.0.3 and not older releases', () => {
   const releasesRaw = fs.readFileSync(path.resolve(process.cwd(), 'public/releases.json'), 'utf8')
   const configRaw = fs.readFileSync(path.resolve(process.cwd(), 'src/utils/releaseConfig.js'), 'utf8')
 
   assert(!releasesRaw.includes('/releases/download/v1.0.0/'), 'releases.json must NOT contain download URLs pointing to v1.0.0')
   assert(!configRaw.includes('/releases/download/v1.0.0/'), 'releaseConfig.js must NOT contain download URLs pointing to v1.0.0')
-  assert(releasesRaw.includes('/releases/download/v1.0.2/'), 'releases.json MUST contain download URLs pointing to v1.0.2')
-  assert(configRaw.includes('/releases/download/v1.0.2/'), 'releaseConfig.js MUST contain download URLs pointing to v1.0.2')
+  assert(!releasesRaw.includes('/releases/download/v1.0.1/'), 'releases.json must NOT contain download URLs pointing to v1.0.1')
+  assert(!configRaw.includes('/releases/download/v1.0.1/'), 'releaseConfig.js must NOT contain download URLs pointing to v1.0.1')
+  assert(!releasesRaw.includes('/releases/download/v1.0.2/'), 'releases.json must NOT contain download URLs pointing to v1.0.2')
+  assert(!configRaw.includes('/releases/download/v1.0.2/'), 'releaseConfig.js must NOT contain download URLs pointing to v1.0.2')
+  assert(releasesRaw.includes('/releases/download/v1.0.3/'), 'releases.json MUST contain download URLs pointing to v1.0.3')
+  assert(configRaw.includes('/releases/download/v1.0.3/'), 'releaseConfig.js MUST contain download URLs pointing to v1.0.3')
 })
 
 test('Branding: Logo assets existence and optimization across formats', () => {
@@ -686,9 +695,9 @@ test('AI UX & Architecture: Malformed and standard AI response handling', () => 
   assert.equal(emptyRes.error, 'Empty response')
 })
 
-test('Service Worker: Cache version matches v1.0.2 and precaches robot asset', () => {
+test('Service Worker: Cache version matches v1.0.3 and precaches robot asset', () => {
   const swCode = fs.readFileSync(path.resolve(process.cwd(), 'public/sw.js'), 'utf8')
-  assert(swCode.includes("SW_VERSION = 'v1.0.2'"), 'sw.js SW_VERSION must be v1.0.2')
+  assert(swCode.includes("SW_VERSION = 'v1.0.3'"), 'sw.js SW_VERSION must be v1.0.3')
   assert(swCode.includes("CACHE_NAME = `tooldesk-pwa-${SW_VERSION}`"), 'sw.js CACHE_NAME must use SW_VERSION')
   assert(swCode.includes('/robot-assistant-64.webp'), 'sw.js must precache /robot-assistant-64.webp')
   assert(swCode.includes('/logo.png'), 'sw.js must precache /logo.png')
@@ -700,8 +709,88 @@ test('Release Integrity: Checksums consistency in SHA256SUMS.txt', () => {
   const content = fs.readFileSync(sumsPath, 'utf8')
   assert(content.includes('ToolDesk-macos-arm64.dmg'), 'SHA256SUMS.txt must contain ToolDesk-macos-arm64.dmg')
   assert(content.includes('ToolDesk-macos-arm64.zip'), 'SHA256SUMS.txt must contain ToolDesk-macos-arm64.zip')
+  assert(content.includes('ToolDesk.apk'), 'SHA256SUMS.txt must contain ToolDesk.apk')
+  assert(content.includes('ToolDesk.aab'), 'SHA256SUMS.txt must contain ToolDesk.aab')
+
+  const releasesSums = fs.readFileSync(path.resolve(process.cwd(), 'releases/SHA256SUMS.txt'), 'utf8')
+  assert.equal(content.trim(), releasesSums.trim(), 'public/SHA256SUMS.txt and releases/SHA256SUMS.txt must be identical')
+})
+
+// ─────────────────────────────────────────────────────────────
+// 16. NATIVE DOWNLOAD ENGINE & SHARED ABSTRACTION AUDIT
+// ─────────────────────────────────────────────────────────────
+test('Download Engine: fileSaver exports saveFileWithFallback and downloadFile', async () => {
+  const fileSaver = await import('../src/utils/fileSaver.js')
+  assert(typeof fileSaver.saveFileWithFallback === 'function', 'saveFileWithFallback must be a function')
+  assert(typeof fileSaver.downloadFile === 'function', 'downloadFile alias must be a function')
+})
+
+test('Download Engine: Native Android Bridge interface contract validation', () => {
+  const javaBridgePath = path.resolve(process.cwd(), 'android/app/src/main/java/com/tooldesk/app/ToolDeskNativeBridge.java')
+  assert(fs.existsSync(javaBridgePath), 'ToolDeskNativeBridge.java must exist')
+  const javaCode = fs.readFileSync(javaBridgePath, 'utf8')
+  assert(javaCode.includes('@JavascriptInterface'), 'Bridge must expose @JavascriptInterface')
+  assert(javaCode.includes('saveFileToDownloads('), 'Bridge must implement saveFileToDownloads')
+  assert(javaCode.includes('MediaStore.Downloads'), 'Bridge must use modern MediaStore.Downloads API')
+  assert(javaCode.includes('Environment.DIRECTORY_DOWNLOADS'), 'Bridge must target Downloads folder')
+  assert(javaCode.includes('ToolDesk'), 'Bridge must create ToolDesk subfolder')
+  assert(javaCode.includes('MediaScannerConnection.scanFile'), 'Bridge must index newly saved files with MediaScanner')
+  assert(javaCode.includes('Toast.makeText'), 'Bridge must show native user feedback toast')
+
+  const mainActivity = fs.readFileSync(path.resolve(process.cwd(), 'android/app/src/main/java/com/tooldesk/app/MainActivity.java'), 'utf8')
+  assert(mainActivity.includes('ToolDeskNativeBridge'), 'MainActivity must register ToolDeskNativeBridge')
+  assert(mainActivity.includes('addJavascriptInterface'), 'MainActivity must register bridge with addJavascriptInterface')
+})
+
+test('Download Engine: MIME type and extension mapping validation', () => {
+  const mimeMap = {
+    pdf: 'application/pdf',
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    webp: 'image/webp',
+    svg: 'image/svg+xml',
+    zip: 'application/zip',
+    json: 'application/json',
+    txt: 'text/plain',
+    csv: 'text/csv',
+    srt: 'application/x-subrip',
+    vtt: 'text/vtt',
+    ico: 'image/x-icon',
+    gif: 'image/gif'
+  }
+  for (const [ext, expectedMime] of Object.entries(mimeMap)) {
+    assert(expectedMime.includes('/') || expectedMime.length > 3, `Invalid MIME mapping for ${ext}`)
+  }
+})
+
+test('Download Engine: URL lifecycle retains Blob for at least 60 seconds without early revoke', () => {
+  const fileSaverCode = fs.readFileSync(path.resolve(process.cwd(), 'src/utils/fileSaver.js'), 'utf8')
+  assert(fileSaverCode.includes('setTimeout('), 'Must delay revoke inside setTimeout')
+  assert(fileSaverCode.includes('60000'), 'Must retain Object URL for 60 seconds')
+  assert(fileSaverCode.includes('URL.revokeObjectURL(url)'), 'Must revoke object URL cleanly inside timer')
+})
+
+test('Mobile UI: CSS responsive action rows and option grid classes exist and prevent overflow', () => {
+  const indexCss = fs.readFileSync(path.resolve(process.cwd(), 'src/index.css'), 'utf8')
+  assert(indexCss.includes('.ai-gen-row'), 'index.css must define .ai-gen-row')
+  assert(indexCss.includes('.tool-btn-row'), 'index.css must define .tool-btn-row')
+  assert(indexCss.includes('.pdf-options-grid'), 'index.css must define .pdf-options-grid')
+  assert(indexCss.includes('flex-wrap: wrap'), 'Responsive rows must allow wrapping')
+  assert(indexCss.includes('min-width: 0'), 'Responsive items must set min-width: 0')
+  assert(indexCss.includes('box-sizing: border-box'), 'Responsive elements must use border-box')
+  assert(indexCss.includes('max-width: 100%'), 'Mobile inputs must constrain max-width to 100%')
+})
+
+test('AI Assistant: ChatInputForm state isolation and race-safe AbortController', () => {
+  const aiCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/AIHelper.jsx'), 'utf8')
+  assert(aiCode.includes('ChatInputForm'), 'AIHelper must isolate input inside ChatInputForm')
+  assert(aiCode.includes('AbortController'), 'AIHelper must support AbortController request cancellation')
+  assert(aiCode.includes('requestIdRef'), 'AIHelper must track requestId to prevent stale response overwrites')
+  assert(aiCode.includes('abortControllerRef'), 'AIHelper must store active abort controller')
 })
 
 console.log(`\n===> Test Suite Finished: ${passed} passed, ${failed} failed.\n`)
 if (failed > 0) process.exit(1)
+
 

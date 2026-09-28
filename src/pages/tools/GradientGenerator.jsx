@@ -101,16 +101,17 @@ function AIGradientPanel({ onApply }) {
 
   return (
     <div>
-      <div style={{display:'flex',gap:9,marginBottom:14,flexWrap:'wrap'}}>
+      <div className="ai-gen-row" style={{display:'flex',gap:9,marginBottom:14,flexWrap:'wrap',width:'100%'}}>
         <input value={desc} onChange={e=>setDesc(e.target.value)}
           onKeyDown={e=>e.key==='Enter'&&generate()}
           placeholder='e.g. "tropical sunset", "cyberpunk neon"…'
-          style={{flex:1,minWidth:160,padding:'11px 14px',borderRadius:11,border:'1.5px solid rgba(124,58,237,.25)',
+          style={{flex:'1 1 160px',minWidth:0,maxWidth:'100%',boxSizing:'border-box',padding:'11px 14px',borderRadius:11,border:'1.5px solid rgba(124,58,237,.25)',
             fontFamily:'DM Sans,sans-serif',fontSize:13,outline:'none',background:'#fafbff'}}/>
         <button onClick={generate} disabled={!desc.trim()||loading}
+          className="ai-gen-btn"
           style={{padding:'11px 20px',borderRadius:11,border:'none',cursor:desc.trim()&&!loading?'pointer':'not-allowed',
             background:desc.trim()&&!loading?'linear-gradient(135deg,#7c3aed,#4F8EF7)':'#e5e7ef',
-            color:'#fff',fontWeight:700,fontSize:13,flexShrink:0,
+            color:'#fff',fontWeight:700,fontSize:13,flexShrink:0,boxSizing:'border-box',
             transition:'filter .18s, box-shadow .18s',
             boxShadow:desc.trim()&&!loading?'0 4px 14px rgba(124,58,237,.28)':'none'}}
           onMouseEnter={e=>{ if(desc.trim()&&!loading){ e.currentTarget.style.filter='brightness(1.08)' } }}
@@ -838,7 +839,7 @@ export default function GradientGenerator() {
                 <div style={{marginTop:4,opacity:.5,fontSize:11}}>/* image only */</div>
                 <div><span style={{color:'#cba6f7'}}>background-image</span><span style={{color:'#fff'}}>: </span><span style={{color:'#a6e3a1'}}>{css}</span><span style={{color:'#fff'}}>;</span></div>
               </div>
-              <div style={{ display:'flex', gap:8, marginTop:10, flexWrap:'wrap' }}>
+              <div className="tool-btn-row" style={{ display:'flex', gap:8, marginTop:10, flexWrap:'wrap', width:'100%' }}>
                 <button className={`btn ${cssCopied?'btn-success':'btn-primary'} btn-sm`} onClick={() => copyCss(fullCss)}>
                   {cssCopied ? '✓ Copied!' : '📋 Copy Full CSS'}
                 </button>

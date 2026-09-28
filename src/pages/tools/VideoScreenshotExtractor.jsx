@@ -882,9 +882,9 @@ export default function VideoScreenshotExtractor(){
                 <div style={{fontSize:12.5, fontWeight:700, color:'#0d0d1a', marginBottom:10}}>Preview Compiled GIF</div>
                 <img src={compiledGif} alt="Compiled GIF preview" style={{maxWidth:'100%', borderRadius:8, boxShadow:'0 4px 12px rgba(0,0,0,0.1)'}}/>
                 <div style={{marginTop:14}}>
-                  <a href={compiledGif} download="tooldesk-clip.gif" className="btn btn-blue" style={{display:'inline-block', width:'auto', padding:'10px 20px', textDecoration:'none', textAlign:'center'}}>
+                  <button onClick={() => saveFileWithFallback(compiledGif, 'tooldesk-clip.gif', 'image/gif')} className="btn btn-blue" style={{display:'inline-block', width:'auto', padding:'10px 20px', textAlign:'center', cursor:'pointer'}}>
                     ⬇️ Download Animated GIF
-                  </a>
+                  </button>
                 </div>
               </motion.div>
             )}

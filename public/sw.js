@@ -1,4 +1,4 @@
-const SW_VERSION = 'v1.0.2'
+const SW_VERSION = 'v1.0.3'
 const CACHE_NAME = `tooldesk-pwa-${SW_VERSION}`
 const RUNTIME_CACHE = `tooldesk-runtime-${SW_VERSION}`
 const FONT_CACHE = 'tooldesk-fonts-v1'

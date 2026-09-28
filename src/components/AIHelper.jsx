@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, memo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLocation } from 'react-router-dom'
 import { safeFetchJSON } from '../utils/safeFetch'
@@ -81,6 +81,103 @@ function getSuggestions(tool) {
   ]
 }
 
+/* ── Isolated Chat Input: isolates input state from whole panel re-renders ── */
+const ChatInputForm = memo(function ChatInputForm({ onSend, loading, placeholder }) {
+  const [localInput, setLocalInput] = useState('')
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    const text = localInput.trim()
+    if (!text || loading) return
+    setLocalInput('')
+    onSend(text)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} style={{
+      padding: '12px 14px',
+      borderTop: '1px solid rgba(0,0,0,0.06)',
+      display: 'flex',
+      gap: 8,
+      background: '#ffffff',
+    }}>
+      <input
+        type="text"
+        value={localInput}
+        onChange={e => setLocalInput(e.target.value)}
+        placeholder={placeholder}
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="sentences"
+        spellCheck={false}
+        style={{
+          flex: 1,
+          padding: '10px 14px',
+          borderRadius: 999,
+          border: '1px solid rgba(0,0,0,0.09)',
+          fontSize: 14,
+          outline: 'none',
+          background: '#f8f9fc',
+          boxSizing: 'border-box',
+        }}
+      />
+      <button
+        type="submit"
+        disabled={!localInput.trim() || loading}
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: '50%',
+          background: localInput.trim() && !loading ? 'var(--blue, #4F8EF7)' : '#e2e5ec',
+          color: '#ffffff',
+          border: 'none',
+          cursor: localInput.trim() && !loading ? 'pointer' : 'default',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 16,
+          flexShrink: 0,
+          boxSizing: 'border-box',
+          transition: 'background .15s',
+        }}>
+        ➔
+      </button>
+    </form>
+  )
+})
+
+/* ── Isolated Quick Suggestions ── */
+const ChatSuggestions = memo(function ChatSuggestions({ suggestions, onSelect }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.5px' }}>
+        💡 Quick Suggestions:
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {suggestions.map((s, i) => (
+          <button key={i} type="button" onClick={() => onSelect(s)}
+            style={{
+              textAlign: 'left',
+              padding: '8px 12px',
+              borderRadius: 10,
+              border: '1px solid rgba(79, 142, 247, 0.15)',
+              background: 'rgba(79, 142, 247, 0.04)',
+              color: '#4F8EF7',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all .15s'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(79, 142, 247, 0.08)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(79, 142, 247, 0.04)' }}>
+            {s}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+})
+
 export default function AIHelper() {
   const location = useLocation()
   const currentTool = TOOLS.find(t => t.path === location.pathname)
@@ -90,12 +187,12 @@ export default function AIHelper() {
   const [messages, setMessages] = useState([
     { role: 'assistant', content: getWelcomeMessage(currentTool) }
   ])
-  const [input, setInput]       = useState('')
   const [loading, setLoading]   = useState(false)
   const chatEndRef = useRef(null)
   const panelRef = useRef(null)
   const prevPathRef = useRef(location.pathname)
   const abortControllerRef = useRef(null)
+  const requestIdRef = useRef(0)
 
   useEffect(() => {
     return () => {
@@ -144,27 +241,24 @@ export default function AIHelper() {
         }])
       }
     }
-  }, [location.pathname, isOpen])
+  }, [location.pathname, isOpen, currentTool, messages.length])
 
-  const handleSend = (e) => {
-    e.preventDefault()
-    const text = input.trim()
-    if (!text || loading) return
-    setInput('')
-    sendText(text)
-  }
+  const sendText = useCallback(async (text) => {
+    const cleanText = typeof text === 'string' ? text.trim() : ''
+    if (!cleanText) return
 
-  const sendText = async (text) => {
-    if (!text.trim() || loading) return
+    // Cancel prior in-flight request
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
     }
     const controller = new AbortController()
     abortControllerRef.current = controller
+    const reqId = ++requestIdRef.current
 
-    const userMsg = { role: 'user', content: text }
+    const userMsg = { role: 'user', content: cleanText }
     setMessages(prev => [...prev, userMsg])
     setLoading(true)
+
     try {
       const history = [...messages, userMsg].map(m => ({ role: m.role, content: m.content }))
       const data = await safeFetchJSON('/.netlify/functions/groq-ai', {
@@ -175,8 +269,10 @@ export default function AIHelper() {
           tool: 'aiHelper',
           payload: { messages: history, currentPage: currentPageLabel }
         })
-      })
-      if (controller.signal.aborted) return
+      }, 15000)
+
+      if (controller.signal.aborted || reqId !== requestIdRef.current) return
+
       if (data?.response || data?.result) {
         setMessages(prev => [...prev, { role: 'assistant', content: data.response || data.result }])
       } else if (data?.error) {
@@ -185,12 +281,18 @@ export default function AIHelper() {
         setMessages(prev => [...prev, { role: 'assistant', content: "⚠️ Sorry, I encountered an issue. Please try again." }])
       }
     } catch (e) {
-      if (e?.name === 'AbortError') return
-      setMessages(prev => [...prev, { role: 'assistant', content: "⚠️ Connection error. Please check your network." }])
+      if (e?.name === 'AbortError' || controller.signal.aborted) return
+      if (reqId === requestIdRef.current) {
+        setMessages(prev => [...prev, { role: 'assistant', content: "⚠️ Connection error. Please check your network." }])
+      }
     } finally {
-      setLoading(false)
+      if (reqId === requestIdRef.current) {
+        setLoading(false)
+      }
     }
-  }
+  }, [messages, currentPageLabel])
+
+  const suggestions = getSuggestions(currentTool)
 
   return (
     <div style={{
@@ -329,83 +431,21 @@ export default function AIHelper() {
               )}
 
               {messages.length === 1 && !loading && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.5px' }}>
-                    💡 Quick Suggestions:
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {getSuggestions(currentTool).map((s, i) => (
-                      <button key={i} type="button" onClick={() => sendText(s)}
-                        style={{
-                          textAlign: 'left',
-                          padding: '8px 12px',
-                          borderRadius: 10,
-                          border: '1px solid rgba(79, 142, 247, 0.15)',
-                          background: 'rgba(79, 142, 247, 0.04)',
-                          color: '#4F8EF7',
-                          fontSize: 13,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          transition: 'all .15s'
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(79, 142, 247, 0.08)' }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(79, 142, 247, 0.04)' }}>
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <ChatSuggestions
+                  suggestions={suggestions}
+                  onSelect={sendText}
+                />
               )}
 
               <div ref={chatEndRef} />
             </div>
 
-            {/* Input Form */}
-            <form onSubmit={handleSend} style={{
-              padding: '12px 14px',
-              borderTop: '1px solid rgba(0,0,0,0.06)',
-              display: 'flex',
-              gap: 8,
-              background: '#ffffff',
-            }}>
-              <input
-                type="text"
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                placeholder={currentTool ? `Ask about ${currentTool.title}…` : 'Ask anything…'}
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="sentences"
-                spellCheck={false}
-                style={{
-                  flex: 1,
-                  padding: '10px 14px',
-                  borderRadius: 999,
-                  border: '1px solid rgba(0,0,0,0.09)',
-                  fontSize: 14,
-                  outline: 'none',
-                  background: '#f8f9fc',
-                }}
-              />
-              <button
-                type="submit"
-                disabled={!input.trim() || loading}
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: '50%',
-                  background: input.trim() && !loading ? 'var(--blue, #4F8EF7)' : '#e2e5ec',
-                  color: '#ffffff',
-                  border: 'none',
-                  cursor: input.trim() && !loading ? 'pointer' : 'default',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 16
-                }}>
-                ➔
-              </button>
-            </form>
+            {/* Input Form — isolated component prevents re-rendering chat messages while typing */}
+            <ChatInputForm
+              onSend={sendText}
+              loading={loading}
+              placeholder={currentTool ? `Ask about ${currentTool.title}…` : 'Ask anything…'}
+            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -419,65 +459,30 @@ export default function AIHelper() {
         whileTap={{ scale: 0.94 }}
         initial={{ opacity: 0, scale: 0.5 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: 'spring', stiffness: 340, damping: 22 }}
+        transition={{ delay: 0.5, type: 'spring', stiffness: 300, damping: 20 }}
         style={{
           width: 54,
           height: 54,
           borderRadius: '50%',
-          background: 'linear-gradient(135deg, var(--blue, #4F8EF7), var(--purple, #9C6FDE))',
-          color: '#ffffff',
-          border: 'none',
+          background: 'linear-gradient(135deg, #4F8EF7, #9C6FDE)',
+          border: '2px solid rgba(255,255,255,0.85)',
+          boxShadow: '0 8px 24px rgba(79,142,247,0.38), 0 2px 8px rgba(0,0,0,0.08)',
           cursor: 'pointer',
-          boxShadow: '0 8px 24px rgba(79, 142, 247, 0.4), 0 2px 8px rgba(0,0,0,.12)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          color: '#ffffff',
           fontSize: 22,
-          transformOrigin: 'center',
-          position: 'relative',
-          willChange: 'transform',
-        }}>
-        {!isOpen && (
-          <span style={{
-            position: 'absolute', top: -2, right: -2, width: 13, height: 13, borderRadius: '50%',
-            background: '#22C55E', border: '2px solid #fff',
-            boxShadow: '0 0 0 0 rgba(34,197,94,.5)',
-            animation: 'aiHelperPulse 2.2s ease-out infinite',
-          }}/>
-        )}
-        <motion.span animate={{ rotate: isOpen ? 90 : 0 }} transition={{ duration: 0.25 }} style={{ display:'flex', alignItems:'center', justifyContent:'center' }}>
-          {isOpen ? (
-            <span style={{ fontSize: 18, fontWeight: 700 }}>✕</span>
-          ) : (
-            <img
-              src="/robot-assistant-64.webp"
-              alt="ToolDesk Assistant"
-              style={{ width: 34, height: 34, objectFit: 'contain', pointerEvents: 'none', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.18))' }}
-              onError={e => { e.currentTarget.src = '/robot-assistant-64.png' }}
-            />
-          )}
-        </motion.span>
+          padding: 0,
+        }}
+      >
+        <img
+          src="/robot-assistant-64.webp"
+          alt="AI"
+          style={{ width: 34, height: 34, objectFit: 'contain' }}
+          onError={e => { e.currentTarget.src = '/robot-assistant-64.png' }}
+        />
       </motion.button>
-      <style>{`
-        @keyframes aiHelperPulse {
-          0%   { box-shadow: 0 0 0 0 rgba(34,197,94,.55); }
-          70%  { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
-          100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
-        }
-        /* Mobile: anchor the panel to the viewport with safe margins instead of a
-           fixed 330px box that can crowd/overflow a narrow screen. */
-        @media (max-width: 640px) {
-          .ai-helper-panel {
-            left: calc(10px + env(safe-area-inset-left, 0px)) !important;
-            right: calc(10px + env(safe-area-inset-right, 0px)) !important;
-            width: auto !important;
-            max-width: none !important;
-            bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
-            height: min(62vh, 480px) !important;
-            max-height: min(62vh, 480px) !important;
-          }
-        }
-      `}</style>
     </div>
   )
 }

@@ -1437,7 +1437,7 @@ function PaletteStudio() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 110px), 1fr))', gap: 10, width: '100%', boxSizing: 'border-box' }}>
             {colors.map((c, i) => (
               <div
                 key={i}

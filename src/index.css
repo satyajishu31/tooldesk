@@ -979,6 +979,99 @@ a.btn:not([style*="transform"]):hover {
 
   /* Form */
   .fgrp { margin-bottom: 16px; }
+
+  /* Responsive AI Action Rows — Prevents clipping of Generate button on mobile */
+  .ai-gen-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  .ai-gen-row input,
+  .ai-gen-row button,
+  .ai-gen-row .ai-gen-btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+  }
+
+  /* Responsive Button Rows — [Copy Full CSS] [Copy Value Only] */
+  .tool-btn-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .tool-btn-row > * {
+    flex: 1 1 100%;
+    min-width: 0;
+    text-align: center;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  /* Tool Option Grids — Prevent truncated select text ("Standard A...", "Auto (Matc...") */
+  .pdf-options-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Base definitions for desktop & tablet (>= 481px) */
+.ai-gen-row {
+  display: flex;
+  gap: 9px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
+}
+.ai-gen-row input {
+  flex: 1 1 160px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.ai-gen-row button,
+.ai-gen-row .ai-gen-btn {
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.tool-btn-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
+}
+.tool-btn-row > * {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.pdf-options-grid {
+  width: 100%;
+  box-sizing: border-box;
+}
+@media (max-width: 560px) {
+  .pdf-options-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Mobile interactive containment rule: inputs, buttons, and cards never exceed viewport */
+@media (max-width: 640px) {
+  .tool-page .tool-card-glass {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .tool-page input,
+  .tool-page select,
+  .tool-page textarea,
+  .tool-page button {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
 }
 
 /* ═══════════════════════════════════════════

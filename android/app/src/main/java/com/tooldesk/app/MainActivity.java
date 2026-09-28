@@ -38,5 +38,23 @@ public class MainActivity extends BridgeActivity {
             }
             return windowInsets;
         });
+
+        registerNativeBridge();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        registerNativeBridge();
+    }
+
+    private void registerNativeBridge() {
+        if (getBridge() != null && getBridge().getWebView() != null) {
+            getBridge().getWebView().post(() -> {
+                try {
+                    getBridge().getWebView().addJavascriptInterface(new ToolDeskNativeBridge(this), "ToolDeskNativeBridge");
+                } catch (Exception ignored) {}
+            });
+        }
     }
 }

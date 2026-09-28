@@ -152,8 +152,7 @@ export default function QuoteGenerator() {
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div className="tool-actions-row" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(130px, 1fr))', gap:8, marginBottom:14 }}>
+        <div className="tool-actions-row" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(100%, 120px), 1fr))', gap:8, marginBottom:14, width:'100%', boxSizing:'border-box' }}>
           <button className="btn btn-primary" onClick={rand}>✨ Random</button>
           <button className={`btn ${copied?'btn-success':'btn-outline'}`} onClick={()=>copy(shareText)}>
             {copied?'✓':'📋 Copy'}
