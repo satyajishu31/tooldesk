@@ -56,13 +56,8 @@ export async function getPdfJs() {
         window.pdfjsLib = lib
         return lib
       } catch (e) {
-        console.warn('[pdfEngine] Local pdfjs-dist import fallback:', e)
-        const s = document.createElement('script')
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.mjs'
-        document.head.appendChild(s)
-        await new Promise((res, rej) => { s.onload = res; s.onerror = rej })
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
-        return window.pdfjsLib
+        console.error('[pdfEngine] Local pdfjs-dist import error:', e)
+        throw new Error('Local PDF.js processing engine could not be loaded.')
       }
     })()
   }
@@ -210,9 +205,195 @@ export function sanitizeWinAnsi(str) {
    ══════════════════════════════════════════════════════════ */
 
 /**
+ * Renders structured blocks containing multi-language Unicode (Hindi, Chinese, Cyrillic, Arabic, Emoji)
+ * with high-DPI canvas rasterization at 2x resolution, embedding crisp PNGs into PDFDocument.
+ */
+async function typesetUnicodeDocument(blocks, doc, options = {}) {
+  const { width = PAGE_SIZES.A4.width, height = PAGE_SIZES.A4.height } = options.pageSize || PAGE_SIZES.A4
+  const scale = 2
+  const cWidth = Math.round(width * scale)
+  const cHeight = Math.round(height * scale)
+  const margin = Math.round((options.margin !== undefined ? options.margin : 54) * scale)
+  const maxContentW = cWidth - margin * 2
+  const bottomMargin = margin + Math.round(30 * scale)
+
+  const fontStack = 'system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Devanagari", "Noto Sans SC", "Noto Sans Arabic", "Apple Color Emoji", sans-serif'
+  const monoStack = 'SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
+
+  const canvas = document.createElement('canvas')
+  canvas.width = cWidth
+  canvas.height = cHeight
+  const ctx = canvas.getContext('2d')
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, cWidth, cHeight)
+
+  let cursorY = margin
+  let pageNumber = 1
+  const pagesBitmaps = []
+
+  const flushPage = async () => {
+    ctx.font = `${Math.round(8.5 * scale)}px ${fontStack}`
+    ctx.fillStyle = '#64748b'
+    if (options.title) {
+      ctx.fillText(options.title, margin, margin - 12 * scale)
+    }
+    const pageStr = `Page ${pageNumber}`
+    const numW = ctx.measureText(pageStr).width
+    ctx.fillText(pageStr, cWidth - margin - numW, cHeight - margin + 20 * scale)
+
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'))
+    const buf = await blob.arrayBuffer()
+    pagesBitmaps.push(buf)
+
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, cWidth, cHeight)
+    pageNumber++
+    cursorY = margin
+  }
+
+  const checkPageBreak = async (needed) => {
+    if (cursorY + needed > cHeight - bottomMargin) {
+      await flushPage()
+    }
+  }
+
+  const wrapCanvasText = (str, fontSize, isBold = false, isMono = false) => {
+    ctx.font = `${isBold ? 'bold ' : ''}${fontSize}px ${isMono ? monoStack : fontStack}`
+    const words = String(str || '').split(' ')
+    const lines = []
+    let cur = ''
+    for (const w of words) {
+      const test = cur ? `${cur} ${w}` : w
+      if (ctx.measureText(test).width <= maxContentW) {
+        cur = test
+      } else {
+        if (cur) lines.push(cur)
+        if (ctx.measureText(w).width > maxContentW) {
+          let sub = ''
+          for (let c = 0; c < w.length; c++) {
+            if (ctx.measureText(sub + w[c]).width > maxContentW && sub) {
+              lines.push(sub)
+              sub = w[c]
+            } else {
+              sub += w[c]
+            }
+          }
+          cur = sub
+        } else {
+          cur = w
+        }
+      }
+    }
+    if (cur) lines.push(cur)
+    return lines
+  }
+
+  for (const block of blocks) {
+    if (block.type === 'hr') {
+      await checkPageBreak(24 * scale)
+      cursorY += 10 * scale
+      ctx.strokeStyle = '#e2e8f0'
+      ctx.lineWidth = 1 * scale
+      ctx.beginPath()
+      ctx.moveTo(margin, cursorY)
+      ctx.lineTo(cWidth - margin, cursorY)
+      ctx.stroke()
+      cursorY += 14 * scale
+      continue
+    }
+
+    if (block.type === 'codeblock') {
+      const fontSize = Math.round(9.5 * scale)
+      const lineHeight = Math.round(14 * scale)
+      const rawLines = (block.text || '').split('\n')
+      await checkPageBreak(rawLines.length * lineHeight + 20 * scale)
+
+      ctx.fillStyle = '#f8fafc'
+      const startY = cursorY
+      let codeHeight = 0
+      for (const line of rawLines) {
+        const wrapped = wrapCanvasText(line, fontSize, false, true)
+        codeHeight += wrapped.length * lineHeight
+      }
+      ctx.fillRect(margin, startY, maxContentW, codeHeight + 16 * scale)
+
+      cursorY += 10 * scale
+      ctx.fillStyle = '#1e293b'
+      for (const line of rawLines) {
+        const wrapped = wrapCanvasText(line, fontSize, false, true)
+        for (const wl of wrapped) {
+          await checkPageBreak(lineHeight)
+          ctx.fillText(wl, margin + 10 * scale, cursorY + fontSize)
+          cursorY += lineHeight
+        }
+      }
+      cursorY += 12 * scale
+      continue
+    }
+
+    let fontSize = Math.round(11 * scale)
+    let lineHeight = Math.round(16 * scale)
+    let isBold = false
+    let color = '#0f172a'
+    let prefix = ''
+
+    if (block.type === 'h1') {
+      fontSize = Math.round(18 * scale)
+      lineHeight = Math.round(25 * scale)
+      isBold = true
+      cursorY += 10 * scale
+    } else if (block.type === 'h2') {
+      fontSize = Math.round(15 * scale)
+      lineHeight = Math.round(21 * scale)
+      isBold = true
+      cursorY += 8 * scale
+    } else if (block.type === 'h3') {
+      fontSize = Math.round(13 * scale)
+      lineHeight = Math.round(18 * scale)
+      isBold = true
+      cursorY += 6 * scale
+    } else if (block.type === 'bullet') {
+      prefix = '•  '
+    } else if (block.type === 'quote') {
+      color = '#475569'
+      prefix = '│  '
+    }
+
+    const wrapped = wrapCanvasText(prefix + (block.text || ''), fontSize, isBold, false)
+    for (const line of wrapped) {
+      await checkPageBreak(lineHeight)
+      ctx.font = `${isBold ? 'bold ' : ''}${fontSize}px ${fontStack}`
+      ctx.fillStyle = color
+      ctx.fillText(line, margin, cursorY + fontSize)
+      cursorY += lineHeight
+    }
+    cursorY += 4 * scale
+  }
+
+  await flushPage()
+
+  for (const pageBuf of pagesBitmaps) {
+    const embeddedImg = await doc.embedPng(pageBuf)
+    const page = doc.addPage([width, height])
+    page.drawImage(embeddedImg, { x: 0, y: 0, width, height })
+  }
+
+  canvas.width = 0
+  canvas.height = 0
+
+  return await doc.save()
+}
+
+/**
  * Typeset multi-line structured text blocks into PDFDocument
  */
 async function typesetDocument(blocks, doc, options = {}) {
+  // If input contains non-WinAnsi Unicode (Hindi, Chinese, Arabic, Cyrillic, Emoji), route to high-DPI canvas typesetter
+  const allText = blocks.map(b => b.text || '').join(' ')
+  if (typeof document !== 'undefined' && /[^\x00-\x7F\xA0-\xFF]/.test(allText)) {
+    return await typesetUnicodeDocument(blocks, doc, options)
+  }
+
   const fontRegular = await doc.embedFont(StandardFonts.Helvetica)
   const fontBold = await doc.embedFont(StandardFonts.HelveticaBold)
   const fontMono = await doc.embedFont(StandardFonts.Courier)
@@ -1391,37 +1572,96 @@ export async function rotatePdfPages(file, arg2 = 90, arg3 = null, onProgress = 
    ══════════════════════════════════════════════════════════ */
 
 /**
- * Compress PDF via Object Streams & structural clean-up
+ * Compress PDF via multi-tier strategy:
+ * 1. Object Streams & structural clean-up (lossless)
+ * 2. Downsampling of raster images where enabled (balanced / high presets)
+ * Honest reporting of before/after/reduction, never falsely claiming savings.
  */
-export async function compressPdf(file, onProgress) {
+export async function compressPdf(file, arg2 = null, arg3 = null) {
+  const onProgress = typeof arg2 === 'function' ? arg2 : (typeof arg3 === 'function' ? arg3 : null)
+  const options = (arg2 && typeof arg2 === 'object') ? arg2 : {}
+  const preset = options.preset || 'balanced' // 'balanced', 'high', 'lossless'
+
   if (onProgress) onProgress('Analyzing PDF structures...')
   const buf = await file.arrayBuffer()
-  const doc = await safeLoadPdfDocument(buf, file.name)
+  const origSize = file.size || buf.byteLength
 
-  if (onProgress) onProgress('Applying object stream compression...')
-  const bytes = await doc.save({
+  // 1. First attempt fast lossless object stream compression
+  const doc = await safeLoadPdfDocument(buf.slice(0), file.name)
+  const losslessBytes = await doc.save({
     useObjectStreams: true,
     addDefaultPage: false,
     updateFieldAppearances: false,
   })
 
-  const origSize = file.size
-  let finalBytes = bytes
-  if (bytes.length > origSize && buf) {
-    finalBytes = new Uint8Array(buf)
+  let bestBytes = losslessBytes.length < origSize ? losslessBytes : new Uint8Array(buf)
+  let bestSize = bestBytes.length
+  let reductionNotice = ''
+
+  // 2. If balanced or high compression requested and in browser environment with PDF.js available:
+  if ((preset === 'balanced' || preset === 'high') && typeof window !== 'undefined' && typeof document !== 'undefined') {
+    try {
+      if (onProgress) onProgress(`Applying ${preset} image downsampling...`)
+      const pdfjs = await getPdfJs()
+      const pdf = await pdfjs.getDocument({ data: buf.slice(0), isEvalSupported: false }).promise
+      const numPages = pdf.numPages
+      const targetScale = preset === 'high' ? 1.0 : 1.35
+      const jpegQuality = preset === 'high' ? 0.50 : 0.70
+
+      const outDoc = await PDFDocument.create()
+
+      for (let i = 1; i <= numPages; i++) {
+        if (onProgress) onProgress(`Optimizing page ${i} of ${numPages}...`)
+        const page = await pdf.getPage(i)
+        const viewport = page.getViewport({ scale: targetScale })
+
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(viewport.width)
+        canvas.height = Math.round(viewport.height)
+        const ctx = canvas.getContext('2d')
+
+        await page.render({ canvasContext: ctx, viewport }).promise
+
+        const jpegBlob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', jpegQuality))
+        if (jpegBlob) {
+          const jpegBuf = await jpegBlob.arrayBuffer()
+          const embedded = await outDoc.embedJpg(jpegBuf)
+          const origVp = page.getViewport({ scale: 1.0 })
+          const p = outDoc.addPage([origVp.width, origVp.height])
+          p.drawImage(embedded, { x: 0, y: 0, width: origVp.width, height: origVp.height })
+        }
+
+        canvas.width = 0
+        canvas.height = 0
+        if (typeof page.cleanup === 'function') page.cleanup()
+      }
+
+      const rasterBytes = await outDoc.save({ useObjectStreams: true })
+      if (rasterBytes.length < bestSize) {
+        bestBytes = rasterBytes
+        bestSize = rasterBytes.length
+      }
+    } catch (e) {
+      console.warn('[PDF Compress] Raster downsampling skipped, kept lossless:', e)
+    }
   }
-  const newSize = finalBytes.length
-  const savedBytes = Math.max(0, origSize - newSize)
+
+  const savedBytes = Math.max(0, origSize - bestSize)
   const savedPct = origSize > 0 ? Math.round((savedBytes / origSize) * 100) : 0
 
+  if (savedBytes === 0) {
+    reductionNotice = 'Document is already optimally compressed. Preserved original file.'
+  }
+
   return {
-    bytes: finalBytes,
-    blob: new Blob([finalBytes], { type: 'application/pdf' }),
+    bytes: bestBytes,
+    blob: new Blob([bestBytes], { type: 'application/pdf' }),
     name: `compressed-${file.name}`,
     origSize,
-    size: newSize,
+    size: bestSize,
     savedBytes,
     savedPct,
+    reductionNotice,
   }
 }
 
@@ -1577,6 +1817,151 @@ export async function watermarkPdf(file, watermarkOptions = {}, onProgress) {
     name: `watermarked-${file.name}`,
     size: bytes.length,
     pageCount: pages.length,
+  }
+}
+
+/**
+ * Add customizable page numbering to a PDF document (Page X or Page X of Y)
+ */
+export async function addPageNumbers(file, options = {}, onProgress = null) {
+  if (onProgress) onProgress('Loading document for page numbering...')
+  const buf = await file.arrayBuffer()
+  const doc = await safeLoadPdfDocument(buf, file.name)
+  const pages = doc.getPages()
+  const totalPages = pages.length
+
+  const {
+    format = 'page_x_of_y', // 'page_x', 'page_x_of_y', 'x_of_y', 'x'
+    position = 'bottom-center', // 'bottom-center', 'bottom-right', 'bottom-left', 'top-right', 'top-center'
+    startPage = 1, // 1-based page to start numbering (e.g. 2 skips cover page)
+    fontSize = 10,
+    margin = 25,
+    color = rgb(0.35, 0.4, 0.5),
+  } = options
+
+  const font = await doc.embedFont(StandardFonts.Helvetica)
+
+  if (onProgress) onProgress('Numbering pages...')
+  for (let i = 0; i < totalPages; i++) {
+    const pageNum = i + 1
+    if (pageNum < startPage) continue
+
+    const page = pages[i]
+    const pWidth = page.getWidth()
+    const pHeight = page.getHeight()
+
+    let text = ''
+    if (format === 'page_x_of_y') text = `Page ${pageNum} of ${totalPages}`
+    else if (format === 'page_x') text = `Page ${pageNum}`
+    else if (format === 'x_of_y') text = `${pageNum} / ${totalPages}`
+    else text = `${pageNum}`
+
+    const textWidth = font.widthOfTextAtSize(text, fontSize)
+    let x = (pWidth - textWidth) / 2
+    let y = margin
+
+    if (position === 'bottom-right') x = pWidth - margin - textWidth
+    else if (position === 'bottom-left') x = margin
+    else if (position === 'top-right') { x = pWidth - margin - textWidth; y = pHeight - margin }
+    else if (position === 'top-left') { x = margin; y = pHeight - margin }
+    else if (position === 'top-center') { x = (pWidth - textWidth) / 2; y = pHeight - margin }
+
+    page.drawText(text, {
+      x,
+      y,
+      size: fontSize,
+      font,
+      color,
+    })
+  }
+
+  const bytes = await doc.save()
+  return {
+    bytes,
+    blob: new Blob([bytes], { type: 'application/pdf' }),
+    name: `numbered-${file.name}`,
+    size: bytes.length,
+    pageCount: totalPages,
+  }
+}
+
+/**
+ * Add Header & Footer text with page number variables to PDF document
+ */
+export async function addHeaderFooter(file, options = {}, onProgress = null) {
+  if (onProgress) onProgress('Preparing headers and footers...')
+  const buf = await file.arrayBuffer()
+  const doc = await safeLoadPdfDocument(buf, file.name)
+  const pages = doc.getPages()
+  const totalPages = pages.length
+
+  const {
+    headerText = '',
+    headerAlign = 'center', // 'left', 'center', 'right'
+    footerText = '',
+    footerAlign = 'center',
+    fontSize = 9,
+    margin = 25,
+    startPage = 1,
+    color = rgb(0.4, 0.45, 0.55),
+  } = options
+
+  const font = await doc.embedFont(StandardFonts.Helvetica)
+
+  for (let i = 0; i < totalPages; i++) {
+    const pageNum = i + 1
+    if (pageNum < startPage) continue
+
+    const page = pages[i]
+    const pWidth = page.getWidth()
+    const pHeight = page.getHeight()
+
+    const resolveVars = (tpl) => {
+      return String(tpl || '')
+        .replace(/\{page\}/gi, String(pageNum))
+        .replace(/\{total\}/gi, String(totalPages))
+        .replace(/\{title\}/gi, file.name.replace(/\.pdf$/i, ''))
+        .replace(/\{date\}/gi, new Date().toISOString().slice(0, 10))
+    }
+
+    if (headerText) {
+      const hText = sanitizeWinAnsi(resolveVars(headerText))
+      const hWidth = font.widthOfTextAtSize(hText, fontSize)
+      let hX = (pWidth - hWidth) / 2
+      if (headerAlign === 'left') hX = margin
+      else if (headerAlign === 'right') hX = pWidth - margin - hWidth
+      page.drawText(hText, {
+        x: hX,
+        y: pHeight - margin,
+        size: fontSize,
+        font,
+        color,
+      })
+    }
+
+    if (footerText) {
+      const fText = sanitizeWinAnsi(resolveVars(footerText))
+      const fWidth = font.widthOfTextAtSize(fText, fontSize)
+      let fX = (pWidth - fWidth) / 2
+      if (footerAlign === 'left') fX = margin
+      else if (footerAlign === 'right') fX = pWidth - margin - fWidth
+      page.drawText(fText, {
+        x: fX,
+        y: margin,
+        size: fontSize,
+        font,
+        color,
+      })
+    }
+  }
+
+  const bytes = await doc.save()
+  return {
+    bytes,
+    blob: new Blob([bytes], { type: 'application/pdf' }),
+    name: `header-footer-${file.name}`,
+    size: bytes.length,
+    pageCount: totalPages,
   }
 }
 
@@ -1970,6 +2355,66 @@ export async function fillPdfForm(file, formValues = {}, onProgress = null) {
     blob,
     name: `filled-${fileName}`,
     size: bytes.length,
+  }
+}
+
+/**
+ * Create interactive AcroForm fields (text, checkbox, dropdown) on PDF pages
+ * @param {File|Blob} file
+ * @param {Array<{ pageNumber: number, type: 'text'|'checkbox'|'dropdown', name: string, rect?: { x, y, width, height }, xPercent?: number, yPercent?: number, widthPercent?: number, heightPercent?: number, defaultValue?: string|boolean, options?: string[] }>} fields
+ * @param {Function} onProgress
+ */
+export async function createPdfFormFields(file, fields = [], onProgress = null) {
+  if (onProgress) onProgress('Initializing interactive PDF form builder...')
+  const fileName = file?.name || 'document.pdf'
+  const buf = await file.arrayBuffer()
+  const doc = await safeLoadPdfDocument(buf, fileName)
+  const pages = doc.getPages()
+  const form = doc.getForm()
+
+  let fieldIndex = 1
+  for (const f of fields) {
+    const pNum = Math.max(1, Math.min(pages.length, f.pageNumber || 1))
+    const page = pages[pNum - 1]
+    const pWidth = page.getWidth()
+    const pHeight = page.getHeight()
+
+    const name = f.name || `field_${fieldIndex++}`
+    const x = f.rect?.x !== undefined ? f.rect.x : (f.xPercent !== undefined ? f.xPercent * pWidth : 50)
+    const y = f.rect?.y !== undefined ? f.rect.y : (f.yPercent !== undefined ? (1 - f.yPercent) * pHeight : 100)
+    const width = f.rect?.width !== undefined ? f.rect.width : (f.widthPercent !== undefined ? f.widthPercent * pWidth : 200)
+    const height = f.rect?.height !== undefined ? f.rect.height : (f.heightPercent !== undefined ? f.heightPercent * pHeight : 24)
+
+    if (f.type === 'checkbox') {
+      const cb = form.createCheckBox(name)
+      if (f.defaultValue) cb.check()
+      cb.addToPage(page, { x, y, width: Math.max(14, height), height: Math.max(14, height) })
+    } else if (f.type === 'dropdown') {
+      const dd = form.createDropdown(name)
+      if (Array.isArray(f.options) && f.options.length) {
+        dd.setOptions(f.options)
+      } else {
+        dd.setOptions(['Option 1', 'Option 2', 'Option 3'])
+      }
+      if (f.defaultValue) dd.select(String(f.defaultValue))
+      dd.addToPage(page, { x, y, width, height })
+    } else {
+      // Default: text field
+      const tf = form.createTextField(name)
+      if (f.defaultValue) tf.setText(String(f.defaultValue))
+      tf.addToPage(page, { x, y, width, height })
+    }
+  }
+
+  const bytes = await doc.save()
+  const blob = new Blob([bytes], { type: 'application/pdf' })
+  return {
+    bytes,
+    blob,
+    name: `form-${fileName}`,
+    size: bytes.length,
+    pageCount: pages.length,
+    fieldCount: fields.length,
   }
 }
 

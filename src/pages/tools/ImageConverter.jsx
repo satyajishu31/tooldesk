@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { TOOLS } from '../../constants'
 import { saveFileWithFallback } from '../../utils/fileSaver'
+import { addToHistory } from '../../utils/history'
 import ChainedInputBanner from '../../components/ChainedInputBanner'
 import ToolChainingBar from '../../components/ToolChainingBar'
 
@@ -121,7 +122,25 @@ export default function ImageConverter() {
     const results = []
     for (const f of arr) {
       const r = await processFile(f, currentFmt, currentQ)
-      if (r) results.push({ ...r, rawFile: f })
+      if (r) {
+        results.push({ ...r, rawFile: f })
+        const fmtInfo = FORMATS.find(fi => fi.mime === r.fmt)
+        const base = r.origName.replace(/\.[^.]+$/, '')
+        const ext = fmtInfo?.ext || 'webp'
+        addToHistory({
+          tool: 'Image Converter',
+          label: `${r.origName} → ${base}.${ext}`,
+          value: `${base}.${ext} (${ext.toUpperCase()})`,
+          action: 'Converted',
+          category: 'Image',
+          metadata: {
+            origName: r.origName,
+            targetFormat: ext.toUpperCase(),
+            origSize: r.origSize,
+            newSize: r.size
+          }
+        })
+      }
     }
     setFiles(prev => [...prev, ...results])
     setConv(false)
@@ -130,7 +149,16 @@ export default function ImageConverter() {
   const downloadOne = (item) => {
     const fmtInfo = FORMATS.find(f => f.mime === item.fmt)
     const base    = item.origName.replace(/\.[^.]+$/, '')
-    saveFileWithFallback(item.src, `${base}.${fmtInfo?.ext || 'webp'}`, fmtInfo?.mime || 'image/webp')
+    const ext     = fmtInfo?.ext || 'webp'
+    saveFileWithFallback(item.src, `${base}.${ext}`, fmtInfo?.mime || 'image/webp')
+    addToHistory({
+      tool: 'Image Converter',
+      label: `Downloaded ${base}.${ext}`,
+      value: `${base}.${ext}`,
+      action: 'Downloaded',
+      category: 'Image',
+      metadata: { origName: item.origName, format: ext.toUpperCase() }
+    })
   }
 
   const downloadAll = async () => {

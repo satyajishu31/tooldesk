@@ -5,7 +5,9 @@ import { useCopy } from '../../hooks'
 import { safeFetchJSON } from '../../utils/safeFetch'
 import { TOOLS } from '../../constants'
 import { addToHistory } from '../../utils/history'
+import { useToolHistory } from '../../hooks/useToolHistory'
 import { saveFileWithFallback } from '../../utils/fileSaver'
+import { Clock, Trash2 } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'iplookup') || {
   id: 'iplookup',
@@ -23,14 +25,7 @@ export default function IPLookup() {
   const [error, setError] = useState('')
   const [copied, copy] = useCopy()
   const [copiedJson, copyJson] = useCopy()
-  const [history, setHistory] = useState(() => {
-    try {
-      const saved = localStorage.getItem('tooldesk_ip_history')
-      return saved ? JSON.parse(saved) : []
-    } catch {
-      return []
-    }
-  })
+  const { history: persistedHistory, add: addHistoryEntry, remove: removeHistoryEntry, clear: clearToolHistory } = useToolHistory('IP Intelligence Studio', 10)
 
   const mountedRef = useRef(true)
 
@@ -166,16 +161,12 @@ export default function IPLookup() {
       if (!mountedRef.current) return
       setResult(enriched)
 
-      setHistory(h => {
-        const updated = [
-          { ip: data.ip, city: data.city, country: data.country, ts: new Date().toLocaleTimeString() },
-          ...h.filter(x => x.ip !== data.ip).slice(0, 7)
-        ]
-        try {
-          localStorage.setItem('tooldesk_ip_history', JSON.stringify(updated))
-        } catch {}
-        addToHistory({ tool: 'IP Intelligence Studio', value: `${data.ip} (${data.city || 'Unknown'}, ${data.country || 'Unknown'})`, label: 'IP Lookup' })
-        return updated
+      addHistoryEntry({
+        label: 'IP Lookup',
+        value: `${data.ip} (${data.city || 'Unknown'}, ${data.country || 'Unknown'})`,
+        action: 'Lookup',
+        category: 'network',
+        metadata: { ip: data.ip, city: data.city, country: data.country }
       })
     } catch (e) {
       if (mountedRef.current) setError(e.message || 'Failed to fetch IP details.')
@@ -550,26 +541,49 @@ BGP/ASN registrations and Regional Internet Registry routing allocations.
 
       {/* Recent Lookups History */}
       <AnimatePresence>
-        {history.length > 0 && (
+        {persistedHistory.length > 0 && (
           <Reveal delay={0.06}>
             <ToolCard>
-              <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 13, color: '#0d0d1a', marginBottom: 10 }}>
-                🕐 Recent Lookups History
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Clock size={15} style={{ color: '#4F8EF7' }} />
+                  <span style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 13, color: '#0d0d1a' }}>
+                    Recent Lookups History <span style={{ fontSize: 11, fontWeight: 500, color: '#aaa' }}>({persistedHistory.length})</span>
+                  </span>
+                </div>
+                <motion.button whileTap={{ scale: 0.95 }}
+                  onClick={clearToolHistory}
+                  className="btn btn-outline btn-sm" style={{ color: '#EF5350', borderColor: 'rgba(239,83,80,.25)', padding: '3px 8px', fontSize: 11 }}>
+                  <Trash2 size={11} style={{ marginRight: 3 }} /> Clear
+                </motion.button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {history.map((h, i) => (
-                  <div
-                    key={i}
-                    onClick={() => { setIp(h.ip); lookup(h.ip) }}
-                    style={{
-                      display: 'flex', justifyContent: 'space-between', padding: '9px 13px',
-                      background: '#fafbff', borderRadius: 10, border: '1px solid rgba(0,0,0,.06)',
-                      cursor: 'pointer', fontSize: 12.5, transition: 'all .15s'
-                    }}>
-                    <span style={{ fontFamily: 'monospace', color: '#0d0d1a', fontWeight: 700 }}>{h.ip}</span>
-                    <span style={{ color: '#888' }}>{h.city || '—'}, {h.country || '—'}</span>
-                  </div>
-                ))}
+                {persistedHistory.map((h) => {
+                  const targetIp = h.metadata?.ip || h.value.split(' ')[0]
+                  const locText = h.metadata?.city ? `${h.metadata.city}, ${h.metadata.country || ''}` : h.value.replace(targetIp, '').trim()
+                  return (
+                    <div
+                      key={h.id}
+                      style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 13px',
+                        background: '#fafbff', borderRadius: 10, border: '1px solid rgba(0,0,0,.06)',
+                        fontSize: 12.5, transition: 'all .15s'
+                      }}>
+                      <div
+                        onClick={() => { setIp(targetIp); lookup(targetIp) }}
+                        style={{ display: 'flex', justifyContent: 'space-between', flex: 1, cursor: 'pointer', marginRight: 10 }}>
+                        <span style={{ fontFamily: 'monospace', color: '#0d0d1a', fontWeight: 700 }}>{targetIp}</span>
+                        <span style={{ color: '#888' }}>{locText}</span>
+                      </div>
+                      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                        onClick={(e) => { e.stopPropagation(); removeHistoryEntry(h.id) }}
+                        title="Delete entry"
+                        style={{ border: 'none', background: 'none', color: '#bbb', cursor: 'pointer', padding: 2 }}>
+                        <Trash2 size={12} />
+                      </motion.button>
+                    </div>
+                  )
+                })}
               </div>
             </ToolCard>
           </Reveal>

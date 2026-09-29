@@ -28,7 +28,10 @@ export default function LocalHistoryShelf() {
 
   useEffect(() => {
     loadHistory()
-    const handleOpen = () => setIsOpen(true)
+    const handleOpen = () => {
+      loadHistory()
+      setIsOpen(true)
+    }
     window.addEventListener('tooldesk-history-updated', loadHistory)
     window.addEventListener('tooldesk-open-history', handleOpen)
     return () => {

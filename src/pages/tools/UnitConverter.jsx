@@ -4,6 +4,8 @@ import { useCopy } from '../../hooks'
 import { TOOLS, UNIT_CATEGORIES } from '../../constants'
 import { UnitExplainPanel } from '../../components/AIPanel'
 import { addToHistory } from '../../utils/history'
+import { useToolHistory } from '../../hooks/useToolHistory'
+import { Clock, Trash2 } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'units')
 
@@ -46,12 +48,7 @@ export default function UnitConverter() {
   const [to,    setTo]    = useState('ft')
   const [value, setValue] = useState('1')
   const [copied, copy]    = useCopy()
-  const [history, setHist]= useState(() => {
-    try {
-      const raw = localStorage.getItem('tooldesk_units_history')
-      return raw ? JSON.parse(raw) : []
-    } catch { return [] }
-  })
+  const { history: persistedHistory, remove: removeHistoryEntry, clear: clearToolHistory } = useToolHistory('Unit Converter', 10)
 
   const result = useMemo(() => convert(value, cat, from, to), [value, cat, from, to])
 
@@ -88,21 +85,13 @@ export default function UnitConverter() {
   useEffect(() => {
     if (!value || isNaN(parseFloat(value)) || result === '—') return
     const timer = setTimeout(() => {
-      setHist(h => {
-        let updated
-        if (h[0] && h[0].from === from && h[0].to === to && h[0].cat === cat) {
-          updated = [{ from, to, value, result, cat, ts: Date.now() }, ...h.slice(1)]
-        } else {
-          updated = [{ from, to, value, result, cat, ts: Date.now() }, ...h.slice(0, 7)]
-        }
-        try { localStorage.setItem('tooldesk_units_history', JSON.stringify(updated)) } catch {}
-        return updated
-      })
       addToHistory({
         tool: 'Unit Converter',
         label: `${cat}: ${value} ${from} → ${result} ${to}`,
         value: `${value} ${from} = ${result} ${to}`,
-        category: 'Math'
+        action: 'Converted',
+        category: 'Math',
+        metadata: { cat, from, to, value, result }
       })
     }, 800)
     return () => clearTimeout(timer)
@@ -210,22 +199,51 @@ export default function UnitConverter() {
         </div>
 
         {/* History */}
-        {history.length > 0 && (
+        {persistedHistory.length > 0 && (
           <div style={{ paddingTop:16, borderTop:'1px solid rgba(0,0,0,.06)' }}>
-            <label className="lbl">Recent Conversions</label>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+              <label className="lbl" style={{ margin:0, display:'flex', alignItems:'center', gap:6 }}>
+                <Clock size={14} color="#4F8EF7" /> Recent Conversions
+              </label>
+              <button
+                onClick={clearToolHistory}
+                style={{ background:'none', border:'none', color:'#71717a', fontSize:11, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}
+              >
+                <Trash2 size={12} /> Clear
+              </button>
+            </div>
             <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
-              {history.slice(0,5).map((h,i) => (
-                <div key={i}
-                  onClick={() => { setCat(h.cat); setFrom(h.from); setTo(h.to); setValue(h.value) }}
-                  style={{ display:'flex', justifyContent:'space-between', padding:'8px 12px',
-                    borderRadius:9, background:'#fafafa', border:'1px solid rgba(0,0,0,.07)',
-                    cursor:'pointer', fontSize:12.5, color:'#555', transition:'background .14s' }}
-                  onMouseEnter={e=>e.currentTarget.style.background='#f0f4ff'}
-                  onMouseLeave={e=>e.currentTarget.style.background='#fafafa'}>
-                  <span>{h.value} {h.from} → {h.result} {h.to}</span>
-                  <span style={{ color:'#71717a', fontSize:11 }}>{h.cat}</span>
-                </div>
-              ))}
+              {persistedHistory.slice(0,5).map((h,i) => {
+                const meta = h.metadata || {}
+                return (
+                  <div key={h.id || i}
+                    onClick={() => {
+                      if (meta.cat && UNIT_CATEGORIES[meta.cat]) {
+                        setCat(meta.cat)
+                        setFrom(meta.from)
+                        setTo(meta.to)
+                        setValue(meta.value)
+                      }
+                    }}
+                    style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 12px',
+                      borderRadius:9, background:'#fafafa', border:'1px solid rgba(0,0,0,.07)',
+                      cursor:'pointer', fontSize:12.5, color:'#555', transition:'background .14s' }}
+                    onMouseEnter={e=>e.currentTarget.style.background='#f0f4ff'}
+                    onMouseLeave={e=>e.currentTarget.style.background='#fafafa'}>
+                    <span>{h.label || h.value}</span>
+                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                      <span style={{ color:'#71717a', fontSize:11 }}>{meta.cat || 'Math'}</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeHistoryEntry(h.id) }}
+                        style={{ background:'none', border:'none', color:'#999', cursor:'pointer', padding:2 }}
+                        title="Remove"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}

@@ -5,7 +5,9 @@ import { useCopy } from '../../hooks'
 import { TOOLS } from '../../constants'
 import { PassphrasePanel } from '../../components/AIPanel'
 import { addToHistory } from '../../utils/history'
+import { useToolHistory } from '../../hooks/useToolHistory'
 import { saveFileWithFallback } from '../../utils/fileSaver'
+import { Clock, Trash2, RotateCcw, X } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'password')
 
@@ -191,12 +193,12 @@ export default function PasswordGenerator() {
   const [pinLen,      setPinLen]  = useState(6)
   const [pw,          setPw]      = useState('')
   const [copied,      copy]       = useCopy()
-  const [history,     setHist]    = useState([])
+  const { history: persistedHistory, remove: removeHistoryItem, clear: clearToolHistory } = useToolHistory('Password Generator', 20)
   const [bulk,        setBulk]    = useState(5)
   const [bulkLen,     setBulkLen] = useState(16)
   const [bulkList,    setBulkList]= useState([])
   const [bulkCopied,  bulkCopy] = useCopy()
-  const [showHistory, setShowH] = useState(false)
+  const [showHistory, setShowH] = useState(true)
 
   const toggle = k => setOpts(o => ({ ...o, [k]: !o[k] }))
 
@@ -214,9 +216,10 @@ export default function PasswordGenerator() {
   const str = strengthInfo(Math.round(bits))
 
   const generate = useCallback(() => {
-    if (mode === 'password')   { const p = doGenPassword();   setPw(p); if(p) { setHist(h => [p,...h.filter(x=>x!==p)].slice(0,20)) } }
-    if (mode === 'passphrase') { const p = doGenPassphrase(); setPw(p); if(p) { setHist(h => [p,...h.filter(x=>x!==p)].slice(0,20)) } }
-    if (mode === 'pin')        { const p = doGenPIN();        setPw(p); if(p) { setHist(h => [p,...h.filter(x=>x!==p)].slice(0,20)) } }
+    let p = ''
+    if (mode === 'password')   { p = doGenPassword();   setPw(p) }
+    if (mode === 'passphrase') { p = doGenPassphrase(); setPw(p) }
+    if (mode === 'pin')        { p = doGenPIN();        setPw(p) }
     if (mode === 'bulk') {
       const list = Array.from({ length: bulk }, () => genPassword(bulkLen, opts))
       setBulkList(list)
@@ -229,7 +232,7 @@ export default function PasswordGenerator() {
         value: `•••••••••••••••• (${countLabel})`,
         action: 'Generated',
         category: 'security',
-        metadata: { length: mode === 'passphrase' ? wordCount : mode === 'pin' ? pinLen : len, strength: str.label }
+        metadata: { length: mode === 'passphrase' ? wordCount : mode === 'pin' ? pinLen : len, strength: str.label, mode }
       })
     } catch {}
   }, [mode, doGenPassword, doGenPassphrase, doGenPIN, bulk, bulkLen, opts, wordCount, pinLen, len, str.label])
@@ -504,19 +507,22 @@ export default function PasswordGenerator() {
 
       </ToolCard>
 
-      {/* ── HISTORY ── */}
-      {history.length > 0 && mode !== 'bulk' && (
+      {/* ── PERSISTENT ZERO-TRUST HISTORY ── */}
+      {persistedHistory.length > 0 && mode !== 'bulk' && (
         <Reveal delay={0.06}>
           <ToolCard style={{ marginBottom:20 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: showHistory ? 14 : 0 }}>
-              <div style={{ fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:14, color:'#0d0d1a' }}>
-                🕐 History <span style={{ fontSize:12, fontWeight:500, color:'#aaa' }}>({history.length} passwords)</span>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <Clock size={16} style={{ color:'#4F8EF7' }} />
+                <span style={{ fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:14, color:'#0d0d1a' }}>
+                  Recent Generations <span style={{ fontSize:12, fontWeight:500, color:'#aaa' }}>({persistedHistory.length})</span>
+                </span>
               </div>
               <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
                 <motion.button whileTap={{scale:.95}}
-                  onClick={() => setHist([])}
+                  onClick={clearToolHistory}
                   className="btn btn-outline btn-sm" style={{ color:'#EF5350', borderColor:'rgba(239,83,80,.25)' }}>
-                  🗑 Clear
+                  <Trash2 size={13} style={{ marginRight:4 }} /> Clear
                 </motion.button>
                 <motion.button whileTap={{scale:.95}}
                   onClick={() => setShowH(s => !s)}
@@ -528,27 +534,48 @@ export default function PasswordGenerator() {
             <AnimatePresence>
               {showHistory && (
                 <motion.div initial={{opacity:0,height:0}} animate={{opacity:1,height:'auto'}} exit={{opacity:0,height:0}}>
-                  <div style={{ display:'flex', flexDirection:'column', gap:5, maxHeight:260, overflowY:'auto' }}>
-                    {history.map((h,i) => (
-                      <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
+                  <div style={{ display:'flex', flexDirection:'column', gap:8, maxHeight:260, overflowY:'auto' }}>
+                    {persistedHistory.map((h) => (
+                      <div key={h.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
                         background:'#fafbff', borderRadius:10, padding:'8px 12px',
                         border:'1px solid rgba(0,0,0,.06)' }}>
-                        <code style={{ fontSize:12.5, fontFamily:'monospace', color:'#2d2d3d',
-                          flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                          {h}
-                        </code>
-                        <motion.button whileHover={{scale:1.08}} whileTap={{scale:.9}}
-                          onClick={() => copy(h)}
-                          style={{ marginLeft:8, padding:'3px 10px', borderRadius:7,
-                            border:'1.5px solid rgba(0,0,0,.1)', background:'#fafafa',
-                            fontSize:11, fontWeight:600, cursor:'pointer', color:'#555', flexShrink:0 }}>
-                          📋
-                        </motion.button>
+                        <div style={{ display:'flex', flexDirection:'column', gap:2, flex:1, overflow:'hidden', marginRight:8 }}>
+                          <span style={{ fontSize:12.5, fontWeight:600, color:'#1e293b' }}>
+                            {h.label}
+                          </span>
+                          <span style={{ fontSize:11, fontFamily:'monospace', color:'#64748b' }}>
+                            {h.value} • <span style={{ color:'#94a3b8' }}>{h.timestamp}</span>
+                          </span>
+                        </div>
+                        <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+                          <motion.button whileHover={{scale:1.05}} whileTap={{scale:.92}}
+                            onClick={() => {
+                              if (h.metadata?.mode) setMode(h.metadata.mode)
+                              if (h.metadata?.length) {
+                                if (h.metadata.mode === 'passphrase') setWCount(h.metadata.length)
+                                else if (h.metadata.mode === 'pin') setPinLen(h.metadata.length)
+                                else setLen(h.metadata.length)
+                              }
+                            }}
+                            title="Restore generation parameters"
+                            style={{ padding:'4px 10px', borderRadius:7, border:'1px solid rgba(79,142,247,.2)',
+                              background:'rgba(79,142,247,.06)', color:'#4F8EF7', fontSize:11, fontWeight:600,
+                              cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
+                            <RotateCcw size={11} /> Restore
+                          </motion.button>
+                          <motion.button whileHover={{scale:1.08}} whileTap={{scale:.9}}
+                            onClick={() => removeHistoryItem(h.id)}
+                            title="Delete entry"
+                            style={{ padding:'4px 8px', borderRadius:7, border:'1px solid rgba(0,0,0,.08)',
+                              background:'#fff', color:'#94a3b8', fontSize:11, cursor:'pointer' }}>
+                            <Trash2 size={11} />
+                          </motion.button>
+                        </div>
                       </div>
                     ))}
                   </div>
                   <div className="info-bar blue" style={{ marginTop:10, marginBottom:0 }}>
-                    🔒 Every password in history is <strong>unique</strong> — once generated, the same password will never appear again in this session.
+                    🔒 Password parameters are securely remembered. Plaintext passwords are never persisted to history storage.
                   </div>
                 </motion.div>
               )}

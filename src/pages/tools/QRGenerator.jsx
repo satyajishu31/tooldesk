@@ -8,6 +8,8 @@ import { generateQRDataURL, generateQRSVG } from '../../utils/qrCode'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import { safeFetchJSON } from '../../utils/safeFetch'
 import { addToHistory } from '../../utils/history'
+import { useToolHistory } from '../../hooks/useToolHistory'
+import { Clock, Trash2 } from 'lucide-react'
 
 const QRScanner = lazy(() => import('./QRScanner'))
 const BarcodeTool = lazy(() => import('./BarcodeTool'))
@@ -51,12 +53,7 @@ export default function QRGenerator() {
   const [qrUrl,   setQrUrl] = useState('')
   const [loading, setLoad]  = useState(false)
   const [error,   setError] = useState('')
-  const [history, setHist]  = useState(() => {
-    try {
-      const raw = localStorage.getItem('tooldesk_qr_history')
-      return raw ? JSON.parse(raw) : []
-    } catch { return [] }
-  })
+  const { history: persistedHistory, add: addPersistedQR, remove: removeHistoryEntry, clear: clearToolHistory } = useToolHistory('QR & Barcode Studio', 10)
   const [copied,  copy]     = useCopy()
 
   /* WiFi & vCard extra fields */
@@ -311,25 +308,47 @@ export default function QRGenerator() {
       setError('')
       setQrUrl(dataUrl)
       if (shouldAddToHistory) {
-        setHist(h => {
-          const updated = [{
-            url: dataUrl, label: qrValue.slice(0, 40) + (qrValue.length > 40 ? '…' : ''),
-            mode, size, ts: new Date().toLocaleTimeString()
-          }, ...h.filter(x => x.label !== qrValue.slice(0, 40)).slice(0, 7)]
-          try { localStorage.setItem('tooldesk_qr_history', JSON.stringify(updated)) } catch {}
-          return updated
-        })
-        addToHistory({
+        let safeLabel = `QR (${mode.toUpperCase()})`
+        let safeVal = qrValue.slice(0, 80)
+        if (mode === 'wifi') {
+          safeLabel = `WiFi: ${value || 'Network'}`
+          safeVal = `WiFi Network: ${value || 'Network'} (${wifiType || 'WPA'})`
+        } else if (mode === 'url') {
+          safeLabel = `URL: ${value}`
+          safeVal = value
+        } else if (mode === 'text') {
+          safeLabel = `Text: ${value.slice(0, 30)}${value.length > 30 ? '…' : ''}`
+          safeVal = `Text (${value.length} chars)`
+        } else if (mode === 'email') {
+          safeLabel = `Email: ${value}`
+          safeVal = value
+        } else if (mode === 'phone') {
+          safeLabel = `Tel: ${value}`
+          safeVal = value
+        } else if (mode === 'sms') {
+          safeLabel = `SMS: ${smsPhone}`
+          safeVal = smsPhone
+        } else if (mode === 'vcard') {
+          safeLabel = `vCard: ${vcName}`
+          safeVal = `vCard: ${vcName}`
+        } else if (mode === 'upi') {
+          safeLabel = `UPI: ${upiId}`
+          safeVal = `UPI: ${upiId}`
+        }
+
+        addPersistedQR({
           tool: 'QR & Barcode Studio',
-          label: `QR Code (${mode.toUpperCase()})`,
-          value: qrValue.slice(0, 80),
-          category: 'Generate'
+          label: safeLabel,
+          value: safeVal,
+          action: 'Generated',
+          category: 'Generate',
+          metadata: { mode, size, ecc: errLvl, payload: safeVal }
         })
       }
     } catch (err) {
       setError(err?.message || 'Input exceeds QR Code capacity.')
     }
-  }, [buildQRValue, color, bgColor, size, margin, errLvl, mode])
+  }, [buildQRValue, color, bgColor, size, margin, errLvl, mode, value, wifiType, smsPhone, vcName, upiId, addPersistedQR])
 
   /* Auto-generate on any input or parameter change with smooth debounce */
   useEffect(() => {
@@ -749,26 +768,47 @@ export default function QRGenerator() {
 
       {/* History */}
       <AnimatePresence>
-        {history.length > 0 && (
+        {persistedHistory.length > 0 && (
           <Reveal delay={.08}>
             <ToolCard style={{ marginTop:14 }}>
-              <div style={{ fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:13, color:'#0d0d1a', marginBottom:10 }}>
-                🕐 Recent QR Codes
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+                <div style={{ fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:13, color:'#0d0d1a', display:'flex', alignItems:'center', gap:6 }}>
+                  <Clock size={15} color="#4F8EF7" /> Recent QR Codes ({persistedHistory.length})
+                </div>
+                <button
+                  onClick={clearToolHistory}
+                  style={{ background:'none', border:'none', color:'#71717a', fontSize:11, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}
+                >
+                  <Trash2 size={12} /> Clear
+                </button>
               </div>
-              <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-                {history.map((h, i) => (
-                  <motion.div key={i} initial={{ opacity:0, y:6 }} animate={{ opacity:1, y:0 }}
-                    transition={{ delay:i*.03 }}
-                    onClick={() => setQrUrl(h.url)}
-                    style={{ cursor:'pointer', textAlign:'center' }}>
-                    <img src={h.url} alt="" style={{ width:60, height:60, borderRadius:8,
-                      border:'1.5px solid rgba(0,0,0,.08)', display:'block' }}/>
-                    <div style={{ fontSize:9, color:'#aaa', marginTop:3, maxWidth:60,
-                      overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                      {h.label}
-                    </div>
-                  </motion.div>
-                ))}
+              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                {persistedHistory.map((h, i) => {
+                  const meta = h.metadata || {}
+                  return (
+                    <motion.div key={h.id || i} initial={{ opacity:0, y:6 }} animate={{ opacity:1, y:0 }}
+                      transition={{ delay:i*.02 }}
+                      style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 12px',
+                        borderRadius:8, background:'#fafafa', border:'1px solid rgba(0,0,0,.06)', fontSize:12.5, color:'#444' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                        <span style={{ fontSize:10, fontWeight:700, background:'rgba(79,142,247,.1)', color:'#4F8EF7', padding:'2px 6px', borderRadius:4 }}>
+                          {meta.mode ? meta.mode.toUpperCase() : 'QR'}
+                        </span>
+                        <span style={{ fontWeight:500 }}>{h.label}</span>
+                      </div>
+                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                        <span style={{ fontSize:11, color:'#888' }}>{h.time}</span>
+                        <button
+                          onClick={() => removeHistoryEntry(h.id)}
+                          style={{ background:'none', border:'none', color:'#999', cursor:'pointer', padding:2 }}
+                          title="Remove"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )
+                })}
               </div>
             </ToolCard>
           </Reveal>

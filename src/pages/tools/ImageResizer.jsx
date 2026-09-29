@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { TOOLS } from '../../constants'
 import { saveFileWithFallback } from '../../utils/fileSaver'
+import { addToHistory } from '../../utils/history'
 import ChainedInputBanner from '../../components/ChainedInputBanner'
 import ToolChainingBar from '../../components/ToolChainingBar'
 
@@ -374,13 +375,27 @@ export default function ImageResizer() {
       const ext    = FORMATS.find(f=>f.mime===fmt)?.ext||'png'
       const baseName = origName.replace(/\.[^/.]+$/,'')||'image'
       await saveFileWithFallback(blob, `${baseName}_${outW}x${outH}.${ext}`, fmt)
+      addToHistory({
+        tool: 'Image Resizer',
+        label: `${baseName}: ${origW}x${origH} → ${outW}x${outH}`,
+        value: `${baseName}_${outW}x${outH}.${ext}`,
+        action: 'Resized',
+        category: 'Image',
+        metadata: {
+          origName,
+          origDimensions: `${origW}x${origH}`,
+          outDimensions: `${outW}x${outH}`,
+          format: ext.toUpperCase(),
+          sizeBytes: blob.size
+        }
+      })
       setStatus('done')
       setTimeout(()=>setStatus('idle'), 3000)
     } catch(e) {
       setErrMsg('Download failed: '+e.message); setStatus('error')
       setTimeout(()=>setStatus('idle'),3000)
     }
-  }, [imgEl, outW, outH, fmt, quality, algo, origName])
+  }, [imgEl, outW, outH, fmt, quality, algo, origName, origW, origH])
 
   const reset = useCallback(() => {
     setImgEl(null); setOrigSrc(''); setPrevSrc(''); setPrevSize(null)

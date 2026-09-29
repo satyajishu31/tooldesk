@@ -1,4 +1,4 @@
-const SW_VERSION = 'v1.1.0'
+const SW_VERSION = 'v1.2.2'
 const CACHE_NAME = `tooldesk-pwa-${SW_VERSION}`
 const RUNTIME_CACHE = `tooldesk-runtime-${SW_VERSION}`
 const FONT_CACHE = 'tooldesk-fonts-v1'
@@ -18,7 +18,7 @@ const PRECACHE_URLS = [
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      // Resilient precaching with cache: 'reload' to ensure fresh assets from server
+      // 1. Core Shell Precache
       for (const url of PRECACHE_URLS) {
         try {
           const req = new Request(url, { cache: 'reload' })
@@ -29,6 +29,28 @@ self.addEventListener('install', (e) => {
         } catch (err) {
           console.warn(`[SW] Precache skipped for ${url}:`, err)
         }
+      }
+
+      // 2. Build-Aware Tool Chunks Precache (ensures unvisited tools work offline on fresh profile)
+      try {
+        const manifestRes = await fetch('/sw-chunks.json', { cache: 'reload' })
+        if (manifestRes && manifestRes.ok) {
+          const chunks = await manifestRes.json()
+          if (Array.isArray(chunks)) {
+            for (const chunkUrl of chunks) {
+              try {
+                const cRes = await fetch(chunkUrl)
+                if (cRes && cRes.status === 200) {
+                  await cache.put(chunkUrl, cRes)
+                }
+              } catch (cErr) {
+                console.warn(`[SW] Precache skipped for chunk ${chunkUrl}:`, cErr)
+              }
+            }
+          }
+        }
+      } catch (mErr) {
+        // Ignored during development before first build
       }
     }).then(() => self.skipWaiting())
   )
@@ -130,10 +152,12 @@ self.addEventListener('fetch', (e) => {
     return
   }
 
-  // 5. Static assets (JS chunks, CSS, icons, wasm, tesseract data): Stale-While-Revalidate
+  // 5. Static assets (JS chunks, CSS, icons, wasm, ffmpeg, tesseract data, fonts): Stale-While-Revalidate
   if (
     url.pathname.startsWith('/assets/') ||
     url.pathname.startsWith('/icons/') ||
+    url.pathname.startsWith('/fonts/') ||
+    url.pathname.startsWith('/ffmpeg/') ||
     url.pathname.startsWith('/tesseract/')
   ) {
     e.respondWith(

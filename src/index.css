@@ -1434,6 +1434,19 @@ main, section, article, .tool-shell {
 /* ═══════════════════════════════════════════
    RESPONSIVE LAYOUT & MOBILE TYPOGRAPHY HIERARCHY
    ═══════════════════════════════════════════ */
+.tool-anim-wrapper {
+  margin-bottom: 20px;
+}
+@media (max-width: 640px) {
+  .tool-anim-wrapper {
+    margin-bottom: 12px;
+  }
+  .tool-anim-box {
+    min-height: 140px !important;
+    padding: 10px 8px !important;
+  }
+}
+
 @media (max-width: 768px) {
   /* Layout reflows for multi-column tools */
   .batch-remover-layout {

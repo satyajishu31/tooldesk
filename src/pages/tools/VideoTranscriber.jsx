@@ -4,6 +4,7 @@ import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { useCopy } from '../../hooks'
 import { TOOLS } from '../../constants'
 import { saveFileWithFallback } from '../../utils/fileSaver'
+import { addToHistory } from '../../utils/history'
 import { safeFetchJSON } from '../../utils/safeFetch'
 import { resolveApiUrl, getApiHeaders } from '../../utils/apiConfig'
 
@@ -79,6 +80,14 @@ function buildVTT(segs) {
 }
 function dlFile(content, name, mime = 'text/plain') {
   saveFileWithFallback(content, name, mime)
+  addToHistory({
+    tool: 'Video Transcriber',
+    label: `Exported ${name}`,
+    value: name,
+    action: 'Exported',
+    category: 'Media',
+    metadata: { filename: name, mime }
+  })
 }
 
 /* ─────────────────────────────────────────────
@@ -112,76 +121,73 @@ function analyzeFile(file) {
 }
 
 /* ─────────────────────────────────────────────
-   FFMPEG LOADER v3 — @ffmpeg/ffmpeg@0.11 (createFFmpeg API)
-   No SharedArrayBuffer needed — works on all browsers/hosts.
-   No cross-origin Worker issues.
+   SELF-HOSTED LOCAL FFMPEG LOADER
+   Loads local assets from /ffmpeg/ without external CDN dependence
 ───────────────────────────────────────────── */
 let _ff = null, _ffLoading = null
-const FFMPEG_SRI = 'sha384-m5or9sW5FUT2WQbj3UthGceVpwo9zSgHKdCugYKHl19lyXPvwO/oQcmq8Fw0FfaA'
-
-async function loadScript(src, integrity) {
-  if (document.querySelector(`script[data-ffid="${src}"]`)) return
-  return new Promise((ok, fail) => {
-    const s = document.createElement('script')
-    s.src = src
-    s.setAttribute('data-ffid', src)
-    s.crossOrigin = 'anonymous'
-    if (integrity) s.integrity = integrity
-    s.onload = ok
-    s.onerror = () => {
-      s.remove()
-      fail(new Error('Failed to load: ' + src))
-    }
-    document.head.appendChild(s)
-  })
-}
 
 async function getFFmpeg(onLog) {
   if (_ff) return _ff
   if (_ffLoading) return _ffLoading
 
   _ffLoading = (async () => {
-    if (typeof WebAssembly === 'undefined')
-      throw new Error('WebAssembly not supported in this browser.')
-
-    const CDNS = [
-      'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js',
-      'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js',
-    ]
-    let scriptLoaded = false
-    for (const cdn of CDNS) {
-      try { await loadScript(cdn, FFMPEG_SRI); scriptLoaded = true; break }
-      catch (e) { console.warn('[FFmpeg] CDN failed:', e.message) }
+    if (typeof WebAssembly === 'undefined') {
+      throw new Error('WebAssembly is not supported in this browser.')
     }
-    if (!scriptLoaded) throw new Error('Could not load FFmpeg from CDN.')
 
-    const { createFFmpeg, fetchFile: ffFetchFile } = window.FFmpeg || {}
-    if (!createFFmpeg) throw new Error('window.FFmpeg.createFFmpeg not found.')
+    const [{ FFmpeg }, { toBlobURL, fetchFile }] = await Promise.all([
+      import('@ffmpeg/ffmpeg'),
+      import('@ffmpeg/util')
+    ])
+    const ffmpeg = new FFmpeg()
 
-    const ff = createFFmpeg({
-      log: false,
-      logger: ({ message }) => onLog?.(message),
-      corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
-    })
-    await ff.load()
+    if (onLog) {
+      ffmpeg.on('log', ({ message }) => onLog(message))
+    }
 
-    // Shim: wrap v0.11 API into the interface the rest of this file expects
+    let coreURL = null
+    let wasmURL = null
+    try {
+      const testRes = await fetch('/ffmpeg/ffmpeg-core.js', { method: 'HEAD' })
+      if (testRes.ok) {
+        coreURL = await toBlobURL('/ffmpeg/ffmpeg-core.js', 'text/javascript')
+        wasmURL = await toBlobURL('/ffmpeg/ffmpeg-core.wasm', 'application/wasm')
+      }
+    } catch {}
+
+    if (!coreURL || !wasmURL) {
+      throw new Error('Self-hosted FFmpeg assets (/ffmpeg/) are not available. Please ensure public/ffmpeg/ files are present.')
+    }
+
+    await ffmpeg.load({ coreURL, wasmURL })
+
     _ff = {
-      _fetchFile: ffFetchFile,
+      _fetchFile: (file) => fetchFile(file),
       _progressCb: null,
-      on(evt, cb) { if (evt === 'progress') { this._progressCb = cb } },
-      off(evt) { if (evt === 'progress') { this._progressCb = null } },
-      writeFile(name, data) { ff.FS('writeFile', name, data) },
-      readFile(name) { return ff.FS('readFile', name) },
-      deleteFile(name) { try { ff.FS('unlink', name) } catch { } },
-      async exec(args) {
-        const self = this
-        ff.setProgress(({ ratio }) => {
-          self._progressCb?.({ progress: Math.max(0, ratio) })
-        })
-        await ff.run(...args)
-        ff.setProgress(() => { })
+      on(evt, cb) {
+        if (evt === 'progress') {
+          this._progressCb = cb
+          ffmpeg.on('progress', cb)
+        }
       },
+      off(evt, cb) {
+        if (evt === 'progress') {
+          this._progressCb = null
+          if (cb) ffmpeg.off('progress', cb)
+        }
+      },
+      async writeFile(name, data) {
+        return await ffmpeg.writeFile(name, data)
+      },
+      async readFile(name) {
+        return await ffmpeg.readFile(name)
+      },
+      async deleteFile(name) {
+        try { return await ffmpeg.deleteFile(name) } catch {}
+      },
+      async exec(args) {
+        return await ffmpeg.exec(args)
+      }
     }
     return _ff
   })()
@@ -349,7 +355,7 @@ async function extractAudio(videoFile, { onProgress, onLog, signal } = {}) {
   let lastP = 0
 
   try {
-    ff.writeFile(inName, inputBytes)
+    await ff.writeFile(inName, inputBytes)
     inputBytes = null
 
     ff.on('progress', onProg)
@@ -362,11 +368,11 @@ async function extractAudio(videoFile, { onProgress, onLog, signal } = {}) {
 
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
 
-    try { data = ff.readFile(outName) } catch (e) { console.warn('readFile error:', e) }
+    try { data = await ff.readFile(outName) } catch (e) { console.warn('readFile error:', e) }
   } finally {
     ff.off('progress', onProg)
-    try { ff.deleteFile(inName) } catch { }
-    try { ff.deleteFile(outName) } catch { }
+    try { await ff.deleteFile(inName) } catch { }
+    try { await ff.deleteFile(outName) } catch { }
   }
 
   if (!ok || !data || data.length === 0) {
@@ -953,13 +959,28 @@ export default function VideoTranscriber() {
       /* ── DONE ── */
       setPhase('done'); setProgress(100)
       const elapsed = ((Date.now() - startTs.current) / 1000).toFixed(1)
+      const wordCount = final.fullText.trim().split(/\s+/).filter(Boolean).length
       setStats({
-        words: final.fullText.trim().split(/\s+/).filter(Boolean).length,
+        words: wordCount,
         segs: final.segments.length,
         chars: final.fullText.length,
         elapsed,
         chunks: total,
         lang: final.detectedLang,
+      })
+      addToHistory({
+        tool: 'Video Transcriber',
+        label: `${fileInfo?.name || 'Media'}: ${final.segments.length} segments (${wordCount} words)`,
+        value: `${fileInfo?.name || 'Media'} transcribed in ${final.detectedLang || 'auto'}`,
+        action: 'Transcribed',
+        category: 'Media',
+        metadata: {
+          filename: fileInfo?.name,
+          duration: fileInfo?.duration,
+          segmentsCount: final.segments.length,
+          wordCount,
+          lang: final.detectedLang
+        }
       })
 
     } catch (e) {

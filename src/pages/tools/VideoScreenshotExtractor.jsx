@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { TOOLS } from '../../constants'
 import { saveFileWithFallback } from '../../utils/fileSaver'
+import { addToHistory } from '../../utils/history'
+import { Download } from 'lucide-react'
 import ToolChainingBar from '../../components/ToolChainingBar'
 
 const tool = TOOLS.find(t => t.id === 'videoscreenshot')
@@ -576,8 +578,16 @@ export default function VideoScreenshotExtractor(){
       const zipChunks = buildZip(files)
       const blob      = new Blob(zipChunks, { type:'application/zip' })
       await saveFileWithFallback(blob, 'screenshots.zip', 'application/zip')
+      addToHistory({
+        tool: 'Video Screenshot Extractor',
+        label: `Extracted ${all.length} frames`,
+        value: `screenshots.zip (${all.length} frames)`,
+        action: 'Downloaded',
+        category: 'Video',
+        metadata: { frameCount: all.length, format: format }
+      })
     } catch(e){
-      setError('❌ Failed to create ZIP: ' + e.message)
+      setError('Failed to create ZIP: ' + e.message)
     } finally {
       setZipBld(false)
     }
@@ -1107,11 +1117,20 @@ export default function VideoScreenshotExtractor(){
                     onClick={()=>{
                       const ext = format.toLowerCase()
                       const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`
-                      saveFileWithFallback(singleFrame.url, `frame_${fmtTime(singleFrame.ts)}.${ext}`, mime)
+                      const filename = `frame_${fmtTime(singleFrame.ts)}.${ext}`
+                      saveFileWithFallback(singleFrame.url, filename, mime)
+                      addToHistory({
+                        tool: 'Video Screenshot Extractor',
+                        label: `Saved frame at ${fmtDisplay(singleFrame.ts)}`,
+                        value: filename,
+                        action: 'Extracted',
+                        category: 'Video',
+                        metadata: { timestamp: singleFrame.ts, format: ext.toUpperCase() }
+                      })
                     }}
                     style={{padding:'5px 14px',borderRadius:8,border:'none',
-                      background:'rgba(79,142,247,.9)',color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer'}}>
-                    ⬇ Save
+                      background:'rgba(79,142,247,.9)',color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:4}}>
+                    <Download size={13} /> Save
                   </motion.button>
                 </div>
               </motion.div>

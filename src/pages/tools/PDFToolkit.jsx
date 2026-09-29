@@ -41,7 +41,14 @@ import {
   getPdfFormFields,
   fillPdfForm,
   comparePdfs,
+  addPageNumbers,
+  addHeaderFooter,
+  createPdfFormFields,
 } from '../../utils/pdfEngine'
+import { createOutput } from '../../utils/fileEngine'
+import { createJob, JOB_STATES } from '../../utils/jobEngine'
+import { createBatchSession, BATCH_ITEM_STATUS } from '../../utils/batchEngine'
+import { consumePendingInboundFiles } from '../../utils/inboundShare'
 import ToolChainingBar from '../../components/ToolChainingBar'
 import ChainedInputBanner from '../../components/ChainedInputBanner'
 
@@ -224,6 +231,22 @@ const ALL_ACTIONS = [
     multiple: true,
     color: '#0284c7',
   },
+  {
+    id: 'page-numbers', cat: 'organize',
+    label: 'Page Numbers', icon: '🔢',
+    desc: 'Add customizable headers, footers & page numbering',
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    color: '#6366f1',
+  },
+  {
+    id: 'header-footer', cat: 'organize',
+    label: 'Header & Footer', icon: '📑',
+    desc: 'Add custom headers and footers with page numbers & dates',
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    color: '#06b6d4',
+  },
 
   // ── Security & Sign ──
   {
@@ -249,6 +272,14 @@ const ALL_ACTIONS = [
     accept: '.pdf,application/pdf',
     multiple: false,
     color: '#10b981',
+  },
+  {
+    id: 'form-builder', cat: 'security',
+    label: 'Form Builder', icon: '📋',
+    desc: 'Add interactive text fields, checkboxes & dropdowns',
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    color: '#3b82f6',
   },
   {
     id: 'flatten', cat: 'security',
@@ -559,12 +590,54 @@ export default function PDFToolkit() {
   // Zip packaging state
   const [zipFilename, setZipFilename] = useState('documents.zip')
 
+  // Compress state
+  const [compressPreset, setCompressPreset] = useState('balanced')
+
+  // Page numbering state
+  const [pageNumberFormat, setPageNumberFormat] = useState('page_x_of_y')
+  const [pageNumberPosition, setPageNumberPosition] = useState('bottom-center')
+  const [pageNumberStart, setPageNumberStart] = useState(1)
+  const [pageNumberFontSize, setPageNumberFontSize] = useState(10)
+
+  // Header & Footer state
+  const [headerText, setHeaderText] = useState('')
+  const [headerAlign, setHeaderAlign] = useState('center')
+  const [footerText, setFooterText] = useState('Page {page} of {total}')
+  const [footerAlign, setFooterAlign] = useState('center')
+  const [headerFooterFontSize, setHeaderFooterFontSize] = useState(9)
+
+  // Interactive Form Builder state
+  const [builderFields, setBuilderFields] = useState([
+    { id: 1, name: 'full_name', type: 'text', pageNumber: 1, defaultValue: '', xPercent: 0.1, yPercent: 0.2, widthPercent: 0.4, heightPercent: 0.04 }
+  ])
+
   // AI OCR text
   const [extractedOcrText, setExtractedOcrText] = useState('')
   const [extractingAI, setExtractingAI] = useState(false)
 
   const fileInputRef = useRef(null)
   const objectUrlsRef = useRef([])
+  const activeJobRef = useRef(null)
+  const activeBatchRef = useRef(null)
+
+  const cancelActiveOperation = useCallback(() => {
+    let cancelled = false
+    if (activeJobRef.current) {
+      activeJobRef.current.cancel('Operation cancelled by user')
+      activeJobRef.current = null
+      cancelled = true
+    }
+    if (activeBatchRef.current) {
+      activeBatchRef.current.cancelAll()
+      activeBatchRef.current = null
+      cancelled = true
+    }
+    if (cancelled) {
+      setLoading(false)
+      setProgressMsg('')
+      setStatusMsg({ type: 'warning', text: '⚠️ Operation was cancelled by user.' })
+    }
+  }, [])
 
   const trackUrl = useCallback(url => {
     objectUrlsRef.current.push(url)
@@ -739,6 +812,20 @@ export default function PDFToolkit() {
     [activeAction, loadThumbnailsForFile]
   )
 
+  useEffect(() => {
+    const pending = consumePendingInboundFiles()
+    if (pending && pending.length > 0) {
+      addFiles(pending)
+    }
+    const handleShared = (e) => {
+      if (e.detail && e.detail.length > 0) {
+        addFiles(e.detail)
+      }
+    }
+    window.addEventListener('tooldesk-shared-files-ready', handleShared)
+    return () => window.removeEventListener('tooldesk-shared-files-ready', handleShared)
+  }, [addFiles])
+
   const removeFile = idx => {
     setFiles(prev => prev.filter((_, i) => i !== idx))
     if (files.length <= 1) {
@@ -825,7 +912,19 @@ export default function PDFToolkit() {
 
   // ── Download Helpers ──
   const downloadBlob = async (blob, name) => {
-    await saveFileWithFallback(blob, name, blob.type || 'application/pdf')
+    try {
+      const out = createOutput({
+        blob,
+        filename: name || 'document.pdf',
+        mimeType: blob?.type || 'application/pdf',
+        sourceTool: 'pdf',
+        metadata: { action: activeAction?.id, filesCount: files.length }
+      })
+      await out.download()
+    } catch (err) {
+      console.warn('fileEngine createOutput fallback:', err)
+      await saveFileWithFallback(blob, name, blob?.type || 'application/pdf')
+    }
     try {
       addToHistory({
         tool: 'PDF Toolkit',
@@ -871,8 +970,119 @@ export default function PDFToolkit() {
     setProgressMsg('Initializing operation...')
     cleanupUrls()
 
-    try {
-      const targetFile = files[0]
+    // ── BATCH ENGINE PATH (Multi-file document conversion or batch optimization) ──
+    const isMultiBatchAction = files.length > 1 && [
+      'docx-pdf', 'md-pdf', 'html-pdf', 'txt-pdf', 'csv-pdf', 'json-pdf', 'xml-pdf',
+      'clean-meta', 'compress', 'flatten'
+    ].includes(activeAction.id)
+
+    if (isMultiBatchAction) {
+      setProgressMsg(`Starting batch processing for ${files.length} files...`)
+      try {
+        const batchSession = createBatchSession({
+          tool: 'PDF Studio',
+          concurrency: typeof navigator !== 'undefined' && /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 1 : 2,
+          zipFilename: `tooldesk-pdf-batch-${Date.now()}.zip`,
+          onUpdate: (state) => {
+            setProgressMsg(`Batch processing: ${state.done + state.failed}/${state.total} items (${state.progress}%)`)
+          },
+          processItem: async (file, { signal, onProgress }) => {
+            if (signal?.aborted) throw new Error('Operation was cancelled')
+            let blob = null
+            let outName = `${file.name.replace(/\.[^.]+$/, '')}.pdf`
+
+            if (activeAction.id === 'docx-pdf') {
+              const res = await convertDocxToPdf(file, msg => onProgress(50))
+              blob = res.blob
+            } else if (activeAction.id === 'md-pdf') {
+              const text = await file.text()
+              const res = await convertMarkdownToPdf(text, { title: file.name.replace(/\.[^.]+$/, '') })
+              blob = res.blob
+            } else if (activeAction.id === 'html-pdf') {
+              const html = await file.text()
+              const res = await convertHtmlToPdf(html, { title: file.name.replace(/\.[^.]+$/, '') })
+              blob = res.blob
+            } else if (activeAction.id === 'txt-pdf') {
+              const text = await file.text()
+              const res = await convertTextToPdf(text, { title: file.name.replace(/\.[^.]+$/, '') })
+              blob = res.blob
+            } else if (activeAction.id === 'csv-pdf') {
+              const csv = await file.text()
+              const res = await convertCsvToPdf(csv, { title: file.name.replace(/\.[^.]+$/, '') })
+              blob = res.blob
+            } else if (activeAction.id === 'json-pdf') {
+              const json = await file.text()
+              const res = await convertJsonToPdf(json, { title: file.name.replace(/\.[^.]+$/, '') })
+              blob = res.blob
+            } else if (activeAction.id === 'xml-pdf') {
+              const xml = await file.text()
+              const res = await convertXmlToPdf(xml, { title: file.name.replace(/\.[^.]+$/, '') })
+              blob = res.blob
+            } else if (activeAction.id === 'clean-meta') {
+              const res = await cleanPdfMetadata(file, msg => onProgress(50))
+              blob = res.blob
+              outName = res.name
+            } else if (activeAction.id === 'compress') {
+              const res = await compressPdf(file, { level: compressLevel, grayscale: compressGrayscale }, msg => onProgress(50))
+              blob = res.blob
+              outName = res.name
+            } else if (activeAction.id === 'flatten') {
+              const res = await flattenPdf(file, msg => onProgress(50))
+              blob = res.blob
+              outName = res.name
+            }
+
+            if (!blob) throw new Error(`Batch conversion failed for ${file.name}`)
+            return { blob, filename: outName, mimeType: 'application/pdf' }
+          }
+        })
+        activeBatchRef.current = batchSession
+
+        await new Promise((resolve) => {
+          let hasResolved = false
+          const checkCompletion = () => {
+            const items = batchSession.getItems()
+            const total = items.length
+            const done = items.filter(i => i.status === BATCH_ITEM_STATUS.DONE).length
+            const failed = items.filter(i => i.status === BATCH_ITEM_STATUS.FAILED).length
+            const cancelled = items.filter(i => i.status === BATCH_ITEM_STATUS.CANCELLED).length
+            if (total > 0 && done + failed + cancelled >= total && !hasResolved) {
+              hasResolved = true
+              resolve(items)
+            }
+          }
+          batchSession.addFiles(files)
+          const interval = setInterval(() => {
+            checkCompletion()
+            if (hasResolved) clearInterval(interval)
+          }, 150)
+        })
+
+        const doneCount = batchSession.getItems().filter(i => i.status === BATCH_ITEM_STATUS.DONE).length
+        if (doneCount > 0) {
+          await batchSession.exportZip(`tooldesk-pdf-batch-${Date.now()}.zip`)
+          setStatusMsg({ type: 'success', text: `✅ Batch converted ${doneCount}/${files.length} documents into ZIP archive!` })
+        } else {
+          setStatusMsg({ type: 'error', text: 'Batch conversion completed with zero successful outputs.' })
+        }
+      } catch (bErr) {
+        setStatusMsg({ type: 'error', text: `Batch error: ${bErr.message || 'Operation failed'}` })
+      } finally {
+        activeBatchRef.current = null
+        setLoading(false)
+        setProgressMsg('')
+      }
+      return
+    }
+
+    // ── UNIVERSAL JOB ENGINE PATH (Single or combined operations) ──
+    const job = createJob({
+      tool: 'PDF Studio',
+      operation: activeAction.id,
+      input: { action: activeAction.id, count: files.length },
+      execute: async (signal, onProgress) => {
+        if (signal?.aborted) throw new Error('Operation was cancelled')
+        const targetFile = files[0]
 
       // ── CONVERT TO PDF ──
       if (activeAction.id === 'docx-pdf') {
@@ -1143,6 +1353,37 @@ export default function PDFToolkit() {
           text: `✅ Compared documents! ${res.identicalPagesCount} matching pages, ${res.modifiedPagesCount} modified, ${res.addedPagesCount} added, ${res.removedPagesCount} removed.`
         })
 
+      } else if (activeAction.id === 'page-numbers') {
+        const res = await addPageNumbers(targetFile, {
+          format: pageNumberFormat,
+          position: pageNumberPosition,
+          startPage: parseInt(pageNumberStart, 10) || 1,
+          fontSize: parseInt(pageNumberFontSize, 10) || 10,
+        }, msg => setProgressMsg(msg))
+        setResult({
+          blob: res.blob,
+          name: res.name,
+          size: res.size,
+          type: 'single-pdf',
+        })
+        setStatusMsg({ type: 'success', text: `✅ Numbered ${res.pageCount} pages (${formatBytes(res.size)})` })
+
+      } else if (activeAction.id === 'header-footer') {
+        const res = await addHeaderFooter(targetFile, {
+          headerText,
+          headerAlign,
+          footerText,
+          footerAlign,
+          fontSize: parseInt(headerFooterFontSize, 10) || 9,
+        }, msg => setProgressMsg(msg))
+        setResult({
+          blob: res.blob,
+          name: res.name,
+          size: res.size,
+          type: 'single-pdf',
+        })
+        setStatusMsg({ type: 'success', text: `✅ Embedded header & footer across ${res.pageCount} pages (${formatBytes(res.size)})` })
+
       // ── SECURITY & SIGN ──
       } else if (activeAction.id === 'redact') {
         const hasBoxes = Object.values(redactionBoxes).some(arr => arr && arr.length > 0)
@@ -1187,6 +1428,19 @@ export default function PDFToolkit() {
         })
         setStatusMsg({ type: 'success', text: `✅ Interactive PDF form fields filled and saved (${formatBytes(res.size)})` })
 
+      } else if (activeAction.id === 'form-builder') {
+        if (!builderFields.length) {
+          throw new Error('Please add at least one form field to embed.')
+        }
+        const res = await createPdfFormFields(targetFile, builderFields, msg => setProgressMsg(msg))
+        setResult({
+          blob: res.blob,
+          name: res.name,
+          size: res.size,
+          type: 'single-pdf',
+        })
+        setStatusMsg({ type: 'success', text: `✅ Embedded interactive AcroForm fields (${formatBytes(res.size)})` })
+
       } else if (activeAction.id === 'flatten') {
         const res = await flattenPdf(targetFile, msg => setProgressMsg(msg))
         setResult({
@@ -1218,7 +1472,7 @@ export default function PDFToolkit() {
 
       // ── OPTIMIZE & METADATA ──
       } else if (activeAction.id === 'compress') {
-        const res = await compressPdf(targetFile, msg => setProgressMsg(msg))
+        const res = await compressPdf(targetFile, { preset: compressPreset }, msg => setProgressMsg(msg))
         setResult({
           blob: res.blob,
           name: res.name,
@@ -1226,11 +1480,13 @@ export default function PDFToolkit() {
           origSize: res.origSize,
           savedBytes: res.savedBytes,
           savedPct: res.savedPct,
+          reductionNotice: res.reductionNotice,
           type: 'single-pdf',
         })
+        const notice = res.reductionNotice ? ` (${res.reductionNotice})` : ''
         setStatusMsg({
           type: 'success',
-          text: `✅ Optimized! Size: ${formatBytes(res.size)} ${res.savedPct > 0 ? `(Saved ${res.savedPct}%)` : '(Already optimized)'}`,
+          text: `✅ Optimized! Size: ${formatBytes(res.size)} ${res.savedPct > 0 ? `(Saved ${res.savedPct}%)` : '(Already optimal)'}${notice}`,
         })
 
       } else if (activeAction.id === 'clean-meta') {
@@ -1276,13 +1532,28 @@ export default function PDFToolkit() {
         })
         setStatusMsg({ type: 'success', text: `✅ PDF inspected: ${meta.pageCount} pages, ${formatBytes(meta.fileSize)}` })
       }
+      }
+    })
 
+    activeJobRef.current = job
+
+    job.on('progress', (pct, txt) => {
+      if (txt) setProgressMsg(txt)
+    })
+
+    try {
+      await job.start()
     } catch (err) {
-      console.error('PDF Operation Error:', err)
-      setStatusMsg({ type: 'error', text: `❌ Error: ${err.message || 'Operation failed'}` })
+      if (err.category === 'CANCELLED' || err.message?.includes('cancelled') || err.message?.includes('aborted')) {
+        setStatusMsg({ type: 'warning', text: '⚠️ Operation was cancelled by user.' })
+      } else {
+        console.error('PDF Operation Error:', err)
+        setStatusMsg({ type: 'error', text: `❌ Error: ${err.message || 'Operation failed'}` })
+      }
     } finally {
       setLoading(false)
       setProgressMsg('')
+      activeJobRef.current = null
     }
   }
 
@@ -1756,6 +2027,150 @@ export default function PDFToolkit() {
           </div>
         )}
 
+        {/* Page Numbers Options */}
+        {activeAction.id === 'page-numbers' && files.length > 0 && (
+          <div style={{ background: 'rgba(99,102,241,.06)', border: '1px solid rgba(99,102,241,.2)', borderRadius: 14, padding: '16px 18px', marginBottom: 20 }}>
+            <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 13.5, color: '#1a1a2e', marginBottom: 12 }}>
+              🔢 Page Numbering Configuration
+            </div>
+            <div className="tool-grid-2-compact" style={{ gap: 12 }}>
+              <div>
+                <label className="lbl">Number Format</label>
+                <select className="inp sel" value={pageNumberFormat} onChange={e => setPageNumberFormat(e.target.value)}>
+                  <option value="page_x_of_y">Page X of Y (e.g. Page 1 of 12)</option>
+                  <option value="page_x">Page X (e.g. Page 1)</option>
+                  <option value="x_of_y">X / Y (e.g. 1 / 12)</option>
+                  <option value="x">Plain Number (e.g. 1)</option>
+                </select>
+              </div>
+              <div>
+                <label className="lbl">Position</label>
+                <select className="inp sel" value={pageNumberPosition} onChange={e => setPageNumberPosition(e.target.value)}>
+                  <option value="bottom-center">Bottom Center</option>
+                  <option value="bottom-right">Bottom Right</option>
+                  <option value="bottom-left">Bottom Left</option>
+                  <option value="top-center">Top Center</option>
+                  <option value="top-right">Top Right</option>
+                  <option value="top-left">Top Left</option>
+                </select>
+              </div>
+              <div>
+                <label className="lbl">Start Numbering On Page</label>
+                <input
+                  type="number"
+                  min={1}
+                  className="inp"
+                  value={pageNumberStart}
+                  onChange={e => setPageNumberStart(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                  placeholder="1 (Set 2 to skip cover)"
+                />
+              </div>
+              <div>
+                <label className="lbl">Font Size (pt)</label>
+                <input
+                  type="number"
+                  min={6}
+                  max={24}
+                  className="inp"
+                  value={pageNumberFontSize}
+                  onChange={e => setPageNumberFontSize(+e.target.value || 10)}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Header & Footer Options */}
+        {activeAction.id === 'header-footer' && files.length > 0 && (
+          <div style={{ background: 'rgba(6,182,212,.06)', border: '1px solid rgba(6,182,212,.2)', borderRadius: 14, padding: '16px 18px', marginBottom: 20 }}>
+            <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 13.5, color: '#1a1a2e', marginBottom: 12 }}>
+              📑 Header & Footer Configuration
+            </div>
+            <div className="tool-grid-2-compact" style={{ gap: 12, marginBottom: 12 }}>
+              <div>
+                <label className="lbl">Header Text</label>
+                <input
+                  className="inp"
+                  value={headerText}
+                  onChange={e => setHeaderText(e.target.value)}
+                  placeholder="e.g. Confidential Report — {date}"
+                />
+              </div>
+              <div>
+                <label className="lbl">Header Alignment</label>
+                <select className="inp sel" value={headerAlign} onChange={e => setHeaderAlign(e.target.value)}>
+                  <option value="center">Center</option>
+                  <option value="left">Left</option>
+                  <option value="right">Right</option>
+                </select>
+              </div>
+              <div>
+                <label className="lbl">Footer Text</label>
+                <input
+                  className="inp"
+                  value={footerText}
+                  onChange={e => setFooterText(e.target.value)}
+                  placeholder="Page {page} of {total}"
+                />
+              </div>
+              <div>
+                <label className="lbl">Footer Alignment</label>
+                <select className="inp sel" value={footerAlign} onChange={e => setFooterAlign(e.target.value)}>
+                  <option value="center">Center</option>
+                  <option value="left">Left</option>
+                  <option value="right">Right</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ fontSize: 11, color: '#64748b' }}>
+              💡 Template variables supported: <code>{'{page}'}</code>, <code>{'{total}'}</code>, <code>{'{title}'}</code>, <code>{'{date}'}</code>.
+            </div>
+          </div>
+        )}
+
+        {/* Compress PDF Options */}
+        {activeAction.id === 'compress' && files.length > 0 && (
+          <div style={{ background: 'rgba(34,197,94,.06)', border: '1px solid rgba(34,197,94,.2)', borderRadius: 14, padding: '16px 18px', marginBottom: 20 }}>
+            <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 13.5, color: '#1a1a2e', marginBottom: 10 }}>
+              🗜️ Multi-Tier Compression Presets
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 10 }}>
+              {[
+                { id: 'balanced', title: 'Balanced (Recommended)', desc: '144 DPI smart image downsampling & object stream compaction', badge: 'Best Balance' },
+                { id: 'high', title: 'Extreme Compression', desc: '96 DPI raster reduction for compact web & email transfers', badge: 'Smallest Size' },
+                { id: 'lossless', title: 'Lossless Cleanup', desc: 'Deduplicates streams & fonts without altering image pixels', badge: '100% Quality' },
+              ].map(opt => {
+                const isSel = compressPreset === opt.id
+                return (
+                  <div
+                    key={opt.id}
+                    onClick={() => setCompressPreset(opt.id)}
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: 12,
+                      cursor: 'pointer',
+                      border: `1.5px solid ${isSel ? '#22c55e' : 'rgba(0,0,0,.08)'}`,
+                      background: isSel ? 'rgba(34,197,94,.12)' : '#ffffff',
+                      transition: 'all .18s var(--ease)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <span style={{ fontWeight: 700, fontSize: 12.5, color: '#1a1a2e' }}>{opt.title}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 6, background: isSel ? '#22c55e' : '#f1f5f9', color: isSel ? '#fff' : '#64748b' }}>
+                        {opt.badge}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.4 }}>{opt.desc}</div>
+                  </div>
+                )
+              })}
+            </div>
+            <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 600 }}>
+              🛡️ Honest Size Policy: ToolDesk checks real byte reduction and never misleads you.
+            </div>
+          </div>
+        )}
+
         {/* Clean Metadata Options */}
         {activeAction.id === 'clean-meta' && files.length > 0 && (
           <div style={{ background: 'rgba(16,185,129,.06)', border: '1px solid rgba(16,185,129,.2)', borderRadius: 14, padding: '16px 18px', marginBottom: 20 }}>
@@ -1825,6 +2240,109 @@ export default function PDFToolkit() {
             <p style={{ fontSize: 12.5, color: '#444', lineHeight: 1.5, margin: 0 }}>
               Burns all fillable form widgets (text fields, checkboxes, radio buttons, dropdowns) directly into the static document stream so values become permanent and cannot be modified.
             </p>
+          </div>
+        )}
+
+        {/* Form Builder Options */}
+        {activeAction.id === 'form-builder' && files.length > 0 && (
+          <div style={{ background: 'rgba(59,130,246,.06)', border: '1px solid rgba(59,130,246,.2)', borderRadius: 14, padding: '16px 18px', marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 13.5, color: '#1a1a2e' }}>
+                📋 AcroForm Interactive Field Builder
+              </div>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline"
+                onClick={() => {
+                  setBuilderFields(prev => [
+                    ...prev,
+                    {
+                      id: Date.now(),
+                      name: `field_${prev.length + 1}`,
+                      type: 'text',
+                      pageNumber: 1,
+                      defaultValue: '',
+                      xPercent: 0.1,
+                      yPercent: Math.min(0.85, 0.2 + (prev.length * 0.08)),
+                      widthPercent: 0.4,
+                      heightPercent: 0.04
+                    }
+                  ])
+                }}
+              >
+                + Add Field
+              </button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {builderFields.map((f, idx) => (
+                <div key={f.id || idx} style={{ padding: '12px 14px', background: '#fff', borderRadius: 10, border: '1px solid rgba(0,0,0,.08)' }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#3b82f6', width: 22 }}>#{idx + 1}</span>
+                    <input
+                      className="inp"
+                      style={{ flex: 2, padding: '5px 8px', fontSize: 12 }}
+                      value={f.name}
+                      onChange={e => {
+                        const val = e.target.value
+                        setBuilderFields(fields => fields.map((item, i) => i === idx ? { ...item, name: val } : item))
+                      }}
+                      placeholder="Field Name (e.g. signature_name)"
+                    />
+                    <select
+                      className="inp sel"
+                      style={{ flex: 1.2, padding: '5px 8px', fontSize: 12 }}
+                      value={f.type}
+                      onChange={e => {
+                        const val = e.target.value
+                        setBuilderFields(fields => fields.map((item, i) => i === idx ? { ...item, type: val } : item))
+                      }}
+                    >
+                      <option value="text">Text Field</option>
+                      <option value="checkbox">Checkbox</option>
+                      <option value="dropdown">Dropdown</option>
+                    </select>
+                    <select
+                      className="inp sel"
+                      style={{ width: 90, padding: '5px 8px', fontSize: 12 }}
+                      value={f.pageNumber}
+                      onChange={e => {
+                        const val = +e.target.value
+                        setBuilderFields(fields => fields.map((item, i) => i === idx ? { ...item, pageNumber: val } : item))
+                      }}
+                    >
+                      {(thumbnails.length ? thumbnails : [{ pageNumber: 1 }]).map(t => (
+                        <option key={t.pageNumber} value={t.pageNumber}>Page {t.pageNumber}</option>
+                      ))}
+                    </select>
+                    {builderFields.length > 1 && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline"
+                        style={{ color: '#ef4444', borderColor: '#ef4444' }}
+                        onClick={() => setBuilderFields(fields => fields.filter((_, i) => i !== idx))}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input
+                      className="inp"
+                      style={{ flex: 1, padding: '5px 8px', fontSize: 11 }}
+                      value={f.defaultValue}
+                      onChange={e => {
+                        const val = e.target.value
+                        setBuilderFields(fields => fields.map((item, i) => i === idx ? { ...item, defaultValue: val } : item))
+                      }}
+                      placeholder={f.type === 'dropdown' ? 'Default Option (comma-separate options)' : 'Default Value (optional)'}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 8 }}>
+              💡 Form fields are created as native PDF AcroForms compatible with Adobe Reader, Preview, Chrome, and iOS.
+            </div>
           </div>
         )}
 
@@ -2541,22 +3059,45 @@ export default function PDFToolkit() {
           {loading ? '⏳ Processing Document…' : `${activeAction.icon} ${activeAction.label}`}
         </button>
 
-        {/* Progress feedback */}
-        {loading && progressMsg && (
+        {/* Progress feedback & Cancel */}
+        {loading && (
           <div
             style={{
-              padding: 12,
+              padding: '12px 16px',
               background: 'rgba(79,142,247,.06)',
               borderRadius: 12,
               border: '1px solid rgba(79,142,247,.18)',
               fontSize: 13,
               color: '#4F8EF7',
               marginTop: 12,
-              textAlign: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
               fontWeight: 500,
+              flexWrap: 'wrap',
+              gap: 8,
             }}
           >
-            ⚙️ {progressMsg}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>⚙️</span>
+              <span>{progressMsg || 'Processing document…'}</span>
+            </div>
+            <button
+              type="button"
+              onClick={cancelActiveOperation}
+              style={{
+                padding: '4px 10px',
+                borderRadius: 8,
+                background: 'rgba(239,68,68,.1)',
+                border: '1px solid rgba(239,68,68,.25)',
+                color: '#ef4444',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              ✕ Cancel
+            </button>
           </div>
         )}
 
@@ -2633,6 +3174,11 @@ export default function PDFToolkit() {
                   <span>→</span>
                   <span style={{ fontWeight: 700, color: '#1a1a2e' }}>New: {formatBytes(result.size)}</span>
                 </div>
+                {result.reductionNotice && (
+                  <div style={{ marginTop: 6, fontSize: 11, color: '#d97706', fontWeight: 500 }}>
+                    ℹ️ {result.reductionNotice}
+                  </div>
+                )}
               </div>
             )}
 

@@ -57,13 +57,32 @@ export function validateOutputMetadata({ filename, mimeType, size }) {
 /**
  * Creates a normalized File Output instance
  */
-export function createOutput({
-  blob,
-  filename,
-  mimeType = '',
-  sourceTool = 'ToolDesk',
-  metadata = {}
-}) {
+export function createOutput(arg1, arg2 = {}) {
+  let blob, filename, mimeType, sourceTool, metadata
+  if (arg1 instanceof Blob || (typeof Blob !== 'undefined' && (arg1 instanceof Uint8Array || ArrayBuffer.isView(arg1) || arg1 instanceof ArrayBuffer))) {
+    blob = arg1 instanceof Blob ? arg1 : new Blob([arg1])
+    filename = arg2.filename
+    mimeType = arg2.mimeType || blob?.type
+    sourceTool = arg2.tool || arg2.sourceTool || 'ToolDesk'
+    metadata = arg2.metadata || {}
+  } else if (arg1 && arg1.size !== undefined && arg2 && typeof arg2 === 'object') {
+    blob = arg1
+    filename = arg2.filename
+    mimeType = arg2.mimeType || blob?.type
+    sourceTool = arg2.tool || arg2.sourceTool || 'ToolDesk'
+    metadata = arg2.metadata || {}
+  } else if (arg1 && typeof arg1 === 'object') {
+    blob = arg1.blob
+    if (blob && !(blob instanceof Blob) && typeof Blob !== 'undefined' && (arg1.blob instanceof Uint8Array || ArrayBuffer.isView(arg1.blob) || arg1.blob instanceof ArrayBuffer)) {
+      blob = new Blob([blob])
+    }
+    filename = arg1.filename
+    mimeType = arg1.mimeType || blob?.type
+    sourceTool = arg1.sourceTool || arg1.tool || 'ToolDesk'
+    metadata = arg1.metadata || {}
+  } else {
+    throw new Error('createOutput requires valid file data or options')
+  }
   const id = `file_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
   const cleanName = String(filename || 'output')
     .replace(/[/\\?%*:|"<>]/g, '_')

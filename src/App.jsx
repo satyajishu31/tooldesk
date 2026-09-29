@@ -1,11 +1,12 @@
 import React, { Suspense, lazy, useEffect, useState, Component } from 'react'
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Navbar from './components/Navbar'
 import AIHelper from './components/AIHelper'
 import LocalHistoryShelf from './components/LocalHistoryShelf'
 import FilePreviewModal from './components/FilePreviewModal'
 import { isDownloadAppAvailable } from './utils/apiConfig'
+import { initInboundShare } from './utils/inboundShare'
 
 /* ── Error Boundary ── */
 class ErrorBoundary extends Component {
@@ -298,6 +299,14 @@ function AnimatedRoutes() {
   )
 }
 
+function InboundShareHandler() {
+  const navigate = useNavigate()
+  useEffect(() => {
+    return initInboundShare(navigate)
+  }, [navigate])
+  return null
+}
+
 export default function App() {
   const [downloadModalOpen, setDownloadModalOpen] = useState(false)
 
@@ -333,6 +342,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <InboundShareHandler/>
       <Navbar/>
       <ScrollTop/>
       <ErrorBoundary>

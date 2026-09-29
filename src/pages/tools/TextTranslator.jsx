@@ -4,6 +4,8 @@ import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { useCopy } from '../../hooks'
 import { safeFetchJSON } from '../../utils/safeFetch'
 import { TOOLS } from '../../constants'
+import { useToolHistory } from '../../hooks/useToolHistory'
+import { Clock, Trash2 } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'translator')
 
@@ -67,7 +69,7 @@ export default function TextTranslator() {
   const [loading,   setLoading]  = useState(false)
   const [error,     setError]    = useState('')
   const [detected,  setDetected] = useState('')
-  const [history,   setHistory]  = useState([])
+  const { history: persistedHistory, add: addPersistedTranslation, remove: removeHistoryEntry, clear: clearToolHistory } = useToolHistory('Text Translator', 10)
   const [copied,    copy]        = useCopy()
   const [liveMode,  setLiveMode] = useState(true)
   const [isFallback, setIsFallback] = useState(false)
@@ -116,13 +118,19 @@ export default function TextTranslator() {
       setIsFallback(!!data.fallback)
       if (data.detected_source) setDetected(data.detected_source)
       if (trans) {
-        setHistory(h => [{
-          src: text.trim().slice(0, 60) + (text.length > 60 ? '…' : ''),
-          result: trans.slice(0, 60) + (trans.length > 60 ? '…' : ''),
-          srcLang: data.detected_source || source,
-          tgtLang: target,
-          ts: new Date().toLocaleTimeString(),
-        }, ...h.slice(0, 9)])
+        addPersistedTranslation({
+          tool: 'Text Translator',
+          label: `${source} → ${target}: ${text.trim().slice(0, 40)}`,
+          value: `${source} → ${target}`,
+          action: 'Translated',
+          category: 'Text',
+          metadata: {
+            src: text.trim().slice(0, 60),
+            result: trans.slice(0, 60),
+            srcLang: data.detected_source || source,
+            tgtLang: target
+          }
+        })
       }
     } catch(e) {
       if (currentReqId === reqIdRef.current) {
@@ -134,7 +142,7 @@ export default function TextTranslator() {
         setLoading(false)
       }
     }
-  }, [srcText, tgtLang, srcLang])
+  }, [srcText, tgtLang, srcLang, addPersistedTranslation])
 
   const swap = () => {
     if (!result) return
@@ -542,7 +550,7 @@ export default function TextTranslator() {
               )}
 
               <div style={{ marginTop: 10, fontSize: 11, color: '#888', lineHeight: 1.4 }}>
-                💡 <strong>Defensive Language Notice:</strong> Cultural calibrations provide stylistic guidance and contextual phrasing heuristics. They represent customary communicative practices, not absolute rules for every speaker of the target language.
+                <strong>Defensive Language Notice:</strong> Cultural calibrations provide stylistic guidance and contextual phrasing heuristics. They represent customary communicative practices, not absolute rules for every speaker of the target language.
               </div>
             </div>
           )}
@@ -551,39 +559,52 @@ export default function TextTranslator() {
 
       {/* ── History ── */}
       <AnimatePresence>
-        {history.length > 0 && (
+        {persistedHistory.length > 0 && (
           <Reveal delay={.06}>
             <ToolCard style={{ marginBottom:16 }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-                <div style={{ fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:14, color:'#0d0d1a' }}>
-                  🕐 History
+                <div style={{ fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:14, color:'#0d0d1a', display:'flex', alignItems:'center', gap:6 }}>
+                  <Clock size={16} color="#4F8EF7" /> Translation History ({persistedHistory.length})
                 </div>
-                <button onClick={() => setHistory([])}
+                <button onClick={clearToolHistory}
                   style={{ fontSize:11.5, padding:'4px 12px', borderRadius:8,
                     border:'1.5px solid rgba(239,68,68,.2)', background:'rgba(239,68,68,.05)',
-                    color:'#ef4444', cursor:'pointer', fontWeight:700 }}>
-                  Clear
+                    color:'#ef4444', cursor:'pointer', fontWeight:700, display:'flex', alignItems:'center', gap:4 }}>
+                  <Trash2 size={12} /> Clear
                 </button>
               </div>
               <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                {history.map((h, i) => (
-                  <motion.div key={i} initial={{ opacity:0, x:-8 }} animate={{ opacity:1, x:0 }}
-                    transition={{ delay:i*.04 }}
-                    onClick={() => { setSrc(h.src.replace('…','')); setTgtLang(h.tgtLang) }}
-                    style={{ display:'grid', gridTemplateColumns:'1fr 1fr auto', gap:10, alignItems:'center',
-                      padding:'9px 13px', background:'#fafbff', borderRadius:11,
-                      border:'1px solid rgba(0,0,0,.06)', cursor:'pointer' }}
-                    onMouseEnter={e => e.currentTarget.style.background='#f0f4ff'}
-                    onMouseLeave={e => e.currentTarget.style.background='#fafbff'}>
-                    <div style={{ fontSize:12, color:'#444', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                      {h.src}
-                    </div>
-                    <div style={{ fontSize:12, color:'#4F8EF7', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                      {h.result}
-                    </div>
-                    <div style={{ fontSize:10, color:'#ccc', whiteSpace:'nowrap' }}>{h.ts}</div>
-                  </motion.div>
-                ))}
+                {persistedHistory.map((h, i) => {
+                  const meta = h.metadata || {}
+                  return (
+                    <motion.div key={h.id || i} initial={{ opacity:0, x:-8 }} animate={{ opacity:1, x:0 }}
+                      transition={{ delay:i*.03 }}
+                      onClick={() => {
+                        if (meta.src) setSrc(meta.src.replace('…',''))
+                        if (meta.tgtLang) setTgtLang(meta.tgtLang)
+                      }}
+                      style={{ display:'grid', gridTemplateColumns:'1fr 1fr auto auto', gap:10, alignItems:'center',
+                        padding:'9px 13px', background:'#fafbff', borderRadius:11,
+                        border:'1px solid rgba(0,0,0,.06)', cursor:'pointer' }}
+                      onMouseEnter={e => e.currentTarget.style.background='#f0f4ff'}
+                      onMouseLeave={e => e.currentTarget.style.background='#fafbff'}>
+                      <div style={{ fontSize:12, color:'#444', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                        {meta.src || h.label}
+                      </div>
+                      <div style={{ fontSize:12, color:'#4F8EF7', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                        {meta.result || h.value}
+                      </div>
+                      <div style={{ fontSize:10, color:'#888', whiteSpace:'nowrap' }}>{h.time}</div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeHistoryEntry(h.id) }}
+                        style={{ background:'none', border:'none', color:'#999', cursor:'pointer', padding:2 }}
+                        title="Remove"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </motion.div>
+                  )
+                })}
               </div>
             </ToolCard>
           </Reveal>

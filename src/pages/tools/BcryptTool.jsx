@@ -1,12 +1,14 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import ToolShell, { ToolCard } from '../../components/ToolShell'
+import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { useCopy, useSlider } from '../../hooks'
 import { TOOLS } from '../../constants'
 import bcrypt from 'bcryptjs'
 import { addToHistory } from '../../utils/history'
+import { useToolHistory } from '../../hooks/useToolHistory'
 import { hashSingleWorker, compareWorker, hashBatchWorker } from '../../utils/bcryptWorkerClient'
 import { saveFileWithFallback } from '../../utils/fileSaver'
+import { Eye, EyeOff, KeyRound, Search, Layers, ShieldCheck, Copy, Check, AlertTriangle, Info, Lock, Clock, Trash2 } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'bcrypt')
 
@@ -20,18 +22,43 @@ function Spinner() {
 
 function TabBar({ tabs, active, onChange }) {
   return (
-    <div style={{ display: 'flex', gap: 4, background: '#F0F1F7', borderRadius: 14, padding: 4, marginBottom: 24 }}>
+    <div style={{
+      display: 'flex',
+      gap: 4,
+      background: '#F0F1F7',
+      borderRadius: 14,
+      padding: 4,
+      marginBottom: 24,
+      overflowX: 'auto',
+      WebkitOverflowScrolling: 'touch',
+      scrollbarWidth: 'none',
+      msOverflowStyle: 'none'
+    }}>
       {tabs.map(t => (
         <motion.button key={t.id} onClick={() => onChange(t.id)} whileTap={{ scale: 0.95 }}
           style={{
-            flex: 1, padding: '11px 10px', borderRadius: 11, border: 'none', cursor: 'pointer',
-            fontFamily: 'DM Sans, sans-serif', fontSize: 14, fontWeight: 700,
+            flex: '1 0 auto',
+            padding: '11px 12px',
+            borderRadius: 11,
+            border: 'none',
+            cursor: 'pointer',
+            fontFamily: 'DM Sans, sans-serif',
+            fontSize: 13.5,
+            fontWeight: 700,
+            whiteSpace: 'nowrap',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
             background: active === t.id ? 'linear-gradient(135deg,#4F8EF7,#9C6FDE)' : 'transparent',
-            color: active === t.id ? '#fff' : '#999',
+            color: active === t.id ? '#fff' : '#64748b',
             boxShadow: active === t.id ? '0 4px 14px rgba(79,142,247,.35)' : 'none',
             transition: 'color .2s, box-shadow .2s',
           }}
-        >{t.icon} {t.label}</motion.button>
+        >
+          {t.icon}
+          <span>{t.label}</span>
+        </motion.button>
       ))}
     </div>
   )
@@ -65,29 +92,41 @@ function HasherTab() {
   const [hash, setHash] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPw, setShowPw] = useState(false)
+  const [fallbackNotice, setFallbackNotice] = useState('')
 
   const handleHash = async () => {
     if (!text.trim()) return
-    setHash(''); setLoading(true)
+    setHash('')
+    setFallbackNotice('')
+    setLoading(true)
     try {
       let output
+      let actualRounds = rounds
       try {
         output = await hashSingleWorker(text, rounds)
       } catch {}
       if (!output) {
-        const safeRounds = Math.min(rounds, 10)
-        const salt = await bcrypt.genSalt(safeRounds)
+        // Fallback execution on main thread
+        // Preserve user's configured rounds. If >12 on main thread, inform user of defensive limit to prevent browser lock
+        if (rounds > 12) {
+          actualRounds = 12
+          setFallbackNotice(`Worker unavailable. Safely computed with cost factor ${actualRounds} (requested ${rounds}) to prevent main-thread freeze.`)
+        } else {
+          actualRounds = rounds
+          setFallbackNotice(`Worker unavailable. Computed on main thread with cost factor ${actualRounds}.`)
+        }
+        const salt = await bcrypt.genSalt(actualRounds)
         output = await bcrypt.hash(text, salt)
       }
       setHash(output)
       try {
         addToHistory({
           tool: 'Bcrypt Generator',
-          label: `Bcrypt Hash (Cost: ${rounds})`,
-          value: `Calculated with cost factor ${rounds}`,
+          label: `Bcrypt Hash (Cost: ${actualRounds})`,
+          value: `Calculated with cost factor ${actualRounds}`,
           action: 'Generated',
           category: 'security',
-          metadata: { rounds }
+          metadata: { rounds: actualRounds }
         })
       } catch {}
     } finally { setLoading(false) }
@@ -102,15 +141,15 @@ function HasherTab() {
       <div className="fgrp">
         <label className="lbl">Text / Password</label>
         <div style={{ position: 'relative' }}>
-          <input type={showPw ? 'text' : 'password'} value={text} onChange={e => { setText(e.target.value); setHash('') }} onKeyDown={e => e.key === 'Enter' && handleHash()} placeholder="Enter any text or password to hash…" className="inp" style={{ paddingRight: 48, width: '100%', boxSizing: 'border-box' }} />
+          <input type={showPw ? 'text' : 'password'} value={text} onChange={e => { setText(e.target.value); setHash(''); setFallbackNotice('') }} onKeyDown={e => e.key === 'Enter' && handleHash()} placeholder="Enter any text or password to hash…" className="inp" style={{ paddingRight: 48, width: '100%', boxSizing: 'border-box' }} />
           <button
             type="button"
             onClick={() => setShowPw(v => !v)}
             aria-label={showPw ? 'Hide password' : 'Show password'}
             title={showPw ? 'Hide password' : 'Show password'}
-            style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: 2 }}
+            style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', padding: 2 }}
           >
-            {showPw ? '🙈' : '👁️'}
+            {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
         {text.length > 0 && (
@@ -136,8 +175,15 @@ function HasherTab() {
         </div>
       </div>
 
+      {fallbackNotice && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.25)', borderRadius: 10, fontSize: 12, color: '#b45309' }}>
+          <AlertTriangle size={15} style={{ flexShrink: 0 }} />
+          <span>{fallbackNotice}</span>
+        </div>
+      )}
+
       <motion.button className="btn btn-primary" onClick={handleHash} disabled={loading || !text.trim()} whileHover={!loading && text.trim() ? { scale: 1.02 } : {}} whileTap={{ scale: 0.97 }} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontSize: 15, padding: '14px 20px' }}>
-        {loading ? <><Spinner /> Computing BCrypt hash…</> : '🔐  Generate Hash'}
+        {loading ? <><Spinner /> Computing BCrypt hash…</> : 'Generate Hash'}
       </motion.button>
 
       <AnimatePresence>
@@ -227,9 +273,9 @@ function VerifierTab() {
             onClick={() => setShowText(v => !v)}
             aria-label={showText ? 'Hide password' : 'Show password'}
             title={showText ? 'Hide password' : 'Show password'}
-            style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: 2 }}
+            style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', padding: 2 }}
           >
-            {showText ? '🙈' : '👁️'}
+            {showText ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
       </div>
@@ -413,6 +459,14 @@ function BatchTab() {
   )
 }
 
+const MNEMONIC_WORDS = [
+  'beacon','velvet','glacier','matrix','harbor','falcon','ember','crystal',
+  'orbit','prairie','summit','timber','zenith','aurora','meadow','cipher',
+  'plasma','silver','vortex','canyon','blazer','copper','dynamo','echo',
+  'flux','granite','helix','indigo','javelin','kestrel','lagoon','meteor',
+  'nexus','oasis','pulsar','quartz','radiant','safari','titan','umbra'
+]
+
 function AuditorTab() {
   const [text, setText] = useState('')
   const [showPw, setShowPw] = useState(false)
@@ -420,14 +474,6 @@ function AuditorTab() {
   const [attackerRig, setAttackerRig] = useState('gpu') // 'cpu', 'gpu', 'cluster'
   const [copied, copy] = useCopy()
   const [mnemonic, setMnemonic] = useState('')
-
-  const MNEMONIC_WORDS = [
-    'beacon','velvet','glacier','matrix','harbor','falcon','ember','crystal',
-    'orbit','prairie','summit','timber','zenith','aurora','meadow','cipher',
-    'plasma','silver','vortex','canyon','blazer','copper','dynamo','echo',
-    'flux','granite','helix','indigo','javelin','kestrel','lagoon','meteor',
-    'nexus','oasis','pulsar','quartz','radiant','safari','titan','umbra'
-  ]
 
   const generateMnemonic = () => {
     const picks = []
@@ -480,14 +526,15 @@ function AuditorTab() {
       cluster: 100000 // Large distributed cluster (~100,000 H/s at cost 10)
     }
 
-    const currentRate = Math.max(0.1, (baseRates[attackerRig] || 8000) / diffFactor)
+    const currentRate = Math.max(0.1, (baseRates[attackerRig] || 8000) / (diffFactor || 1))
 
     // Average combinations to test (50% of search space)
-    const searchSpace = Math.pow(pool || 1, len) / 2
-    const totalSeconds = searchSpace / currentRate
+    const searchSpace = pool > 0 && len > 0 ? (len > 32 ? Infinity : Math.pow(pool, len) / 2) : 0
+    const totalSeconds = !isFinite(searchSpace) ? Infinity : (currentRate > 0 ? searchSpace / currentRate : Infinity)
 
     let timeEstimate = 'Instantly'
-    if (totalSeconds > 3.15e9) timeEstimate = '> 100 Centuries'
+    if (!isFinite(totalSeconds) || totalSeconds > 3.15e9) timeEstimate = '> 100 Centuries'
+    else if (isNaN(totalSeconds) || totalSeconds <= 0) timeEstimate = 'Instantly'
     else if (totalSeconds > 3.15e7) timeEstimate = `${Math.round(totalSeconds / 3.15e7)} Years`
     else if (totalSeconds > 86400 * 30) timeEstimate = `${Math.round(totalSeconds / (86400 * 30))} Months`
     else if (totalSeconds > 86400) timeEstimate = `${Math.round(totalSeconds / 86400)} Days`
@@ -556,9 +603,9 @@ function AuditorTab() {
             onClick={() => setShowPw(v => !v)}
             aria-label={showPw ? 'Hide password' : 'Show password'}
             title={showPw ? 'Hide password' : 'Show password'}
-            style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, padding: 2 }}
+            style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', padding: 2 }}
           >
-            {showPw ? '🙈' : '👁️'}
+            {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
         <div style={{ fontSize: 11, color: '#888', marginTop: 5 }}>
@@ -739,11 +786,12 @@ function AuditorTab() {
 
 export default function BcryptTool() {
   const [tab, setTab] = useState('hasher')
+  const { history: bcryptHistory, remove: removeHistoryItem, clear: clearToolHistory } = useToolHistory('Bcrypt Generator', 10)
   const TABS = [
-    { id:'hasher',   icon:'🔐', label:'Hash'    },
-    { id:'verifier', icon:'🔍', label:'Verify'  },
-    { id:'batch',    icon:'📦', label:'Batch'   },
-    { id:'auditor',  icon:'🛡️', label:'Security Audit' },
+    { id:'hasher',   icon: <KeyRound size={16} />, label:'Hash'    },
+    { id:'verifier', icon: <Search size={16} />,   label:'Verify'  },
+    { id:'batch',    icon: <Layers size={16} />,   label:'Batch'   },
+    { id:'auditor',  icon: <ShieldCheck size={16} />, label:'Security Audit' },
   ]
   return (
     <ToolShell tool={tool}>
@@ -762,6 +810,51 @@ export default function BcryptTool() {
           </motion.div>
         </AnimatePresence>
       </ToolCard>
+
+      {bcryptHistory.length > 0 && (
+        <Reveal delay={0.06}>
+          <ToolCard style={{ marginTop: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Clock size={16} style={{ color: '#4F8EF7' }} />
+                <span style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 14, color: '#0d0d1a' }}>
+                  Recent Bcrypt Operations <span style={{ fontSize: 12, fontWeight: 500, color: '#aaa' }}>({bcryptHistory.length})</span>
+                </span>
+              </div>
+              <motion.button whileTap={{ scale: 0.95 }}
+                onClick={clearToolHistory}
+                className="btn btn-outline btn-sm" style={{ color: '#EF5350', borderColor: 'rgba(239,83,80,.25)' }}>
+                <Trash2 size={13} style={{ marginRight: 4 }} /> Clear
+              </motion.button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 240, overflowY: 'auto' }}>
+              {bcryptHistory.map((h) => (
+                <div key={h.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: '#fafbff', borderRadius: 10, padding: '8px 12px', border: '1px solid rgba(0,0,0,.06)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, overflow: 'hidden', marginRight: 8 }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 600, color: '#1e293b' }}>
+                      {h.label}
+                    </span>
+                    <span style={{ fontSize: 11, color: '#64748b' }}>
+                      {h.value} • <span style={{ color: '#94a3b8' }}>{h.timestamp}</span>
+                    </span>
+                  </div>
+                  <motion.button whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}
+                    onClick={() => removeHistoryItem(h.id)}
+                    title="Delete entry"
+                    style={{ padding: '4px 8px', borderRadius: 7, border: '1px solid rgba(0,0,0,.08)',
+                      background: '#fff', color: '#94a3b8', fontSize: 11, cursor: 'pointer' }}>
+                    <Trash2 size={11} />
+                  </motion.button>
+                </div>
+              ))}
+            </div>
+            <div className="info-bar blue" style={{ marginTop: 10, marginBottom: 0 }}>
+              🔒 Safe Bcrypt parameters and verification results are saved. Cleartext passwords and raw hashes are never persisted to history.
+            </div>
+          </ToolCard>
+        </Reveal>
+      )}
     </ToolShell>
   )
 }

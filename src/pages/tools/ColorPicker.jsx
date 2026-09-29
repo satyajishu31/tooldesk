@@ -5,6 +5,8 @@ import { useCopy } from '../../hooks'
 import { TOOLS } from '../../constants'
 import { safeFetchJSON } from '../../utils/safeFetch'
 import { addToHistory } from '../../utils/history'
+import { useToolHistory } from '../../hooks/useToolHistory'
+import { Clock, Trash2 } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'colorpicker')
 
@@ -199,12 +201,7 @@ export default function ColorPicker(){
   const [hslS,setS]           = useState(91)
   const [hslL,setL]           = useState(64)
   const [palette,setPalette]  = useState([])
-  const [history,setHistory]  = useState(() => {
-    try {
-      const raw = localStorage.getItem('tooldesk_color_history')
-      return raw ? JSON.parse(raw) : []
-    } catch { return [] }
-  })
+  const { history: persistedHistory, add: addPersistedColor, remove: removeHistoryEntry, clear: clearToolHistory } = useToolHistory('Color Picker', 30)
   const [aiLoading,setAiLoad] = useState(false)
   const [aiPalettes,setAiPal] = useState([])
   const [aiError,setAiErr]    = useState('')
@@ -247,23 +244,29 @@ export default function ColorPicker(){
     setHex(short)
     const r=hexToRgb(short)
     if(r){const hs=rgbToHsl(r);setH(hs.h);setS(hs.s);setL(hs.l)}
-    setHistory(prev=>{
-      const updated = [short,...prev.filter(x=>x!==short)].slice(0,20)
-      try { localStorage.setItem('tooldesk_color_history', JSON.stringify(updated)) } catch {}
-      return updated
+    addPersistedColor({
+      tool: 'Color Picker',
+      label: `Hex: ${short.toUpperCase()}`,
+      value: short,
+      action: 'Picked',
+      category: 'Design',
+      metadata: { hex: short }
     })
-  },[])
+  },[addPersistedColor])
 
   const applyHsl = useCallback((h,s,l)=>{
     setH(h);setS(s);setL(l)
     const newHex=rgbToHex(hslToRgb(h,s,l))
     setHex(newHex)
-    setHistory(prev=>{
-      const updated = [newHex,...prev.filter(x=>x!==newHex)].slice(0,20)
-      try { localStorage.setItem('tooldesk_color_history', JSON.stringify(updated)) } catch {}
-      return updated
+    addPersistedColor({
+      tool: 'Color Picker',
+      label: `Hex: ${newHex.toUpperCase()}`,
+      value: newHex,
+      action: 'Picked',
+      category: 'Design',
+      metadata: { hex: newHex }
     })
-  },[])
+  },[addPersistedColor])
 
   const cp=(text,key)=>{
     setLC(key)
@@ -347,15 +350,36 @@ export default function ColorPicker(){
     <ToolShell tool={tool}>
       <ToolCard>
         {/* Tabs */}
-        <div style={{display:'flex',background:'rgba(0,0,0,.045)',borderRadius:14,padding:4,gap:3,marginBottom:22,flexWrap:'wrap',border:'1px solid rgba(0,0,0,.04)'}}>
-          {TABS.map(t=>(
-            <button key={t} onClick={()=>setTab(t)}
-              style={{flex:1,minWidth:60,padding:'8px 8px',borderRadius:10,border:'none',cursor:'pointer',
-                fontSize:11.5,fontWeight:700,
-                background:tab===t?'#ffffff':'transparent',
-                color:tab===t?'#0d0d1a':'#64748b',
-                boxShadow:tab===t?'0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)':'none',
-                transition:'all .18s cubic-bezier(.22,1,.36,1)'}}>
+        <div style={{
+          display: 'flex',
+          background: 'rgba(0,0,0,.045)',
+          borderRadius: 14,
+          padding: 4,
+          gap: 3,
+          marginBottom: 22,
+          overflowX: 'auto',
+          flexWrap: 'nowrap',
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          border: '1px solid rgba(0,0,0,.04)'
+        }}>
+          {TABS.map(t => (
+            <button key={t} onClick={() => setTab(t)}
+              style={{
+                flex: '0 0 auto',
+                padding: '8px 13px',
+                borderRadius: 10,
+                border: 'none',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                fontSize: 12,
+                fontWeight: 700,
+                background: tab === t ? '#ffffff' : 'transparent',
+                color: tab === t ? '#0d0d1a' : '#64748b',
+                boxShadow: tab === t ? '0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none',
+                transition: 'all .18s cubic-bezier(.22,1,.36,1)'
+              }}>
               {t}
             </button>
           ))}
@@ -998,32 +1022,42 @@ export default function ColorPicker(){
         {tab==='History'&&(
           <motion.div key="hist" initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} exit={{opacity:0}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
-              <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:14,color:'#0d0d1a'}}>
-                🕐 Color History ({history.length})
+              <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:14,color:'#0d0d1a',display:'flex',alignItems:'center',gap:6}}>
+                <Clock size={16} color="#4F8EF7" /> Color History ({persistedHistory.length})
               </div>
-              {history.length>0&&(
-                <button onClick={()=>setHistory([])}
+              {persistedHistory.length>0&&(
+                <button onClick={clearToolHistory}
                   style={{padding:'4px 12px',borderRadius:8,border:'1.5px solid rgba(239,68,68,.2)',
                     background:'rgba(239,68,68,.05)',color:'#ef4444',fontSize:11,
-                    fontWeight:700,cursor:'pointer'}}>
-                  Clear
+                    fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:4}}>
+                  <Trash2 size={12} /> Clear
                 </button>
               )}
             </div>
-            {history.length===0?(
+            {persistedHistory.length===0?(
               <div style={{textAlign:'center',padding:'40px 0',color:'#ccc',fontSize:13}}>
                 Pick colors to build your history
               </div>
             ):(
-              <div style={{display:'flex',flexWrap:'wrap',gap:10}}>
-                {history.map((h,i)=>(
-                  <motion.div key={i} initial={{opacity:0,y:6}} animate={{opacity:1,y:0}}
-                    transition={{delay:i*.03}}
-                    style={{display:'flex',flexDirection:'column',alignItems:'center',gap:5}}>
-                    <Swatch hex={h} size={40} onClick={applyHex} active={hex===h}/>
-                    <span style={{fontSize:8.5,fontFamily:'monospace',color:'#aaa'}}>{h.toUpperCase()}</span>
-                  </motion.div>
-                ))}
+              <div style={{display:'flex',flexWrap:'wrap',gap:12}}>
+                {persistedHistory.map((h,i)=>{
+                  const colorHex = h.metadata?.hex || (typeof h.value === 'string' && h.value.startsWith('#') ? h.value : hex)
+                  return (
+                    <motion.div key={h.id || i} initial={{opacity:0,y:6}} animate={{opacity:1,y:0}}
+                      transition={{delay:i*.02}}
+                      style={{display:'flex',flexDirection:'column',alignItems:'center',gap:5,position:'relative'}}>
+                      <Swatch hex={colorHex} size={42} onClick={applyHex} active={hex===colorHex}/>
+                      <span style={{fontSize:9,fontFamily:'monospace',color:'#888',fontWeight:600}}>{colorHex.toUpperCase()}</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeHistoryEntry(h.id) }}
+                        style={{position:'absolute',top:-4,right:-4,background:'#fff',border:'1px solid rgba(0,0,0,.15)',borderRadius:'50%',width:16,height:16,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',padding:0,color:'#888'}}
+                        title="Remove"
+                      >
+                        <Trash2 size={9} />
+                      </button>
+                    </motion.div>
+                  )
+                })}
               </div>
             )}
           </motion.div>

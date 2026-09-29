@@ -124,12 +124,44 @@ function localNetlifyFunctionsPlugin() {
   }
 }
 
+function pwaManifestPlugin() {
+  return {
+    name: 'pwa-manifest-plugin',
+    writeBundle(options, bundle) {
+      try {
+        const outDir = options.dir || path.resolve(process.cwd(), 'dist')
+        const chunks = []
+
+        for (const [fileName, asset] of Object.entries(bundle)) {
+          if (
+            fileName.startsWith('assets/') &&
+            (fileName.endsWith('.js') || fileName.endsWith('.css'))
+          ) {
+            const size = asset.type === 'chunk' ? (asset.code?.length || 0) : (asset.source?.length || 0)
+            if (size < 2000000 && !fileName.includes('ffmpeg-core') && !fileName.includes('wasm')) {
+              chunks.push('/' + fileName)
+            }
+          }
+        }
+
+        const json = JSON.stringify(chunks, null, 2)
+        fs.writeFileSync(path.resolve(outDir, 'sw-chunks.json'), json, 'utf8')
+        const pubPath = path.resolve(process.cwd(), 'public/sw-chunks.json')
+        fs.writeFileSync(pubPath, json, 'utf8')
+      } catch (err) {
+        console.warn('[pwaManifestPlugin] Failed to generate sw-chunks.json:', err.message)
+      }
+    }
+  }
+}
+
 export default defineConfig({
   plugins: [
     react({
       jsxRuntime: 'automatic',
     }),
     localNetlifyFunctionsPlugin(),
+    pwaManifestPlugin(),
   ],
 
   define: {

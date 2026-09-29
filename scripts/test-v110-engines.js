@@ -135,6 +135,82 @@ test('History Sanitizer: String lengths and metadata sizes are strictly bounded'
   assert(oversized.value.length <= 500, `Value should be truncated to <= 500, got ${oversized.value.length}`)
 })
 
+test('History Sanitizer: Raw Bearer tokens and Base64 data URLs are strictly REJECTED', () => {
+  const bearer = sanitizeHistoryEntry({
+    tool: 'API Tool',
+    label: 'Token',
+    value: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0...'
+  })
+  assert(bearer === null, 'Bearer token must be rejected')
+
+  const dataUrl = sanitizeHistoryEntry({
+    tool: 'QR Code',
+    label: 'Image',
+    value: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+  })
+  assert(dataUrl === null, 'Data URL must be rejected')
+})
+
+await testAsync('History Engine: Safe entry addition, retrieval, deduplication and deletion', async () => {
+  await clearHistory()
+  const entry1 = await addToHistory({
+    tool: 'Password Generator',
+    label: '16-character Strong Password',
+    value: '•••••••••••••••• (16 chars)',
+    action: 'Generated',
+    category: 'Security'
+  })
+  assert(entry1 !== null, 'Safe entry should be added')
+  
+  // Deduplication check: adding identical entry immediately should return existing entry without duplicating
+  const dupEntry = await addToHistory({
+    tool: 'Password Generator',
+    label: '16-character Strong Password',
+    value: '•••••••••••••••• (16 chars)',
+    action: 'Generated',
+    category: 'Security'
+  })
+  assert.equal(dupEntry.id, entry1.id, 'Duplicate entry should return identical ID (deduplicated)')
+
+  const all = await getHistory()
+  assert.equal(all.length, 1, 'History length should be 1 after deduplication')
+
+  const toolHist = await getToolHistory('Password Generator')
+  assert.equal(toolHist.length, 1, 'Tool history should return 1 item')
+  assert.equal(toolHist[0].value, '•••••••••••••••• (16 chars)')
+
+  // Delete item
+  await deleteHistoryItem(entry1.id)
+  const afterDelete = await getHistory()
+  assert.equal(afterDelete.length, 0, 'History should be empty after deleting the item')
+})
+
+await testAsync('History Engine: Legacy localStorage migration safely imports sanitized records', async () => {
+  globalThis.localStorage = {
+    _data: {
+      tooldesk_color_history: JSON.stringify(['#4F8EF7', '#22C55E']),
+      tooldesk_currency_history: JSON.stringify([{ from: 'USD', to: 'EUR', amount: 100, result: '92.50' }])
+    },
+    getItem(k) { return this._data[k] || null },
+    setItem(k, v) { this._data[k] = v },
+    removeItem(k) { delete this._data[k] }
+  }
+
+  const { migrateLegacyHistory } = await import('../src/utils/history.js')
+  const count = await migrateLegacyHistory()
+  assert(count >= 3, `Expected at least 3 migrated items, got ${count}`)
+  
+  const history = await getHistory()
+  const colorItems = history.filter(h => h.tool === 'Color Picker')
+  assert.equal(colorItems.length, 2, 'Should have migrated 2 color items')
+
+  const currencyItems = history.filter(h => h.tool === 'Currency Converter')
+  assert.equal(currencyItems.length, 1, 'Should have migrated 1 currency item')
+
+  delete globalThis.localStorage
+  await clearHistory()
+})
+
 // ─────────────────────────────────────────────────────────────
 // 2. UNIVERSAL FILE ENGINE
 // ─────────────────────────────────────────────────────────────

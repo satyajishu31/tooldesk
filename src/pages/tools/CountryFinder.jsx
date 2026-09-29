@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { TOOLS } from '../../constants'
 import { safeFetchJSON } from '../../utils/safeFetch'
+import { addToHistory } from '../../utils/history'
 import SafeImage from '../../components/SafeImage'
 
 const tool = TOOLS.find(t => t.id === 'countryfinder') || {
@@ -977,6 +978,25 @@ export default function CountryFinder() {
   const [mode, setMode] = useState('grid')
   const [selected, setSelected] = useState(null)
 
+  const handleSelectCountry = useCallback((c) => {
+    setSelected(c)
+    if (c && c.name?.common) {
+      addToHistory({
+        tool: 'Country Finder',
+        label: `${c.name.common} (${c.cca2 || ''})`,
+        value: `${c.name.common} - Capital: ${(c.capital||[]).join(', ') || 'N/A'}, Region: ${c.region || 'N/A'}`,
+        action: 'Explored',
+        category: 'Utility',
+        metadata: {
+          country: c.name.common,
+          cca2: c.cca2,
+          capital: (c.capital||[])[0],
+          region: c.region
+        }
+      })
+    }
+  }, [])
+
   useEffect(() => {
     let alive = true
     ;(async () => {
@@ -1036,7 +1056,7 @@ export default function CountryFinder() {
             </div>
             <motion.button
               whileHover={{ scale:1.04, y:-1 }} whileTap={{ scale:0.95 }}
-              onClick={() => { if (countries.length) setSelected(countries[Math.floor(Math.random()*countries.length)]) }}
+              onClick={() => { if (countries.length) handleSelectCountry(countries[Math.floor(Math.random()*countries.length)]) }}
               disabled={loading}
               style={{ padding:'9px 18px', borderRadius:12, border:'none', background:'linear-gradient(135deg,#4F8EF7,#9C6FDE)', color:'#fff', fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:13, cursor:loading?'not-allowed':'pointer', boxShadow:'0 4px 14px rgba(79,142,247,.28)', display:'flex', alignItems:'center', gap:6 }}>
               🎲 Random
@@ -1096,7 +1116,7 @@ export default function CountryFinder() {
                   <motion.div key={c.cca3||c.name?.common||i}
                     initial={{ opacity:0, y:18 }} animate={{ opacity:1, y:0 }}
                     transition={{ delay:Math.min(i*0.018,0.38), type:'spring', stiffness:280, damping:22 }}>
-                    <CountryCard country={c} onClick={() => setSelected(c)}/>
+                    <CountryCard country={c} onClick={() => handleSelectCountry(c)}/>
                   </motion.div>
                 ))}
               </div>
@@ -1134,7 +1154,7 @@ export default function CountryFinder() {
             totalWorldPop={totalWorldPop}
             regionPops={regionPops}
             onClose={(neighbor) => {
-              if (neighbor && typeof neighbor === 'object' && neighbor.name) setSelected(neighbor)
+              if (neighbor && typeof neighbor === 'object' && neighbor.name) handleSelectCountry(neighbor)
               else setSelected(null)
             }}
           />

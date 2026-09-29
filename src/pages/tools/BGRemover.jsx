@@ -5,6 +5,7 @@ import { TOOLS } from '../../constants'
 import { safeFetchJSON, safeTimeoutSignal } from '../../utils/safeFetch'
 import { processBackgroundInWorker } from '../../utils/bgWorkerClient'
 import { saveFileWithFallback } from '../../utils/fileSaver'
+import { addToHistory } from '../../utils/history'
 import { resolveApiUrl, getApiHeaders } from '../../utils/apiConfig'
 
 const tool = TOOLS.find(t => t.id === 'bgremove')
@@ -923,14 +924,34 @@ export default function BGRemover() {
     }
 
     setLoading(false); setProgress(100); setProgressMsg('Done!')
+    addToHistory({
+      tool: 'Background Remover',
+      label: `${downloadName || 'Image'} (BG Removed)`,
+      value: `${downloadName || 'background-removed'}.png`,
+      action: 'Processed',
+      category: 'Image',
+      metadata: {
+        filename: `${downloadName || 'background-removed'}.png`,
+        format: 'PNG'
+      }
+    })
     setTimeout(() => {
       if (jobId === activeJobIdRef.current) setCompMode(true)
     }, 100)
-  }, [img, applyBackground])
+  }, [img, applyBackground, downloadName])
 
   const download = useCallback(() => {
     if (!result) return
-    saveFileWithFallback(result, `${downloadName || 'background-removed'}.png`, 'image/png')
+    const filename = `${downloadName || 'background-removed'}.png`
+    saveFileWithFallback(result, filename, 'image/png')
+    addToHistory({
+      tool: 'Background Remover',
+      label: `Downloaded ${filename}`,
+      value: filename,
+      action: 'Downloaded',
+      category: 'Image',
+      metadata: { filename, format: 'PNG' }
+    })
   }, [result, downloadName])
 
   // Drag-to-compare

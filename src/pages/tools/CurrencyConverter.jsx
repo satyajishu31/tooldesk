@@ -5,6 +5,8 @@ import { useCopy } from '../../hooks'
 import { TOOLS } from '../../constants'
 import { safeFetchJSON, safeTimeoutSignal } from '../../utils/safeFetch'
 import { addToHistory } from '../../utils/history'
+import { useToolHistory } from '../../hooks/useToolHistory'
+import { Clock, Trash2 } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'currency')
 
@@ -69,12 +71,7 @@ export default function CurrencyConverter() {
   const [rateDate,  setRateDate]  = useState('offline')
   const [loading,   setLoading]   = useState(false)
   const [apiStatus, setApiStatus] = useState('idle') // idle|loading|live|error
-  const [history,   setHistory]   = useState(() => {
-    try {
-      const raw = localStorage.getItem('tooldesk_currency_history')
-      return raw ? JSON.parse(raw) : []
-    } catch { return [] }
-  })
+  const { history: persistedHistory, remove: removeHistoryEntry, clear: clearToolHistory } = useToolHistory('Currency Converter', 10)
   const [multiShow, setMultiShow] = useState(false)
   const [copied,    copy]         = useCopy()
   const fetchedBase = useRef(null)
@@ -176,21 +173,13 @@ export default function CurrencyConverter() {
   useEffect(() => {
     if (!parseFloat(amount) || result === '—' || result === '0') return
     const timer = setTimeout(() => {
-      setHistory(h => {
-        let updated
-        if (h[0] && h[0].from === from && h[0].to === to) {
-          updated = [{ from, to, amount, result, ts: Date.now() }, ...h.slice(1)]
-        } else {
-          updated = [{ from, to, amount, result, ts: Date.now() }, ...h.slice(0, 9)]
-        }
-        try { localStorage.setItem('tooldesk_currency_history', JSON.stringify(updated)) } catch {}
-        return updated
-      })
       addToHistory({
         tool: 'Currency Converter',
         label: `${amount} ${from} → ${result} ${to}`,
         value: `${amount} ${from} = ${result} ${to}`,
-        category: 'Finance'
+        action: 'Converted',
+        category: 'Finance',
+        metadata: { from, to, amount, result }
       })
     }, 800)
     return () => clearTimeout(timer)
@@ -415,30 +404,56 @@ export default function CurrencyConverter() {
       </Reveal>
 
       {/* Conversion history */}
-      {history.length>0&&(
+      {persistedHistory.length > 0 && (
         <Reveal delay={.06}>
-          <ToolCard style={{marginTop:18}}>
-            <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:15,
-              color:'#0d0d1a',marginBottom:14}}>🕐 Recent Conversions</div>
-            <div style={{display:'flex',flexDirection:'column',gap:6}}>
-              {history.slice(0,5).map((h,i)=>(
-                <motion.div key={h.ts} initial={{opacity:0,x:-8}} animate={{opacity:1,x:0}}
-                  transition={{delay:i*.04}}
-                  onClick={()=>{setFrom(h.from);setTo(h.to);setAmount(h.amount)}}
-                  style={{display:'flex',justifyContent:'space-between',alignItems:'center',
-                    padding:'9px 13px',borderRadius:10,background:'#f8f9ff',
-                    border:'1px solid rgba(0,0,0,.06)',cursor:'pointer',transition:'background .15s'}}
-                  onMouseEnter={e=>e.currentTarget.style.background='#eef2ff'}
-                  onMouseLeave={e=>e.currentTarget.style.background='#f8f9ff'}>
-                  <span style={{fontSize:12.5,color:'#555'}}>
-                    {CURRENCY_INFO[h.from]?.flag} {h.amount} {h.from}
-                  </span>
-                  <span style={{fontSize:11,color:'#bbb'}}>→</span>
-                  <span style={{fontSize:13,fontWeight:700,color:'#4F8EF7'}}>
-                    {CURRENCY_INFO[h.to]?.flag} {h.result} {h.to}
-                  </span>
-                </motion.div>
-              ))}
+          <ToolCard style={{ marginTop: 18 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Clock size={16} style={{ color: '#4F8EF7' }} />
+                <span style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a' }}>
+                  Recent Conversions <span style={{ fontSize: 12, fontWeight: 500, color: '#aaa' }}>({persistedHistory.length})</span>
+                </span>
+              </div>
+              <motion.button whileTap={{ scale: 0.95 }}
+                onClick={clearToolHistory}
+                className="btn btn-outline btn-sm" style={{ color: '#EF5350', borderColor: 'rgba(239,83,80,.25)', padding: '3px 8px', fontSize: 11 }}>
+                <Trash2 size={11} style={{ marginRight: 3 }} /> Clear
+              </motion.button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {persistedHistory.slice(0, 8).map((h, i) => {
+                const cFrom = h.metadata?.from || 'USD'
+                const cTo = h.metadata?.to || 'EUR'
+                const cAmt = h.metadata?.amount || '1'
+                const cRes = h.metadata?.result || ''
+                return (
+                  <motion.div key={h.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * .03 }}
+                    style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '9px 13px', borderRadius: 10, background: '#f8f9ff',
+                      border: '1px solid rgba(0,0,0,.06)', transition: 'background .15s'
+                    }}>
+                    <div
+                      onClick={() => { setFrom(cFrom); setTo(cTo); setAmount(String(cAmt)) }}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1, cursor: 'pointer', marginRight: 10 }}>
+                      <span style={{ fontSize: 12.5, color: '#555' }}>
+                        {CURRENCY_INFO[cFrom]?.flag || '🌐'} {cAmt} {cFrom}
+                      </span>
+                      <span style={{ fontSize: 11, color: '#bbb' }}>→</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#4F8EF7' }}>
+                        {CURRENCY_INFO[cTo]?.flag || '🌐'} {cRes || h.value} {cTo}
+                      </span>
+                    </div>
+                    <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                      onClick={(e) => { e.stopPropagation(); removeHistoryEntry(h.id) }}
+                      title="Delete entry"
+                      style={{ border: 'none', background: 'none', color: '#bbb', cursor: 'pointer', padding: 2 }}>
+                      <Trash2 size={12} />
+                    </motion.button>
+                  </motion.div>
+                )
+              })}
             </div>
           </ToolCard>
         </Reveal>

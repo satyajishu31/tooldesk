@@ -4,6 +4,8 @@ import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { TOOLS } from '../../constants'
 import { safeFetchJSON } from '../../utils/safeFetch'
 import { useCopy } from '../../hooks'
+import { useToolHistory } from '../../hooks/useToolHistory'
+import { Clock, Trash2, AlertTriangle, CheckCircle } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'breachcheck')
 
@@ -203,13 +205,20 @@ function BreachRemediationPlaybook({ email, breachCount = 0 }) {
   )
 }
 
+function maskEmail(em) {
+  if (!em || !em.includes('@')) return '***@domain.com'
+  const [local, domain] = em.split('@')
+  const maskedLocal = local.length <= 2 ? `${local[0] || '*'}***` : `${local.slice(0, 2)}***`
+  return `${maskedLocal}@${domain}`
+}
+
 export default function EmailBreachChecker() {
   /* email tab */
   const [email,    setEmail]   = useState('')
   const [loading,  setLoading] = useState(false)
   const [result,   setResult]  = useState(null)
   const [error,    setError]   = useState('')
-  const [history,  setHistory] = useState([])
+  const { history: persistedHistory, add: addPersistedCheck, remove: removeHistoryEntry, clear: clearToolHistory } = useToolHistory('Email Breach Checker', 10)
   const [showManualPlaybook, setShowManualPlaybook] = useState(false)
   const mountedRef = useRef(true)
 
@@ -220,7 +229,6 @@ export default function EmailBreachChecker() {
 
   useEffect(() => {
     try {
-      localStorage.removeItem('tooldesk_email_breach_history')
       localStorage.removeItem('tooldesk_email_breach_history')
     } catch {}
   }, [])
@@ -242,13 +250,23 @@ export default function EmailBreachChecker() {
     if (data.error) setError(data.error)
     else {
       setResult(data)
-      setHistory(h => [
-        { email:trimmed, pwned:data.pwned, count:data.count, ts:new Date().toLocaleTimeString() },
-        ...h.filter(x => x.email !== trimmed).slice(0,6),
-      ])
+      const masked = maskEmail(trimmed)
+      addPersistedCheck({
+        tool: 'Email Breach Checker',
+        label: `${masked}: ${data.pwned ? `${data.count} breach${data.count !== 1 ? 'es' : ''}` : 'Clean'}`,
+        value: `${masked} (${data.pwned ? `${data.count} breaches` : 'Clean'})`,
+        action: 'Audited',
+        category: 'Security',
+        metadata: {
+          maskedEmail: masked,
+          pwned: !!data.pwned,
+          count: data.count || 0,
+          type: 'email'
+        }
+      })
     }
     setLoading(false)
-  }, [email])
+  }, [email, addPersistedCheck])
 
   const checkPassword = useCallback(async () => {
     if (!password) return
@@ -283,7 +301,21 @@ export default function EmailBreachChecker() {
             }
           }
         }
-        setPwResult({ pwned: count > 0, count, hash_prefix: prefix })
+        const isPwned = count > 0
+        setPwResult({ pwned: isPwned, count, hash_prefix: prefix })
+        addPersistedCheck({
+          tool: 'Email Breach Checker',
+          label: `Password (${password.length} chars): ${isPwned ? `${count} breaches found` : 'Clean'}`,
+          value: `Password (${password.length} chars) - ${isPwned ? `${count} breaches` : 'Clean'}`,
+          action: 'Audited',
+          category: 'Security',
+          metadata: {
+            length: password.length,
+            pwned: isPwned,
+            count,
+            type: 'password'
+          }
+        })
       } else {
         setPwResult({ error: 'Unexpected response from check server.' })
       }
@@ -292,7 +324,7 @@ export default function EmailBreachChecker() {
     } finally {
       if (mountedRef.current) setPwLoad(false)
     }
-  }, [password])
+  }, [password, addPersistedCheck])
 
   return (
     <ToolShell tool={tool}>
@@ -482,25 +514,43 @@ export default function EmailBreachChecker() {
 
           {/* ── History ── */}
           <AnimatePresence>
-            {history.length > 0 && (
+            {persistedHistory.length > 0 && (
               <Reveal delay={.06}>
                 <ToolCard style={{ marginBottom:18 }}>
-                  <div style={{ fontFamily:'Syne,sans-serif', fontWeight:700,
-                    fontSize:13, color:'#0d0d1a', marginBottom:10 }}>🕐 Recent Checks</div>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+                    <div style={{ fontFamily:'Syne,sans-serif', fontWeight:700,
+                      fontSize:13, color:'#0d0d1a', display:'flex', alignItems:'center', gap:6 }}>
+                      <Clock size={15} color="#4F8EF7" /> Recent Audits ({persistedHistory.length})
+                    </div>
+                    <button onClick={clearToolHistory}
+                      style={{ background:'none', border:'none', color:'#71717a', fontSize:11, cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
+                      <Trash2 size={12} /> Clear
+                    </button>
+                  </div>
                   <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                    {history.map((h, i) => (
-                      <div key={i} onClick={() => setEmail(h.email)}
-                        style={{ display:'flex', justifyContent:'space-between', alignItems:'center',
-                          padding:'8px 13px', background:'#fafbff', borderRadius:10,
-                          border:'1px solid rgba(0,0,0,.06)', cursor:'pointer', fontSize:12.5 }}
-                        onMouseEnter={e => e.currentTarget.style.background='#f0f4ff'}
-                        onMouseLeave={e => e.currentTarget.style.background='#fafbff'}>
-                        <span style={{ color:'#444' }}>{h.email}</span>
-                        <span style={{ color: h.pwned ? '#ef4444' : '#22c55e', fontWeight:700 }}>
-                          {h.pwned ? `⚠️ ${h.count} breach${h.count!==1?'es':''}` : '✅ Clean'}
-                        </span>
-                      </div>
-                    ))}
+                    {persistedHistory.map((h, i) => {
+                      const meta = h.metadata || {}
+                      return (
+                        <div key={h.id || i}
+                          style={{ display:'flex', justifyContent:'space-between', alignItems:'center',
+                            padding:'8px 13px', background:'#fafbff', borderRadius:10,
+                            border:'1px solid rgba(0,0,0,.06)', fontSize:12.5 }}>
+                          <span style={{ color:'#444', fontWeight:500 }}>{h.label}</span>
+                          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                            <span style={{ color: meta.pwned ? '#ef4444' : '#22c55e', fontWeight:700, display:'flex', alignItems:'center', gap:4 }}>
+                              {meta.pwned ? <><AlertTriangle size={13} /> {meta.count} breach{meta.count!==1?'es':''}</> : <><CheckCircle size={13} /> Clean</>}
+                            </span>
+                            <button
+                              onClick={() => removeHistoryEntry(h.id)}
+                              style={{ background:'none', border:'none', color:'#999', cursor:'pointer', padding:2 }}
+                              title="Remove"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </ToolCard>
               </Reveal>

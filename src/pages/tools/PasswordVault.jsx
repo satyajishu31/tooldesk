@@ -5,6 +5,7 @@ import { TOOLS } from '../../constants'
 import { generateQRDataURL } from '../../utils/qrCode'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import { resolveApiUrl, getApiHeaders } from '../../utils/apiConfig'
+import { addToHistory } from '../../utils/history'
 
 const tool = TOOLS.find(t => t.id === 'vault')
 const VAULT_KEY = 'tbpro_vault_v1'
@@ -824,6 +825,16 @@ export default function PasswordVault() {
       if (decryptedData) {
         setEntries(Array.isArray(decryptedData) ? decryptedData : [])
         setIsOpen(true)
+        try {
+          addToHistory({
+            tool: 'Password Vault',
+            label: 'Vault Authenticated',
+            value: `Master password authenticated (${Array.isArray(decryptedData) ? decryptedData.length : 0} items)`,
+            action: 'Unlocked',
+            category: 'security',
+            metadata: { status: 'unlocked', count: Array.isArray(decryptedData) ? decryptedData.length : 0 }
+          })
+        } catch {}
       } else {
         setIsShaking(true)
         setAuthError(localEnc || remoteEnc ? 'Wrong Master Password. Decryption failed.' : 'No existing vault found. If this is your first time, switch to "Create New Vault".')
@@ -875,6 +886,16 @@ export default function PasswordVault() {
       setEntries([])
       setHasLocalVault(true)
       setIsOpen(true)
+      try {
+        addToHistory({
+          tool: 'Password Vault',
+          label: 'Vault Initialized',
+          value: 'Master vault created with AES-GCM encryption',
+          action: 'Setup',
+          category: 'security',
+          metadata: { status: 'created' }
+        })
+      } catch {}
     } catch {
       setAuthError('Failed to initialize encrypted vault. Please try again.')
     } finally {
@@ -920,6 +941,16 @@ export default function PasswordVault() {
     setEntries([])
     try {
       broadcastRef.current?.postMessage('LOCK_VAULT')
+    } catch {}
+    try {
+      addToHistory({
+        tool: 'Password Vault',
+        label: 'Vault Locked',
+        value: 'Session cleared and sensitive memory purged',
+        action: 'Locked',
+        category: 'security',
+        metadata: { status: 'locked' }
+      })
     } catch {}
   }
 
@@ -1148,6 +1179,16 @@ export default function PasswordVault() {
                       const exportObj = { encrypted: true, data: encryptedData }
                       const dataStr = JSON.stringify(exportObj, null, 2)
                       saveFileWithFallback(dataStr, 'vault-backup-encrypted.json', 'application/json')
+                      try {
+                        addToHistory({
+                          tool: 'Password Vault',
+                          label: 'Vault Backup Exported',
+                          value: `Encrypted backup JSON exported (${entries.length} items)`,
+                          action: 'Backup',
+                          category: 'security',
+                          metadata: { count: entries.length, format: 'json' }
+                        })
+                      } catch {}
                     }}>
                     ⬇ Export JSON
                   </button>

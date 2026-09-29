@@ -57,17 +57,17 @@ exports.handler = async function (event, context) {
 
     if (!manifestData) {
       manifestData = {
-        version: '1.0.1',
-        releaseDate: '2026-09-27',
+        version: '1.2.2',
+        releaseDate: '2026-09-29',
         minimumSupportedVersion: '1.0.0',
         notes: 'ToolDesk official release with offline privacy tools.',
         platforms: {
-          macos: { status: 'available', version: '1.0.1' },
-          android: { status: 'available', version: '1.0.1' },
-          windows: { status: 'available', version: '1.0.1' },
-          linux: { status: 'available', version: '1.0.1' },
-          ios: { status: 'pwa-ready', version: '1.0.1' },
-          pwa: { status: 'available', version: '1.0.1' }
+          macos: { status: 'available', version: '1.2.2' },
+          android: { status: 'available', version: '1.2.2' },
+          windows: { status: 'available', version: '1.2.2' },
+          linux: { status: 'available', version: '1.2.2' },
+          ios: { status: 'pwa-ready', version: '1.2.2' },
+          pwa: { status: 'available', version: '1.2.2' }
         }
       }
     }

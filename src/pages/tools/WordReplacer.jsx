@@ -4,6 +4,8 @@ import ToolShell, { ToolCard } from '../../components/ToolShell'
 import { useCopy } from '../../hooks'
 import { TOOLS } from '../../constants'
 import { SmartReplacePanel } from '../../components/AIPanel'
+import { useToolHistory } from '../../hooks/useToolHistory'
+import { Clock, Trash2, Copy, Check } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'wordreplace')
 
@@ -57,7 +59,8 @@ export default function WordReplacer() {
   const [wholeWord, setWholeWord] = useState(false)
   const [replaced,  setReplaced]  = useState(false)
   const [result,    setResult]    = useState('')
-  const [history,   setHistory]   = useState([])
+  const { history: persistedHistory, add: addPersistedReplace, remove: removeHistoryEntry, clear: clearToolHistory } = useToolHistory('Word Replace', 10)
+  const [undoStack, setUndoStack] = useState([])
   const [flash,     setFlash]     = useState(false)
   const [copied,    copy]         = useCopy()
   const [copiedRes, copyRes]      = useCopy()
@@ -76,12 +79,20 @@ export default function WordReplacer() {
     try { re = new RegExp(pattern, flags) } catch { return }
     // Use function replacement to prevent $ pattern substitution ($1, $&, $`, $')
     const newText = text.replace(re, () => withText)
-    setHistory(h => [{ find, with: withText, count, text }, ...h.slice(0, 8)])
+    setUndoStack(prev => [{ find, with: withText, count, text }, ...prev.slice(0, 8)])
+    addPersistedReplace({
+      tool: 'Word Replace',
+      label: `Replaced "${find}" → "${withText || '(deleted)'}" (${count}×)`,
+      value: `Replaced "${find}" with "${withText || '(deleted)'}" (${count} occurrences)`,
+      action: 'Replaced',
+      category: 'Text',
+      metadata: { find, with: withText, count }
+    })
     setResult(newText)
     setReplaced(true)
     setFlash(true)
     setTimeout(() => setFlash(false), 600)
-  }, [find, withText, text, caseSens, wholeWord, count])
+  }, [find, withText, text, caseSens, wholeWord, count, addPersistedReplace])
 
   const reset = () => { setReplaced(false); setResult(''); setFind(''); setWithText('') }
   const applyResult = () => { setText(result); setReplaced(false); setResult('') }
@@ -207,33 +218,59 @@ export default function WordReplacer() {
           <motion.button initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
             onClick={() => copyRes(result)} whileHover={{ scale: 1.01, y: -2 }} whileTap={{ scale: .97 }}
             style={{ width: '100%', padding: '13px', borderRadius: 12, border: 'none', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: 15, color: '#fff', marginBottom: 12, transition: 'background .3s, box-shadow .3s',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               background: copiedRes ? 'linear-gradient(135deg,#22c55e,#16a34a)' : 'linear-gradient(135deg,#4CAF50,#22c55e)',
               boxShadow: '0 6px 20px rgba(34,197,94,.28)' }}>
-            {copiedRes ? '✅ Copied!' : '📋 Copy Replaced Text'}
+            {copiedRes ? <><Check size={18} /> Copied!</> : <><Copy size={18} /> Copy Replaced Text</>}
           </motion.button>
         )}
 
         {/* History */}
-        {history.length > 0 && (
+        {persistedHistory.length > 0 && (
           <div>
-            <label style={{ fontSize: 11, fontWeight: 700, color: '#bbb', textTransform: 'uppercase', letterSpacing: '.6px', display: 'block', marginBottom: 9 }}>Replace History</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '.6px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Clock size={14} color="#4F8EF7" /> Replace History ({persistedHistory.length})
+              </label>
+              <button
+                onClick={clearToolHistory}
+                style={{ background: 'none', border: 'none', color: '#71717a', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                <Trash2 size={12} /> Clear
+              </button>
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-              {history.map((entry, i) => (
-                <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#F5F7FF', borderRadius: 10, border: '1px solid rgba(79,142,247,.1)' }}>
-                  <div style={{ flex: 1, minWidth: 0, fontSize: 12, color: '#555' }}>
-                    <span style={{ color: '#ef4444', fontFamily: 'monospace', background: 'rgba(239,68,68,.08)', padding: '1px 5px', borderRadius: 3 }}>{entry.find}</span>
-                    {' → '}
-                    <span style={{ color: '#22c55e', fontFamily: 'monospace', background: 'rgba(34,197,94,.08)', padding: '1px 5px', borderRadius: 3 }}>{entry.with || '(deleted)'}</span>
-                    <span style={{ color: '#bbb', fontSize: 10.5, marginLeft: 8 }}>{entry.count}×</span>
-                  </div>
-                  <motion.button whileHover={{ scale: 1.06 }} whileTap={{ scale: .93 }}
-                    onClick={() => { setText(entry.text); setReplaced(false); setResult('') }}
-                    style={{ padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: 'pointer', border: '1.5px solid rgba(79,142,247,.2)', background: 'rgba(79,142,247,.07)', color: '#4F8EF7', flexShrink: 0 }}>
-                    ↩ Undo
-                  </motion.button>
-                </motion.div>
-              ))}
+              {persistedHistory.map((entry, i) => {
+                const meta = entry.metadata || {}
+                const matchingUndo = undoStack.find(u => u.find === meta.find)
+                return (
+                  <motion.div key={entry.id || i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#F5F7FF', borderRadius: 10, border: '1px solid rgba(79,142,247,.1)' }}>
+                    <div style={{ flex: 1, minWidth: 0, fontSize: 12, color: '#555' }}>
+                      <span style={{ color: '#ef4444', fontFamily: 'monospace', background: 'rgba(239,68,68,.08)', padding: '1px 5px', borderRadius: 3 }}>{meta.find || 'find'}</span>
+                      {' → '}
+                      <span style={{ color: '#22c55e', fontFamily: 'monospace', background: 'rgba(34,197,94,.08)', padding: '1px 5px', borderRadius: 3 }}>{meta.with || '(deleted)'}</span>
+                      {meta.count ? <span style={{ color: '#888', fontSize: 10.5, marginLeft: 8 }}>{meta.count}×</span> : null}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {matchingUndo && (
+                        <motion.button whileHover={{ scale: 1.06 }} whileTap={{ scale: .93 }}
+                          onClick={() => { setText(matchingUndo.text); setReplaced(false); setResult('') }}
+                          style={{ padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: 'pointer', border: '1.5px solid rgba(79,142,247,.2)', background: 'rgba(79,142,247,.07)', color: '#4F8EF7', flexShrink: 0 }}>
+                          ↩ Undo
+                        </motion.button>
+                      )}
+                      <button
+                        onClick={() => removeHistoryEntry(entry.id)}
+                        style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', padding: 2 }}
+                        title="Remove"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </motion.div>
+                )
+              })}
             </div>
           </div>
         )}

@@ -54,4 +54,23 @@ public class ToolDeskNativeBridgePlugin extends Plugin {
             }
         }).start();
     }
+
+    @PluginMethod
+    public void getPendingSharedFiles(PluginCall call) {
+        org.json.JSONArray arr = new org.json.JSONArray();
+        for (JSONObject obj : ToolDeskNativeBridge.getPendingSharedFileList()) {
+            arr.put(obj);
+        }
+        JSObject ret = new JSObject();
+        ret.put("files", arr);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void clearPendingSharedFiles(PluginCall call) {
+        ToolDeskNativeBridge.clearPendingSharedFileList();
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        call.resolve(ret);
+    }
 }

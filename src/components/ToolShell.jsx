@@ -8,6 +8,7 @@ import AppIcon from './AppIcon'
 import { getToolPrivacyTier } from '../utils/privacyTier'
 import { isToolFavorite, toggleToolFavorite } from '../utils/favorites'
 import { recordRecentTool } from '../utils/recentTools'
+import { Clock } from 'lucide-react'
 
 /* ── Spring presets ── */
 const SPRING_ENTER = { type:'spring', stiffness:320, damping:28, mass:.8 }
@@ -64,9 +65,9 @@ export default function ToolShell({ tool, children }) {
       style={{ paddingTop:'calc(64px + max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px)))', paddingBottom:'calc(48px + max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px)))', minHeight:'100vh', background:'#fafbff' }}
     >
       {/* ── HERO BANNER ── */}
-      <div style={{
+      <div className="tool-shell-hero" style={{
         position:'relative', overflow:'hidden',
-        padding:'clamp(44px,5vw,68px) 16px clamp(32px,4vw,52px)',
+        padding:'clamp(28px, 4vw, 56px) 16px clamp(18px, 3.2vw, 42px)',
         textAlign:'center',
         background:`linear-gradient(160deg,${cat.bg}99 0%,#fafbff 52%)`,
       }}>
@@ -112,6 +113,36 @@ export default function ToolShell({ tool, children }) {
             transition={{ delay: .04, ...EASE_OUT }}
             style={{ display: 'flex', alignItems: 'center', gap: 6, pointerEvents: 'auto' }}>
 
+            {/* History Button */}
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: .96 }}
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('tooldesk-open-history'))
+                }
+              }}
+              title="Open Local History"
+              aria-label="Open Local History"
+              style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                padding: '7px 12px', minHeight: 38, border: '1px solid rgba(0,0,0,.07)',
+                borderRadius: 999, background: 'rgba(255,255,255,.86)',
+                fontFamily: 'DM Sans,sans-serif', fontSize: 13, fontWeight: 600,
+                color: '#475569',
+                cursor: 'pointer',
+                backdropFilter: 'blur(16px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+                boxShadow: '0 2px 10px rgba(0,0,0,.04), inset 0 1px 0 rgba(255,255,255,0.95)',
+                boxSizing: 'border-box',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <Clock size={13} style={{ color: '#4F8EF7' }} />
+              <span className="header-btn-text">History</span>
+            </motion.button>
+
             {/* Favorite Toggle */}
             <motion.button
               type="button"
@@ -145,7 +176,7 @@ export default function ToolShell({ tool, children }) {
           initial={{opacity:0, y:-18}}
           animate={{opacity:1, y:0}}
           transition={{duration:.45, ease:[.22,1,.36,1]}}
-          style={{ marginBottom:24, display:'inline-flex', position:'relative', zIndex:2 }}>
+          style={{ marginBottom:'clamp(14px, 2.5vw, 24px)', display:'inline-flex', position:'relative', zIndex:2 }}>
 
           {/* Outer ambient glow — CSS pulse */}
           <div style={{ position:'absolute',inset:-26,borderRadius:'50%',
@@ -223,9 +254,11 @@ export default function ToolShell({ tool, children }) {
       </div>
 
       {/* ── CONTENT ── */}
-      <div style={{ maxWidth:800,margin:'0 auto',padding:'clamp(16px,3vw,28px) clamp(12px,4vw,16px) 72px' }}>
+      <div style={{ maxWidth:800,margin:'0 auto',padding:'clamp(10px,2.5vw,22px) clamp(10px,3.5vw,16px) 64px' }}>
         <Reveal delay={.04}>
-          <ToolAnimation toolId={tool.id}/>
+          <div className="tool-anim-wrapper">
+            <ToolAnimation toolId={tool.id}/>
+          </div>
         </Reveal>
         <Reveal delay={.1}>
           {children}

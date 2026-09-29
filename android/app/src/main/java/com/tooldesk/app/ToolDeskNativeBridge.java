@@ -33,6 +33,35 @@ import java.io.OutputStream;
  */
 public class ToolDeskNativeBridge {
     private final Activity activity;
+    private static final java.util.List<JSONObject> pendingSharedFiles = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+    public static void addPendingSharedFile(JSONObject fileObj) {
+        if (fileObj != null) {
+            pendingSharedFiles.add(fileObj);
+        }
+    }
+
+    public static java.util.List<JSONObject> getPendingSharedFileList() {
+        return pendingSharedFiles;
+    }
+
+    public static void clearPendingSharedFileList() {
+        pendingSharedFiles.clear();
+    }
+
+    @JavascriptInterface
+    public String getPendingSharedFiles() {
+        org.json.JSONArray arr = new org.json.JSONArray();
+        for (JSONObject obj : pendingSharedFiles) {
+            arr.put(obj);
+        }
+        return arr.toString();
+    }
+
+    @JavascriptInterface
+    public void clearPendingSharedFiles() {
+        pendingSharedFiles.clear();
+    }
 
     public ToolDeskNativeBridge(Activity activity) {
         this.activity = activity;

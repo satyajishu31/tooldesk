@@ -3,8 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { useCopy } from '../../hooks'
 import { TOOLS } from '../../constants'
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import { saveFileWithFallback } from '../../utils/fileSaver'
+import { createOutput } from '../../utils/fileEngine'
+import { createJob, JOB_STATES } from '../../utils/jobEngine'
+import { createBatchSession, BATCH_ITEM_STATUS } from '../../utils/batchEngine'
+import { consumePendingInboundFiles } from '../../utils/inboundShare'
+import { convertTextToPdf, convertMarkdownToPdf, getPdfJs } from '../../utils/pdfEngine'
+import { addToHistory } from '../../utils/history'
 
 const tool = TOOLS.find(t => t.id === 'fileconvert')
 
@@ -53,45 +58,12 @@ function base64ToUtf8(b64) {
 }
 
 /* ══════════════════════════════════════════
-   PDF.JS  (CDN)
+   PDF EXTRACTION (LOCAL)
 ══════════════════════════════════════════ */
-let _pdfjs = null
-let _pdfjsPromise = null
-async function getPdfJs() {
-  if (_pdfjs) return _pdfjs
-  if (!_pdfjsPromise) {
-    _pdfjsPromise = (async () => {
-      if (window.pdfjsLib) {
-        _pdfjs = window.pdfjsLib
-        _pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
-        return _pdfjs
-      }
-      try {
-        const pdfjs = await import('pdfjs-dist')
-        _pdfjs = pdfjs.default || pdfjs
-        _pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
-        window.pdfjsLib = _pdfjs
-        return _pdfjs
-      } catch (err) {
-        console.warn('[FileConverter] Local pdfjs import error, falling back:', err)
-        const s = document.createElement('script')
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.mjs'
-        document.head.appendChild(s)
-        await new Promise((res, rej) => { s.onload = res; s.onerror = rej })
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
-        _pdfjs = window.pdfjsLib
-        return _pdfjs
-      }
-    })()
-  }
-  return _pdfjsPromise
-}
 async function extractPdfText(ab) {
   const lib = await getPdfJs()
   const loadingTask = lib.getDocument({
     data: new Uint8Array(ab),
-    cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/cmaps/',
-    cMapPacked: true,
     isEvalSupported: false,
     enableScripting: false,
   })
@@ -117,94 +89,6 @@ async function extractPdfText(ab) {
   return pages.join('\n\n')
 }
 
-/* ══════════════════════════════════════════
-   TEXT → PDF
-══════════════════════════════════════════ */
-function sanitize(s) {
-  if (!s || typeof s !== 'string') return ''
-  return s
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-    .replace(/\u00A0/g, ' ')
-    .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
-    .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
-    .replace(/[\u2013\u2014\u2015]/g, '-')
-    .replace(/\u2026/g, '...')
-    .replace(/[\u2022\u25E6\u2023]/g, '*')
-    .replace(/[\u00AB\u00BB]/g, '"')
-    .replace(/[\u20AC]/g, 'EUR')
-    .replace(/[\u2264]/g, '<=')
-    .replace(/[\u2265]/g, '>=')
-    .replace(/[\u2260]/g, '!=')
-    .replace(/[\x00-\x09\x0B\x0C\x0E-\x1F]/g, ' ')
-    .replace(/[^\x20-\x7E\xA0-\xFF\n]/g, '?')
-}
-
-function safeMeasureWidth(font, str, size) {
-  try {
-    return font.widthOfTextAtSize(str, size)
-  } catch {
-    const fallback = str.replace(/[^\x20-\x7E]/g, '?')
-    try {
-      return font.widthOfTextAtSize(fallback, size)
-    } catch {
-      return fallback.length * size * 0.55
-    }
-  }
-}
-
-async function textToPdf(text) {
-  text = sanitize(text)
-  const doc = await PDFDocument.create()
-  const font = await doc.embedFont(StandardFonts.Helvetica)
-  const bold = await doc.embedFont(StandardFonts.HelveticaBold)
-  const [W,H,M] = [595,842,55]
-  const maxW = W-M*2
-  const lines = []
-  for (const raw of text.replace(/\r\n/g,'\n').split('\n')) {
-    if (!raw.trim()) { lines.push({text:'',fs:5}); continue }
-    const isH = /^#{1,3} /.test(raw)
-    const clean = raw.replace(/^#{1,6}\s*/,'')
-    const fs = raw.startsWith('# ')?18:raw.startsWith('## ')?15:raw.startsWith('### ')?13:11
-    const f = isH?bold:font
-    let cur=''
-    for (const w of clean.split(' ')) {
-      if (safeMeasureWidth(f, w, fs) > maxW) {
-        if (cur) { lines.push({text:cur,isH,fs,f}); cur='' }
-        let sub = ''
-        for (let i = 0; i < w.length; i++) {
-          const testSub = sub + w[i]
-          if (safeMeasureWidth(f, testSub, fs) > maxW && sub) {
-            lines.push({text:sub,isH,fs,f})
-            sub = w[i]
-          } else {
-            sub = testSub
-          }
-        }
-        cur = sub
-      } else {
-        const test = cur ? cur+' '+w : w
-        if (safeMeasureWidth(f, test, fs) > maxW && cur) { lines.push({text:cur,isH,fs,f}); cur=w }
-        else cur=test
-      }
-    }
-    if (cur) lines.push({text:cur,isH,fs,f:isH?bold:font})
-  }
-  let page=doc.addPage([W,H]); let y=H-M
-  for (const l of lines) {
-    if (y<M+20){page=doc.addPage([W,H]);y=H-M}
-    if (l.text) {
-      try {
-        page.drawText(l.text,{x:M,y,size:l.fs||11,font:l.f||font,color:rgb(.08,.08,.08)})
-      } catch {
-        const safe = l.text.replace(/[^\x20-\x7E]/g, '?')
-        page.drawText(safe,{x:M,y,size:l.fs||11,font:l.f||font,color:rgb(.08,.08,.08)})
-      }
-    }
-    y-=(l.fs||11)+7
-  }
-  return doc.save()
-}
 
 /* ══════════════════════════════════════════
    TEXT CONVERTERS
@@ -245,85 +129,146 @@ function htmlToMd(h) {
     .replace(/<p[^>]*>(.*?)<\/p>/gi,'$1\n\n').replace(/<[^>]+>/g,'')
     .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ').trim()
 }
-function parseCsvRow(row) {
-  const result = []
-  let current = ''
-  let inQuotes = false
-  for (let i = 0; i < row.length; i++) {
-    const char = row[i]
-    if (char === '"') {
-      if (inQuotes && row[i + 1] === '"') {
-        current += '"' // Escaped quote
-        i++
-      } else {
-        inQuotes = !inQuotes // Toggle quote state
-      }
-    } else if (char === ',' && !inQuotes) {
-      result.push(current.trim())
-      current = ''
-    } else {
-      current += char
-    }
-  }
-  result.push(current.trim())
-  return result
-}
-function splitCsvIntoRows(csvText) {
+export function parseCsv(csvText) {
+  if (!csvText || typeof csvText !== 'string') return []
   const rows = []
-  let current = ''
+  let currentRow = []
+  let currentCell = ''
   let inQuotes = false
-  for (let i = 0; i < csvText.length; i++) {
+  let i = 0
+  const len = csvText.length
+
+  while (i < len) {
     const char = csvText[i]
-    if (char === '"') {
-      inQuotes = !inQuotes
-      current += char
-    } else if (char === '\n' && !inQuotes) {
-      rows.push(current)
-      current = ''
-    } else if (char === '\r') {
-      // Skip carriage return
+
+    if (inQuotes) {
+      if (char === '"') {
+        if (i + 1 < len && csvText[i + 1] === '"') {
+          // Escaped quote: "" -> literal "
+          currentCell += '"'
+          i += 2
+          continue
+        } else {
+          // Closing quote
+          inQuotes = false
+          i++
+          continue
+        }
+      } else {
+        currentCell += char
+        i++
+        continue
+      }
     } else {
-      current += char
+      if (char === '"') {
+        if (currentCell.trim() === '') {
+          inQuotes = true
+          currentCell = '' // Discard any whitespace preceding initial quote
+          i++
+          continue
+        } else {
+          currentCell += '"'
+          i++
+          continue
+        }
+      } else if (char === ',') {
+        currentRow.push(currentCell)
+        currentCell = ''
+        i++
+        continue
+      } else if (char === '\r') {
+        if (i + 1 < len && csvText[i + 1] === '\n') {
+          i++
+        }
+        currentRow.push(currentCell)
+        currentCell = ''
+        rows.push(currentRow)
+        currentRow = []
+        i++
+        continue
+      } else if (char === '\n') {
+        currentRow.push(currentCell)
+        currentCell = ''
+        rows.push(currentRow)
+        currentRow = []
+        i++
+        continue
+      } else {
+        currentCell += char
+        i++
+        continue
+      }
     }
   }
-  if (current) rows.push(current)
-  return rows.filter(r => r.trim().length > 0)
+
+  if (currentCell || currentRow.length > 0) {
+    currentRow.push(currentCell)
+    rows.push(currentRow)
+  }
+
+  // Remove single trailing empty line if it resulted from a final newline
+  if (rows.length > 0 && rows[rows.length - 1].length === 1 && rows[rows.length - 1][0] === '') {
+    rows.pop()
+  }
+
+  return rows
 }
-function csvToJson(csv) {
-  const rows = splitCsvIntoRows(csv)
+
+export function csvToJson(csv) {
+  const rows = parseCsv(csv)
   if (rows.length < 2) throw new Error('CSV needs a header row + at least one data row')
   if (rows.length > 50000) {
     throw new Error('CSV exceeds maximum capacity (50,000 rows). Please use smaller files to prevent browser freezing.')
   }
-  const headers = parseCsvRow(rows[0]).map((h, i) => {
-    const clean = h.replace(/^"|"$/g, '').trim()
+  const seenHeaders = new Map()
+  const headers = rows[0].map((h, i) => {
+    let clean = (typeof h === 'string' ? h.trim() : '')
     if (clean === '__proto__' || clean === 'constructor' || clean === 'prototype') {
-      return `_${clean}`
+      clean = `_${clean}`
     }
-    return clean || `column_${i + 1}`
+    clean = clean || `column_${i + 1}`
+    const count = seenHeaders.get(clean) || 0
+    seenHeaders.set(clean, count + 1)
+    return count > 0 ? `${clean}_${count + 1}` : clean
   })
   const data = rows.slice(1).map(r => {
-    const vals = parseCsvRow(r).map(v => v.replace(/^"|"$/g, ''))
     const obj = {}
     for (let i = 0; i < headers.length; i++) {
       const key = headers[i]
       if (key !== '__proto__' && key !== 'constructor' && key !== 'prototype') {
-        obj[key] = vals[i] ?? ''
+        obj[key] = r[i] ?? ''
       }
     }
     return obj
   })
   return JSON.stringify(data, null, 2)
 }
-function jsonToCsv(json) {
-  const arr = (() => { const d = JSON.parse(json); return Array.isArray(d) ? d : [d] })()
+
+export function jsonToCsv(json) {
+  const parsed = typeof json === 'string' ? JSON.parse(json) : json
+  const arr = Array.isArray(parsed) ? parsed : [parsed]
   if (!arr.length) throw new Error('Empty JSON array')
   if (arr.length > 50000) {
     throw new Error('JSON exceeds maximum capacity (50,000 items). Please use smaller files to prevent browser freezing.')
   }
-  const validObjects = arr.filter(item => item !== null && typeof item === 'object')
-  if (!validObjects.length) throw new Error('JSON array must contain valid objects')
-  const keys = [...new Set(validObjects.flatMap(Object.keys))].filter(k => k !== '__proto__' && k !== 'constructor' && k !== 'prototype')
+
+  // Support arrays containing primitives e.g. [1, 2, 3] or ["apple", "banana"]
+  const hasPrimitives = arr.some(item => item === null || typeof item !== 'object')
+  let normalizedItems
+  if (hasPrimitives) {
+    normalizedItems = arr.map(item => {
+      if (item === null || typeof item !== 'object') {
+        return { value: item }
+      }
+      return item
+    })
+  } else {
+    normalizedItems = arr
+  }
+
+  const keys = [...new Set(normalizedItems.flatMap(Object.keys))].filter(k => k !== '__proto__' && k !== 'constructor' && k !== 'prototype')
+  if (!keys.length) keys.push('value')
+
   const esc = v => {
     let val = (v !== null && typeof v === 'object') ? JSON.stringify(v) : String(v ?? '')
     if (/^[=+\-@\t\r]/.test(val)) {
@@ -331,7 +276,7 @@ function jsonToCsv(json) {
     }
     return val.includes(',') || val.includes('"') || val.includes('\n') || val.includes('\r') ? `"${val.replace(/"/g, '""')}"` : val
   }
-  return [keys.map(esc).join(','), ...validObjects.map(r => keys.map(k => esc(r[k])).join(','))].join('\n')
+  return [keys.map(esc).join(','), ...normalizedItems.map(r => keys.map(k => esc(r[k])).join(','))].join('\n')
 }
 
 /* ══════════════════════════════════════════
@@ -416,10 +361,26 @@ async function loadFFmpeg() {
         import('@ffmpeg/util'),
       ])
       const ffmpeg = new FFmpeg()
-      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm'
+
+      // Attempt self-hosted local assets first for offline & PWA capability
+      let coreURL = null
+      let wasmURL = null
+      try {
+        const testRes = await fetch('/ffmpeg/ffmpeg-core.js', { method: 'HEAD' })
+        if (testRes.ok) {
+          coreURL = await toBlobURL('/ffmpeg/ffmpeg-core.js', 'text/javascript')
+          wasmURL = await toBlobURL('/ffmpeg/ffmpeg-core.wasm', 'application/wasm')
+        }
+      } catch {}
+
+      // Validate self-hosted local assets
+      if (!coreURL || !wasmURL) {
+        throw new Error('Self-hosted FFmpeg assets (/ffmpeg/) are not available. Please ensure public/ffmpeg/ files are present.')
+      }
+
       await ffmpeg.load({
-        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+        coreURL,
+        wasmURL,
       })
       return ffmpeg
     } catch (err) {
@@ -556,12 +517,14 @@ const ALL_SUBS = GROUPS.flatMap(g=>g.subs.map(s=>({...s,groupColor:g.color,group
 /* ══════════════════════════════════════════
    CONVERSION ENGINE
 ══════════════════════════════════════════ */
-async function doConvert(sub, textInput, binaryInput, mediaOpts, fileBlob) {
+async function doConvert(sub, textInput, binaryInput, mediaOpts, fileBlob, signal) {
+  if (signal?.aborted) throw new Error('Operation was cancelled')
   const {from, to, binary, isMedia, mode} = sub
   const t = textInput
 
   // ── Media conversions — need original File/Blob, NOT the ArrayBuffer ──
   if (isMedia === 'image') {
+    if (signal?.aborted) throw new Error('Operation was cancelled')
     const src = fileBlob || binaryInput
     if (!src) throw new Error('Please upload an image file.')
     // processImage accepts both File and ArrayBuffer — convert AB to blob if needed
@@ -577,10 +540,12 @@ async function doConvert(sub, textInput, binaryInput, mediaOpts, fileBlob) {
       grayscale: mode === 'grayscale',
     }
     const result = await processImage(imgFile, opts)
+    if (signal?.aborted) throw new Error('Operation was cancelled')
     return { blob: result.blob, ext: result.ext, mime: result.mime, w: result.w, h: result.h, isBlob: true }
   }
 
   if (isMedia === 'video') {
+    if (signal?.aborted) throw new Error('Operation was cancelled')
     // compressVideo expects a File/Blob — use fileBlob directly
     const videoFile = fileBlob
     if (!videoFile) throw new Error('Please upload a video file.')
@@ -591,6 +556,7 @@ async function doConvert(sub, textInput, binaryInput, mediaOpts, fileBlob) {
       preset: mediaOpts.videoPreset || 'medium',
       codec: mediaOpts.videoCodec || 'h264',
     }, mediaOpts.onProgress)
+    if (signal?.aborted) throw new Error('Operation was cancelled')
     return { blob: result.blob, ext: result.ext, mime: result.mime, isBlob: true }
   }
 
@@ -604,8 +570,14 @@ async function doConvert(sub, textInput, binaryInput, mediaOpts, fileBlob) {
   }
 
   // ── Text formats ──
-  if (from==='TXT'&&to==='PDF')   return {content:await textToPdf(t), ext:'pdf', mime:'application/pdf', isPdfBytes:true}
-  if (from==='MD' &&to==='PDF')   return {content:await textToPdf(mdToTxt(t)), ext:'pdf', mime:'application/pdf', isPdfBytes:true}
+  if (from==='TXT'&&to==='PDF') {
+    const res = await convertTextToPdf(t, { title: 'Document' })
+    return { content: res.bytes, ext: 'pdf', mime: 'application/pdf', isPdfBytes: true }
+  }
+  if (from==='MD' &&to==='PDF') {
+    const res = await convertMarkdownToPdf(t, { title: 'Markdown Document' })
+    return { content: res.bytes, ext: 'pdf', mime: 'application/pdf', isPdfBytes: true }
+  }
   if (from==='TXT'&&to==='MD')    return {content:t,                  ext:'md',  mime:'text/markdown'}
   if (from==='TXT'&&to==='HTML')  return {content:`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:system-ui;max-width:820px;margin:48px auto;padding:0 28px;line-height:1.85;white-space:pre-wrap;color:#222}</style></head><body>${t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>`, ext:'html', mime:'text/html'}
   if (from==='TXT'&&to==='B64')   return {content:uint8ToBase64(new TextEncoder().encode(t)), ext:'txt', mime:'text/plain'}
@@ -770,25 +742,43 @@ function MediaOpts({ sub, opts, onChange }) {
 }
 
 /* ── Drop zone ── */
-function DropZone({ sub, onFile }) {
+function DropZone({ sub, onFile, onFiles }) {
   const [drag, setDrag] = useState(false)
   return (
     <motion.label
       onDragOver={e=>{e.preventDefault();setDrag(true)}}
       onDragLeave={()=>setDrag(false)}
-      onDrop={e=>{e.preventDefault();setDrag(false);onFile(e.dataTransfer.files[0])}}
+      onDrop={e=>{
+        e.preventDefault();setDrag(false);
+        const dropped = Array.from(e.dataTransfer.files || []).filter(Boolean)
+        if (dropped.length > 1 && onFiles) {
+          onFiles(dropped)
+        } else if (dropped.length > 0) {
+          onFile(dropped[0])
+        }
+      }}
       animate={{borderColor:drag?sub.groupColor:'rgba(0,0,0,.1)',scale:drag?1.01:1,
         background:drag?sub.groupBg:'transparent'}}
       style={{display:'block',border:'2px dashed rgba(0,0,0,.1)',borderRadius:14,
         padding:'30px 20px',textAlign:'center',cursor:'pointer',marginBottom:16}}>
-      <input type="file" style={{display:'none'}} accept={sub.accept}
-        onChange={e=>onFile(e.target.files[0])}/>
+      <input type="file" multiple style={{display:'none'}} accept={sub.accept}
+        onChange={e=>{
+          const selected = Array.from(e.target.files || []).filter(Boolean)
+          if (selected.length > 1 && onFiles) {
+            onFiles(selected)
+          } else if (selected.length > 0) {
+            onFile(selected[0])
+          }
+          e.target.value = ''
+        }}/>
       <div style={{fontSize:36,marginBottom:8}}>{sub.icon}</div>
       <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:14,
         color:'#0d0d1a',marginBottom:4}}>
-        {drag?'Drop to convert':'Drop file here or click to browse'}
+        {drag?'Drop to convert':'Drop file(s) here or click to browse'}
       </div>
-      <div style={{fontSize:12,color:'#aaa'}}>{sub.accept.replace(/\./g,'').toUpperCase()}</div>
+      <div style={{fontSize:12,color:'#aaa'}}>
+        {sub.accept.replace(/\./g,'').toUpperCase()} • Multi-file batch supported
+      </div>
     </motion.label>
   )
 }
@@ -867,6 +857,9 @@ export default function FileConverter() {
   const [error,    setError]    = useState('')
   const [loading,  setLoading]  = useState(false)
   const [progress, setProgress] = useState(0)
+  const [progressText, setProgressText] = useState('')
+  const [batchSession, setBatchSession] = useState(null)
+  const [batchState, setBatchState] = useState(null)
   const [mediaOpts,setOpts]     = useState({quality:85,maxWidth:0,maxHeight:0,videoPreset:'medium',videoCodec:'h264'})
   const [copied,   copy]        = useCopy()
 
@@ -876,6 +869,7 @@ export default function FileConverter() {
   const textRef = useRef('')
   const binaryRef = useRef(null)
   const blobFileRef = useRef(null)
+  const activeJobRef = useRef(null)
 
   const curGroup = GROUPS.find(g=>g.id===groupId)
 
@@ -888,18 +882,26 @@ export default function FileConverter() {
   },[groupId])
 
   const reset = ()=>{
+    if (activeJobRef.current) {
+      try { activeJobRef.current.cancel('Reset') } catch {}
+      activeJobRef.current = null
+    }
     lastFileRef.current = null
     textRef.current = ''
     binaryRef.current = null
     blobFileRef.current = null
     setText(''); setBinary(null); setBlobFile(null); setFname(''); setFsize(0)
-    setOutput(null); setError(''); setProgress(0); setLoading(false)
+    setOutput(null); setError(''); setProgress(0); setProgressText(''); setLoading(false)
   }
 
   const selectSub = s => {
+    if (activeJobRef.current) {
+      try { activeJobRef.current.cancel('Sub changed') } catch {}
+      activeJobRef.current = null
+    }
     subRef.current = s
     setSub(s)
-    setOutput(null); setError(''); setProgress(0); setLoading(false)
+    setOutput(null); setError(''); setProgress(0); setProgressText(''); setLoading(false)
 
     // Preserve and adapt existing input file if user already loaded one
     if (lastFileRef.current) {
@@ -950,9 +952,103 @@ export default function FileConverter() {
     }
   },[sub])
 
+  const handleFiles = useCallback(async (fileList) => {
+    const files = Array.from(fileList || []).filter(Boolean)
+    if (!files.length) return
+
+    if (files.length === 1) {
+      handleFile(files[0])
+      return
+    }
+
+    const activeSub = subRef.current || sub
+    setError('')
+    setOutput(null)
+
+    const session = createBatchSession({
+      tool: 'File Converter',
+      concurrency: typeof navigator !== 'undefined' && /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 1 : 2,
+      zipFilename: `tooldesk-${activeSub.from.toLowerCase()}-to-${activeSub.to.toLowerCase()}-batch.zip`,
+      onUpdate: (state) => setBatchState(state),
+      processItem: async (file, { signal, onProgress }) => {
+        if (signal?.aborted) throw new Error('Cancelled')
+        let curText = ''
+        let curBinary = null
+        if (activeSub.binary) {
+          curBinary = await readAB(file)
+        } else {
+          curText = await readText(file)
+        }
+
+        const optsWithCb = {
+          ...(mediaOptsRef.current || mediaOpts),
+          signal,
+          onProgress: (p) => onProgress(p)
+        }
+
+        const res = await doConvert(
+          activeSub,
+          curText,
+          curBinary,
+          optsWithCb,
+          file,
+          signal
+        )
+
+        let blob
+        if (res.isBlob) {
+          blob = res.blob
+        } else if (res.isPdfBytes) {
+          blob = new Blob([res.content], { type: 'application/pdf' })
+        } else {
+          blob = new Blob([res.content], { type: (res.mime || 'text/plain') + ';charset=utf-8' })
+        }
+
+        const outName = file.name.replace(/\.[^.]+$/, '') + '.' + res.ext
+        return { blob, filename: outName, mimeType: res.mime || blob.type }
+      }
+    })
+
+    setBatchSession(session)
+    session.addFiles(files)
+  }, [sub, handleFile, mediaOpts])
+
+  useEffect(() => {
+    const pending = consumePendingInboundFiles()
+    if (pending && pending.length > 0) {
+      if (pending.length > 1) {
+        handleFiles(pending)
+      } else {
+        handleFile(pending[0])
+      }
+    }
+    const handleShared = (e) => {
+      if (e.detail && e.detail.length > 0) {
+        if (e.detail.length > 1) {
+          handleFiles(e.detail)
+        } else {
+          handleFile(e.detail[0])
+        }
+      }
+    }
+    window.addEventListener('tooldesk-shared-files-ready', handleShared)
+    return () => window.removeEventListener('tooldesk-shared-files-ready', handleShared)
+  }, [handleFile, handleFiles])
+
   const handleOptsChange = useCallback(newOpts => {
     mediaOptsRef.current = newOpts
     setOpts(newOpts)
+  }, [])
+
+  const handleCancel = useCallback(() => {
+    if (activeJobRef.current) {
+      activeJobRef.current.cancel('Operation cancelled by user')
+      activeJobRef.current = null
+      setLoading(false)
+      setProgress(0)
+      setProgressText('')
+      setError('Conversion was cancelled.')
+    }
   }, [])
 
   const handleConvert = useCallback(async()=>{
@@ -965,30 +1061,106 @@ export default function FileConverter() {
       setError('Please upload a file or enter input first.')
       return
     }
-    setError(''); setOutput(null); setLoading(true); setProgress(0)
+
+    if (fsize > 250 * 1024 * 1024) {
+      setError('File exceeds maximum 250MB safety limit.')
+      return
+    }
+    if (curText && curText !== '__BINARY__' && curText.length > 25000000) {
+      setError('Text content exceeds maximum 25MB safety limit.')
+      return
+    }
+
+    setError('')
+    setOutput(null)
+    setLoading(true)
+    setProgress(0)
+    setProgressText('Queued…')
+
+    const job = createJob({
+      tool: 'File Converter',
+      operation: `${activeSub.from}_to_${activeSub.to}`,
+      input: { fname, fsize, from: activeSub.from, to: activeSub.to },
+      execute: async (signal, onProgress) => {
+        if (signal?.aborted) throw new Error('Operation was cancelled')
+        const optsWithCb = {
+          ...(mediaOptsRef.current || mediaOpts),
+          signal,
+          onProgress: (p) => {
+            onProgress(p, `Processing ${activeSub.from} → ${activeSub.to} (${Math.round(p)}%)`)
+          }
+        }
+        return await doConvert(
+          activeSub,
+          curText === '__BINARY__' ? '' : curText,
+          curBinary,
+          optsWithCb,
+          curBlob,
+          signal
+        )
+      }
+    })
+
+    activeJobRef.current = job
+
+    job.on('progress', (p, txt) => {
+      setProgress(p)
+      if (txt) setProgressText(txt)
+    })
+
     try {
-      const optsWithCb = { ...(mediaOptsRef.current || mediaOpts), onProgress: p=>setProgress(p) }
-      const result = await doConvert(activeSub, curText==='__BINARY__'?'':curText, curBinary, optsWithCb, curBlob)
+      const result = await job.start()
       setOutput({ ...result, origSize: fsize })
       setProgress(100)
+      setProgressText('Completed')
+      try {
+        addToHistory({
+          tool: 'File Converter',
+          label: `${activeSub.label} (${activeSub.from} → ${activeSub.to})`,
+          value: `Converted to .${result.ext}`,
+          action: 'Converted',
+          category: 'convert',
+          metadata: { from: activeSub.from, to: activeSub.to, ext: result.ext }
+        })
+      } catch {}
     } catch(e) {
-      setError(e.message || 'Conversion failed.')
+      if (e.category === 'CANCELLED' || e.message?.includes('cancelled') || e.message?.includes('aborted')) {
+        setError('Conversion was cancelled.')
+      } else {
+        setError(e.message || 'Conversion failed.')
+      }
     } finally {
       setLoading(false)
+      activeJobRef.current = null
     }
-  }, [sub, text, binary, mediaOpts, fsize, blobFile])
+  }, [sub, text, binary, mediaOpts, fsize, blobFile, fname])
 
-
-  const handleDownload = ()=>{
+  const handleDownload = async () => {
     if (!output) return
     const name = fname ? fname.replace(/\.[^.]+$/,'.')+output.ext : 'converted.'+output.ext
+    let blob
     if (output.isBlob) {
-      dlBlob(output.blob, name)
+      blob = output.blob
     } else if (output.isPdfBytes) {
-      dlBlob(new Blob([output.content],{type:'application/pdf'}), name)
+      blob = new Blob([output.content], { type: 'application/pdf' })
     } else {
-      dlBlob(new Blob([output.content],{type:output.mime+';charset=utf-8'}), name)
+      blob = new Blob([output.content], { type: (output.mime || 'text/plain') + ';charset=utf-8' })
     }
+
+    const fileOutput = createOutput({
+      blob,
+      filename: name,
+      mimeType: output.mime || blob.type,
+      sourceTool: 'File Converter',
+      metadata: {
+        from: sub?.from,
+        to: sub?.to,
+        originalSize: fsize || (text ? text.length : 0),
+        outputSize: blob.size,
+      }
+    })
+
+    await fileOutput.download()
   }
 
   const outputSize = output?.isBlob ? output.blob?.size : output?.isPdfBytes ? output.content?.length : output?.content?.length
@@ -1049,19 +1221,88 @@ export default function FileConverter() {
           <MediaOpts sub={sub} opts={mediaOpts} onChange={handleOptsChange}/>
         )}
 
+        {/* Batch Queue Section */}
+        {batchState && batchState.items.length > 0 && (
+          <div style={{marginBottom:20,padding:'16px 18px',background:'#F8FAFC',borderRadius:14,border:'1.5px solid rgba(79,142,247,.2)'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12,flexWrap:'wrap',gap:8}}>
+              <div>
+                <div style={{fontSize:14,fontWeight:700,color:'#0d0d1a',fontFamily:'Syne,sans-serif'}}>
+                  📦 Batch Processing Queue ({batchState.items.length} files)
+                </div>
+                <div style={{fontSize:12,color:'#64748B',marginTop:2}}>
+                  Completed: {batchState.done}/{batchState.total} • Failed: {batchState.failed} • {batchState.isProcessing ? '⚡ Processing…' : 'Idle'}
+                </div>
+              </div>
+              <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+                {batchState.isProcessing && (
+                  <button onClick={() => batchSession?.cancelAll()}
+                    style={{padding:'6px 12px',borderRadius:8,background:'rgba(239,68,68,.1)',border:'1px solid rgba(239,68,68,.2)',color:'#ef4444',fontSize:12,fontWeight:600,cursor:'pointer'}}>
+                    ✕ Cancel Batch
+                  </button>
+                )}
+                {batchState.failed > 0 && !batchState.isProcessing && (
+                  <button onClick={() => batchSession?.retryFailed()}
+                    style={{padding:'6px 12px',borderRadius:8,background:'#F1F5F9',border:'1px solid #CBD5E1',color:'#334155',fontSize:12,fontWeight:600,cursor:'pointer'}}>
+                    🔄 Retry Failed
+                  </button>
+                )}
+                {batchState.done > 0 && !batchState.isProcessing && (
+                  <button onClick={() => batchSession?.exportZip()}
+                    style={{padding:'6px 14px',borderRadius:8,background:'#22C55E',border:'none',color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',boxShadow:'0 2px 8px rgba(34,197,94,.3)'}}>
+                    ⬇️ Download Batch (ZIP)
+                  </button>
+                )}
+                {!batchState.isProcessing && (
+                  <button onClick={() => { batchSession?.clear(); setBatchState(null); setBatchSession(null) }}
+                    style={{padding:'6px 10px',borderRadius:8,background:'transparent',border:'1px solid #E2E8F0',color:'#64748B',fontSize:12,cursor:'pointer'}}>
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
+            <div style={{height:6,background:'#E2E8F0',borderRadius:3,overflow:'hidden',marginBottom:12}}>
+              <div style={{height:'100%',width:`${batchState.progress}%`,background:'#4F8EF7',transition:'width 0.3s ease'}}/>
+            </div>
+            <div style={{maxHeight:160,overflowY:'auto',display:'flex',flexDirection:'column',gap:6}}>
+              {batchState.items.map(it => (
+                <div key={it.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'6px 10px',background:'#fff',borderRadius:8,border:'1px solid #E2E8F0',fontSize:12}}>
+                  <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',maxWidth:'60%',color:'#1E293B',fontWeight:500}}>
+                    {it.name}
+                  </span>
+                  <div style={{display:'flex',alignItems:'center',gap:8}}>
+                    {it.status === 'processing' && <span style={{color:'#4F8EF7',fontWeight:600}}>⚡ {it.progress}%</span>}
+                    {it.status === 'done' && <span style={{color:'#16A34A',fontWeight:600}}>✓ Done</span>}
+                    {it.status === 'failed' && <span style={{color:'#DC2626',fontWeight:600}} title={it.error}>✕ Failed</span>}
+                    {it.status === 'cancelled' && <span style={{color:'#64748B'}}>Cancelled</span>}
+                    {it.status === 'queued' && <span style={{color:'#94A3B8'}}>Queued</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Input area */}
         {sub?.binary ? (
           fname
             ? <FileBadge name={fname} size={fsize} onClear={reset}/>
-            : <DropZone sub={{...sub,groupColor:curGroup.color,groupBg:curGroup.bg}} onFile={handleFile}/>
+            : <DropZone sub={{...sub,groupColor:curGroup.color,groupBg:curGroup.bg}} onFile={handleFile} onFiles={handleFiles}/>
         ) : (
           <div className="fgrp">
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
               <label className="lbl" style={{margin:0}}>Input ({sub?.from})</label>
               <div style={{display:'flex',gap:6}}>
-                <input id="fc-file" type="file" style={{display:'none'}}
+                <input id="fc-file" type="file" multiple style={{display:'none'}}
                   accept={sub?.accept||'*/*'}
-                  onChange={e=>{if(e.target.files[0])handleFile(e.target.files[0]);e.target.value=''}}/>
+                  onChange={e=>{
+                    const selected = Array.from(e.target.files || []).filter(Boolean)
+                    if (selected.length > 1) {
+                      handleFiles(selected)
+                    } else if (selected.length === 1) {
+                      handleFile(selected[0])
+                    }
+                    e.target.value=''
+                  }}/>
                 <label htmlFor="fc-file"
                   style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 13px',
                     borderRadius:999,background:'#f0f1f8',border:'1.5px solid rgba(0,0,0,.08)',
@@ -1090,17 +1331,24 @@ export default function FileConverter() {
           </div>
         )}
 
-        {/* Progress bar for media */}
-        {loading && sub?.isMedia && (
+        {/* Universal JobEngine Progress Bar & Real Cancel Button */}
+        {loading && (
           <div style={{marginBottom:14}}>
-            <div style={{display:'flex',justifyContent:'space-between',marginBottom:5}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:5}}>
               <span style={{fontSize:12,fontWeight:600,color:'#4F8EF7'}}>
-                {sub.isMedia==='video'?'Re-encoding video…':'Converting…'}
+                {progressText || (sub?.isMedia==='video'?'Re-encoding video…':'Converting…')}
               </span>
-              <span style={{fontSize:12,fontWeight:700,color:'#4F8EF7'}}>{progress}%</span>
+              <div style={{display:'flex',alignItems:'center',gap:10}}>
+                <span style={{fontSize:12,fontWeight:700,color:'#4F8EF7'}}>{progress}%</span>
+                <button onClick={handleCancel}
+                  style={{padding:'2px 8px',borderRadius:6,background:'rgba(239,68,68,.1)',
+                    border:'1px solid rgba(239,68,68,.25)',color:'#ef4444',fontSize:11,fontWeight:600,cursor:'pointer'}}>
+                  ✕ Cancel
+                </button>
+              </div>
             </div>
             <div style={{height:7,background:'#e5e7ef',borderRadius:4,overflow:'hidden'}}>
-              <motion.div animate={{width:`${progress}%`}} transition={{duration:.4,ease:'easeOut'}}
+              <motion.div animate={{width:`${progress}%`}} transition={{duration:.2,ease:'easeOut'}}
                 style={{height:'100%',background:`linear-gradient(90deg,${curGroup.color}99,${curGroup.color})`,borderRadius:4}}/>
             </div>
           </div>

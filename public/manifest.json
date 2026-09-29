@@ -35,5 +35,18 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "share_target": {
+    "action": "/tools/fileconvert",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "files": [
+        {
+          "name": "files",
+          "accept": ["*/*", "image/*", "application/pdf", "text/*"]
+        }
+      ]
+    }
+  }
 }

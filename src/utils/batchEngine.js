@@ -224,7 +224,14 @@ export function createBatchSession({
 
       const zipBlob = await zip.generateAsync({ type: 'blob' })
       const finalName = customName || zipFilename || 'tooldesk-batch-export.zip'
-      return saveFileWithFallback(zipBlob, finalName, 'application/zip')
+      const output = createOutput(zipBlob, {
+        filename: finalName,
+        mimeType: 'application/zip',
+        tool: tool || 'batch',
+        action: 'export-zip',
+        metadata: { count: doneItems.length }
+      })
+      return await output.download()
     },
 
     /**

@@ -16,7 +16,7 @@ function rr(c, x, y, w, h, r) { c.beginPath(); rrPath(c, x, y, w, h, r) }
 
 function AnimBox({ children, bg='#F5F7FF', minH=200 }) {
   return (
-    <div style={{ borderRadius:16,overflow:'hidden',minHeight:minH,background:bg,
+    <div className="tool-anim-box" style={{ borderRadius:16,overflow:'hidden',minHeight:minH,background:bg,
       display:'flex',alignItems:'center',justifyContent:'center',
       padding:'18px 14px',position:'relative',width:'100%',
       contain:'layout style',

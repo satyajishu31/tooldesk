@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { TOOLS } from '../../constants'
+import { addToHistory } from '../../utils/history'
 import DeveloperUtilities from '../../components/DeveloperUtilities'
 
 const tool = TOOLS.find(t => t.id === 'systeminfo')
@@ -82,6 +83,19 @@ export default function SystemInfo() {
       networkSpeed: speed,
       networkType: type
     }))
+
+    addToHistory({
+      tool: 'System Info & Audit',
+      label: `${plat}: ${res}, ${cores} Cores`,
+      value: `${plat} (${cores} cores, ${res})`,
+      action: 'Audited',
+      category: 'Dev',
+      metadata: {
+        platform: String(plat),
+        screenRes: res,
+        cpuCores: String(cores)
+      }
+    })
 
     // 4. Battery status with cleanup
     let activeBat = null
