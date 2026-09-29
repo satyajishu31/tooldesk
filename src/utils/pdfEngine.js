@@ -1598,15 +1598,14 @@ export async function compressPdf(file, arg2 = null, arg3 = null) {
   let bestSize = bestBytes.length
   let reductionNotice = ''
 
-  // 2. If balanced or high compression requested and in browser environment with PDF.js available:
-  if ((preset === 'balanced' || preset === 'high') && typeof window !== 'undefined' && typeof document !== 'undefined') {
+  // 2. If balanced, high compression, or explicit DPI requested and in browser environment with PDF.js available:
+  const isLosslessOnly = preset === 'lossless' && !options.dpi
+  if (!isLosslessOnly && typeof window !== 'undefined' && typeof document !== 'undefined') {
     try {
-      if (onProgress) onProgress(`Applying ${preset} image downsampling...`)
-      const pdfjs = await getPdfJs()
-      const pdf = await pdfjs.getDocument({ data: buf.slice(0), isEvalSupported: false }).promise
-      const numPages = pdf.numPages
-      const targetScale = preset === 'high' ? 1.0 : 1.35
-      const jpegQuality = preset === 'high' ? 0.50 : 0.70
+      const targetDpi = options.dpi || (preset === 'high' ? 72 : 96)
+      const targetScale = options.dpi ? (options.dpi / 72) : (preset === 'high' ? 1.0 : 1.33)
+      const jpegQuality = options.quality !== undefined ? Math.max(0.1, Math.min(1.0, options.quality)) : (preset === 'high' ? 0.50 : 0.70)
+      if (onProgress) onProgress(`Applying ${targetDpi} DPI (${preset}) optimization...`)
 
       const outDoc = await PDFDocument.create()
 
@@ -2090,20 +2089,114 @@ export async function cleanPdfMetadata(file, onProgress = null) {
 }
 
 /**
- * Legitimate authorized PDF unlock using provided password
- * Decrypts protected pages via PDF.js and reconstructs an unencrypted PDF
+ * Standards-compliant PDF encryption and password locking
+ * Implements AES-256 (PDF Standard) or RC4-128 with granular permissions.
  * @param {File|Blob} file
+ * @param {string} password User password to open document
+ * @param {Object} options { confirmPassword, ownerPassword, algorithm, permissions }
+ * @param {Function} onProgress
+ */
+export async function lockPdf(file, password, options = {}, onProgress = null) {
+  if (!password || typeof password !== 'string' || !password.trim()) {
+    throw new Error('A non-empty password is required to lock this PDF.')
+  }
+  if (options.confirmPassword && password !== options.confirmPassword) {
+    throw new Error('Passwords do not match. Please confirm your password.')
+  }
+
+  if (onProgress) onProgress('Importing cryptographic engine and analyzing PDF structure...')
+  const { encryptPDF } = await import('@pdfsmaller/pdf-encrypt')
+  const arrayBuffer = await toSafeArrayBuffer(file)
+  const uint8 = new Uint8Array(arrayBuffer)
+  const baseName = file?.name ? file.name.replace(/\.pdf$/i, '') : 'document'
+
+  // Verify that input is a valid PDF
+  const pdfDoc = await safeLoadPdfDocument(arrayBuffer.slice(0), baseName)
+  const pageCount = pdfDoc.getPageCount()
+
+  if (onProgress) onProgress('Applying cryptographic encryption and permission restrictions...')
+
+  const algorithm = options.algorithm === 'RC4-128' ? 'RC4-128' : 'AES-256'
+  const encryptOpts = {
+    algorithm,
+  }
+
+  if (options.ownerPassword && options.ownerPassword.trim()) {
+    encryptOpts.ownerPassword = options.ownerPassword.trim()
+  }
+
+  if (options.permissions) {
+    encryptOpts.permissions = {
+      print: options.permissions.print || 'highResolution',
+      copy: options.permissions.copy !== false,
+      modify: options.permissions.modify !== false,
+      annotate: options.permissions.annotate !== false,
+      fillForms: options.permissions.fillForms !== false,
+      assemble: options.permissions.assemble !== false,
+    }
+  }
+
+  const encryptedBytes = await encryptPDF(uint8, password, encryptOpts)
+
+  const blob = new Blob([encryptedBytes], { type: 'application/pdf' })
+  return {
+    bytes: encryptedBytes,
+    blob,
+    name: `protected-${baseName}.pdf`,
+    size: encryptedBytes.length,
+    pageCount,
+    algorithm,
+    permissions: encryptOpts.permissions || null,
+  }
+}
+
+/**
+ * Authorized PDF decryption using provided password
+ * Attempts direct lossless vector decryption via @pdfsmaller/pdf-decrypt,
+ * with fallback to authenticated PDF.js rendering for proprietary legacy dialects.
+ * @param {File|Blob|Uint8Array|ArrayBuffer} file
  * @param {string} password
  * @param {Function} onProgress
  */
 export async function unlockPdf(file, password, onProgress = null) {
-  if (onProgress) onProgress('Authenticating credentials and decrypting...')
-  const pdfjs = await getPdfJs()
-  const arrayBuffer = await file.arrayBuffer()
+  if (!password || typeof password !== 'string' || !password.trim()) {
+    throw new Error('Password is required to decrypt this document.')
+  }
+  if (onProgress) onProgress('Authenticating credentials and decrypting document...')
+  const arrayBuffer = await toSafeArrayBuffer(file)
+  const uint8 = new Uint8Array(arrayBuffer)
+  const baseName = file?.name ? file.name.replace(/\.pdf$/i, '') : 'document'
 
+  // 1. Primary: Direct standards-compliant lossless vector decryption
+  try {
+    const { decryptPDF } = await import('@pdfsmaller/pdf-decrypt')
+    const decryptedBytes = await decryptPDF(uint8, password)
+    if (decryptedBytes && decryptedBytes.length > 0) {
+      const doc = await PDFDocument.load(decryptedBytes, { ignoreEncryption: false })
+      const numPages = doc.getPageCount()
+      const blob = new Blob([decryptedBytes], { type: 'application/pdf' })
+      return {
+        bytes: decryptedBytes,
+        blob,
+        name: `unlocked-${baseName}.pdf`,
+        size: decryptedBytes.length,
+        pageCount: numPages,
+        mode: 'lossless-vector',
+      }
+    }
+  } catch (decErr) {
+    const msg = decErr?.message || ''
+    if (/incorrect password/i.test(msg) || /wrong password/i.test(msg)) {
+      throw new Error('Incorrect password. The encrypted PDF could not be decrypted.')
+    }
+    console.warn('[unlockPdf] Primary decrypt failed, attempting PDF.js fallback:', decErr)
+  }
+
+  // 2. Secondary Fallback: Authenticated render via PDF.js
+  const pdfjs = await getPdfJs()
   let pdf
   try {
-    const loadingTask = pdfjs.getDocument({ data: arrayBuffer, password, isEvalSupported: false, enableScripting: false })
+    const loadingTask = pdfjs.getDocument({ data: arrayBuffer.slice(0), password, isEvalSupported: false, enableScripting: false })
     pdf = await loadingTask.promise
   } catch (err) {
     if (/password|incorrect/i.test(err?.message || '')) {
@@ -2142,6 +2235,7 @@ export async function unlockPdf(file, password, onProgress = null) {
 
     canvas.width = 0
     canvas.height = 0
+    if (typeof page.cleanup === 'function') page.cleanup()
   }
 
   const bytes = await newPdfDoc.save()
@@ -2149,9 +2243,37 @@ export async function unlockPdf(file, password, onProgress = null) {
   return {
     bytes,
     blob,
-    name: `unlocked-${file.name}`,
+    name: `unlocked-${baseName}.pdf`,
     size: bytes.length,
     pageCount: numPages,
+    mode: 'authenticated-render',
+  }
+}
+
+/**
+ * Change or rotate password on an encrypted PDF document
+ * @param {File|Blob|Uint8Array|ArrayBuffer} file
+ * @param {string} currentPassword
+ * @param {string} newPassword
+ * @param {Object} options
+ * @param {Function} onProgress
+ */
+export async function changePdfPassword(file, currentPassword, newPassword, options = {}, onProgress = null) {
+  if (!currentPassword) throw new Error('Current password is required.')
+  if (!newPassword) throw new Error('New password is required.')
+  if (options.confirmPassword && newPassword !== options.confirmPassword) {
+    throw new Error('New passwords do not match.')
+  }
+
+  if (onProgress) onProgress('Authenticating current password and unlocking...')
+  const unlocked = await unlockPdf(file, currentPassword, onProgress)
+
+  if (onProgress) onProgress('Applying new encryption password and permissions...')
+  const baseName = file?.name ? file.name.replace(/\.pdf$/i, '') : 'document'
+  const result = await lockPdf(unlocked.blob, newPassword, options, onProgress)
+  return {
+    ...result,
+    name: `re-encrypted-${baseName}.pdf`,
   }
 }
 
@@ -2398,6 +2520,11 @@ export async function createPdfFormFields(file, fields = [], onProgress = null) 
       }
       if (f.defaultValue) dd.select(String(f.defaultValue))
       dd.addToPage(page, { x, y, width, height })
+    } else if (f.type === 'radio') {
+      const rg = form.createRadioGroup(name)
+      const optVal = f.value || `option_${fieldIndex}`
+      rg.addOptionToPage(optVal, page, { x, y, width: Math.max(14, height), height: Math.max(14, height) })
+      if (f.defaultValue === optVal || f.defaultValue === true) rg.select(optVal)
     } else {
       // Default: text field
       const tf = form.createTextField(name)

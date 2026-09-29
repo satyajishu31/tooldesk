@@ -8,7 +8,7 @@ import { addToHistory } from '../../utils/history'
 import { useToolHistory } from '../../hooks/useToolHistory'
 import { hashSingleWorker, compareWorker, hashBatchWorker } from '../../utils/bcryptWorkerClient'
 import { saveFileWithFallback } from '../../utils/fileSaver'
-import { Eye, EyeOff, KeyRound, Search, Layers, ShieldCheck, Copy, Check, AlertTriangle, Info, Lock, Clock, Trash2 } from 'lucide-react'
+import { Eye, EyeOff, KeyRound, Search, Layers, ShieldCheck, Copy, Check, AlertTriangle, Info, Lock, Clock, Trash2, X, Download, BookOpen, Cpu, Sparkles } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'bcrypt')
 
@@ -23,7 +23,9 @@ function Spinner() {
 function TabBar({ tabs, active, onChange }) {
   return (
     <div style={{
-      display: 'flex',
+      display: 'grid',
+      gridAutoFlow: 'column',
+      gridAutoColumns: '1fr',
       gap: 4,
       background: '#F0F1F7',
       borderRadius: 14,
@@ -35,10 +37,10 @@ function TabBar({ tabs, active, onChange }) {
       msOverflowStyle: 'none'
     }}>
       {tabs.map(t => (
-        <motion.button key={t.id} onClick={() => onChange(t.id)} whileTap={{ scale: 0.95 }}
+        <motion.button key={t.id} type="button" onClick={() => onChange(t.id)} whileTap={{ scale: 0.96 }}
           style={{
-            flex: '1 0 auto',
-            padding: '11px 12px',
+            minHeight: 42,
+            padding: '10px 12px',
             borderRadius: 11,
             border: 'none',
             cursor: 'pointer',
@@ -49,15 +51,19 @@ function TabBar({ tabs, active, onChange }) {
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 6,
+            gap: 7,
             background: active === t.id ? 'linear-gradient(135deg,#4F8EF7,#9C6FDE)' : 'transparent',
             color: active === t.id ? '#fff' : '#64748b',
             boxShadow: active === t.id ? '0 4px 14px rgba(79,142,247,.35)' : 'none',
             transition: 'color .2s, box-shadow .2s',
+            lineHeight: 1,
+            boxSizing: 'border-box'
           }}
         >
-          {t.icon}
-          <span>{t.label}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0, verticalAlign: 'middle' }}>
+            {t.icon}
+          </span>
+          <span style={{ display: 'inline-block', lineHeight: 1 }}>{t.label}</span>
         </motion.button>
       ))}
     </div>
@@ -79,8 +85,8 @@ function HashBox({ hash }) {
           <span key={b.label} style={{ background:`${b.color}12`, color:b.color, border:`1px solid ${b.color}28`, fontSize:10.5, fontWeight:700, padding:'3px 11px', borderRadius:999 }}>{b.label}</span>
         ))}
       </div>
-      <button className={`btn ${copied ? 'btn-success' : 'btn-blue'}`} style={{ width: '100%', marginTop: 13 }} onClick={() => copy(hash)}>
-        {copied ? '✓  Copied to clipboard!' : '📋  Copy Hash'}
+      <button className={`btn ${copied ? 'btn-success' : 'btn-blue'}`} style={{ width: '100%', marginTop: 13, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => copy(hash)}>
+        {copied ? <><Check size={16} /> Copied to clipboard!</> : <><Copy size={16} /> Copy Hash</>}
       </button>
     </motion.div>
   )
@@ -167,11 +173,36 @@ function HasherTab() {
           <label className="lbl" style={{ margin: 0 }}>BCrypt Cost Rounds</label>
           <span style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 22, color: '#9C6FDE' }}>{rounds}</span>
         </div>
-        <input type="range" min={4} max={14} value={rounds} onChange={e => setRounds(+e.target.value)} style={{  '--pct': rpct, background:`linear-gradient(to right,#4F8EF7 0%,#4F8EF7 ${Math.max(0,Math.min(100,((rounds)-(4))/((14)-(4))*100))}%,#e2e4ef ${Math.max(0,Math.min(100,((rounds)-(4))/((14)-(4))*100))}%,#e2e4ef 100%)`, WebkitAppearance:'none', appearance:'none', height:5, borderRadius:3, outline:'none' }} className="rs-thumb"/>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#bbb', marginTop: 5 }}>
-          <span>4 — fastest</span>
-          {rounds >= 13 && <span style={{ color: '#f59e0b', fontWeight: 600 }}>⚠ Very slow on mobile</span>}
-          <span>14 — strongest</span>
+        <input
+          type="range"
+          min={4}
+          max={14}
+          value={rounds}
+          onChange={e => setRounds(+e.target.value)}
+          style={{
+            width: '100%',
+            height: 6,
+            borderRadius: 3,
+            background: `linear-gradient(to right, #4F8EF7 0%, #4F8EF7 ${((rounds - 4) / 10) * 100}%, #e2e4ef ${((rounds - 4) / 10) * 100}%, #e2e4ef 100%)`,
+            WebkitAppearance: 'none',
+            appearance: 'none',
+            outline: 'none',
+            cursor: 'pointer',
+            margin: '8px 0',
+            display: 'block'
+          }}
+          className="rs-thumb"
+        />
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#94a3b8', marginTop: 4, padding: '0 2px' }}>
+          <span>4 (Fastest)</span>
+          {rounds >= 13 ? (
+            <span style={{ color: '#f59e0b', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <AlertTriangle size={12} /> Intensive computation
+            </span>
+          ) : (
+            <span>10 (Standard)</span>
+          )}
+          <span>14 (Strongest)</span>
         </div>
       </div>
 
@@ -202,7 +233,9 @@ function HasherTab() {
 
       <div style={{ background: 'rgba(156,111,222,.05)', border: '1px solid rgba(156,111,222,.14)', borderRadius: 13, padding: '14px 16px' }}>
         <div style={{ fontSize: 12, color: '#666', lineHeight: 1.8 }}>
-          <strong style={{ color: '#9C6FDE' }}>ℹ️ How BCrypt works</strong><br />
+          <strong style={{ color: '#9C6FDE', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            <Info size={14} /> How BCrypt works
+          </strong><br />
           BCrypt is a one-way adaptive hash — the original text <strong>cannot be recovered</strong>. Each hash includes a built-in random salt. Use the <strong>Verify</strong> tab to check if a password matches a hash.
         </div>
       </div>
@@ -256,10 +289,10 @@ function VerifierTab() {
   }
 
   const RESULTS = {
-    match:   { icon:'✅', title:'Password Matches!',      sub:'The plain text matches this BCrypt hash.',        color:'#22c55e', bg:'rgba(34,197,94,.06)',  border:'rgba(34,197,94,.28)'  },
-    nomatch: { icon:'❌', title:'No Match',               sub:'The plain text does NOT match this hash.',       color:'#ef4444', bg:'rgba(239,68,68,.06)',  border:'rgba(239,68,68,.28)'  },
-    invalid: { icon:'⚠️', title:'Invalid BCrypt Hash',    sub:'Hash must start with $2a$, $2b$, or $2y$.',      color:'#f59e0b', bg:'rgba(245,158,11,.06)', border:'rgba(245,158,11,.28)' },
-    invalid_cost: { icon:'⚠️', title:'Unsafe Cost Factor', sub:'Hash cost factor must be between 4 and 14 to maintain responsive browser performance.', color:'#f59e0b', bg:'rgba(245,158,11,.06)', border:'rgba(245,158,11,.28)' },
+    match:   { icon: <Check size={40} color="#22c55e" />, title:'Password Matches!',      sub:'The plain text matches this BCrypt hash.',        color:'#22c55e', bg:'rgba(34,197,94,.06)',  border:'rgba(34,197,94,.28)'  },
+    nomatch: { icon: <X size={40} color="#ef4444" />, title:'No Match',               sub:'The plain text does NOT match this hash.',       color:'#ef4444', bg:'rgba(239,68,68,.06)',  border:'rgba(239,68,68,.28)'  },
+    invalid: { icon: <AlertTriangle size={40} color="#f59e0b" />, title:'Invalid BCrypt Hash',    sub:'Hash must start with $2a$, $2b$, or $2y$.',      color:'#f59e0b', bg:'rgba(245,158,11,.06)', border:'rgba(245,158,11,.28)' },
+    invalid_cost: { icon: <AlertTriangle size={40} color="#f59e0b" />, title:'Unsafe Cost Factor', sub:'Hash cost factor must be between 4 and 14 to maintain responsive browser performance.', color:'#f59e0b', bg:'rgba(245,158,11,.06)', border:'rgba(245,158,11,.28)' },
   }
 
   return (
@@ -284,12 +317,14 @@ function VerifierTab() {
         <label className="lbl">BCrypt Hash</label>
         <input type="text" value={hashInput} onChange={e => { setHashInput(e.target.value); setResult(null) }} placeholder="$2a$10$…  (paste the full hash here)" className="inp" style={{ fontFamily: "'Courier New', monospace", fontSize: 12.5, letterSpacing: 0.3 }} />
         {hashInput && !hashInput.startsWith('$2') && (
-          <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 5 }}>⚠️ Valid hashes start with $2a$, $2b$ or $2y$</div>
+          <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 5, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <AlertTriangle size={12} /> Valid hashes start with $2a$, $2b$ or $2y$
+          </div>
         )}
       </div>
 
       <motion.button className="btn btn-primary" onClick={handleVerify} disabled={loading || !text || !hashInput.trim()} whileHover={!loading ? { scale: 1.02 } : {}} whileTap={{ scale: 0.97 }} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontSize: 15, padding: '14px 20px' }}>
-        {loading ? <><Spinner /> Verifying…</> : '🔍  Verify Password'}
+        {loading ? <><Spinner /> Verifying…</> : <><Search size={16} /> Verify Password</>}
       </motion.button>
 
       <AnimatePresence>
@@ -307,7 +342,7 @@ function VerifierTab() {
           return (
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22, ease: [.22, 1, .36, 1] }}
               style={{ background: r.bg, border: `1.5px solid ${r.border}`, borderRadius: 16, padding: '26px 22px', textAlign: 'center' }}>
-              <div style={{ fontSize: 48, marginBottom: 10 }}>{r.icon}</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>{r.icon}</div>
               <div style={{ fontFamily: 'Syne,sans-serif', fontSize: 20, fontWeight: 800, color: r.color, marginBottom: 6 }}>{r.title}</div>
               <div style={{ fontSize: 13, color: '#777', lineHeight: 1.6 }}>{r.sub}</div>
             </motion.div>
@@ -317,7 +352,9 @@ function VerifierTab() {
 
       <div style={{ background: 'rgba(79,142,247,.04)', border: '1px solid rgba(79,142,247,.12)', borderRadius: 12, padding: '13px 16px' }}>
         <div style={{ fontSize: 12, color: '#666', lineHeight: 1.75 }}>
-          <strong style={{ color: '#4F8EF7' }}>💡 Tip</strong> — BCrypt hashes are salted, so the same password hashed twice gives two <em>different</em> hashes — yet both will verify correctly.
+          <strong style={{ color: '#4F8EF7', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            <Info size={14} /> Tip
+          </strong> — BCrypt hashes are salted, so the same password hashed twice gives two <em>different</em> hashes — yet both will verify correctly.
         </div>
       </div>
     </div>
@@ -416,7 +453,7 @@ function BatchTab() {
         whileHover={!loading && lines.length ? {scale:1.02} : {}}
         whileTap={{scale:.97}}
         style={{ width:'100%', fontSize:15, padding:'14px', display:'flex', alignItems:'center', justifyContent:'center', gap:10 }}>
-        {loading ? <><Spinner/> Hashing {progress}%…</> : `🔐 Hash ${lines.length} Password${lines.length!==1?'s':''}`}
+        {loading ? <><Spinner/> Hashing {progress}%…</> : <><Lock size={15} /> Hash {lines.length} Password{lines.length!==1?'s':''}</>}
       </motion.button>
 
       {loading && (
@@ -432,11 +469,13 @@ function BatchTab() {
             <label className="lbl" style={{margin:0}}>Results ({results.length})</label>
             <div style={{ display:'flex', gap:6 }}>
               <button className={`btn ${bCopied?'btn-success':'btn-outline'} btn-sm`}
-                onClick={() => bCopy(allText)}>
-                {bCopied ? '✓ Copied' : '📋 Copy All'}
+                onClick={() => bCopy(allText)}
+                style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                {bCopied ? <><Check size={13} /> Copied</> : <><Copy size={13} /> Copy All</>}
               </button>
-              <button className="btn btn-outline btn-sm" onClick={downloadCSV}>
-                ⬇ Download CSV
+              <button className="btn btn-outline btn-sm" onClick={downloadCSV}
+                style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Download size={13} /> Download CSV
               </button>
             </div>
           </div>
@@ -453,7 +492,9 @@ function BatchTab() {
       )}
 
       {lines.length > 50 && (
-        <div className="info-bar amber">⚠️ Maximum 50 passwords per batch to prevent browser freezing.</div>
+        <div className="info-bar amber" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <AlertTriangle size={15} style={{ flexShrink: 0 }} /> Maximum 50 passwords per batch to prevent browser freezing.
+        </div>
       )}
     </div>
   )
@@ -608,8 +649,8 @@ function AuditorTab() {
             {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
-        <div style={{ fontSize: 11, color: '#888', marginTop: 5 }}>
-          🔒 Evaluated 100% locally in browser memory. Text is never sent over any network.
+        <div style={{ fontSize: 11, color: '#888', marginTop: 5, display: 'flex', alignItems: 'center', gap: 5 }}>
+          <ShieldCheck size={13} style={{ color: '#4F8EF7', flexShrink: 0 }} /> Evaluated 100% locally in browser memory. Text is never sent over any network.
         </div>
       </div>
 
@@ -628,8 +669,17 @@ function AuditorTab() {
             max={14}
             value={rounds}
             onChange={e => setRounds(+e.target.value)}
-            style={{ width: '100%', accentColor: '#9C6FDE' }}
-            className="rs-thumb"
+            style={{
+              width: '100%',
+              background: `linear-gradient(to right, #9C6FDE 0%, #9C6FDE ${Math.max(0, Math.min(100, ((rounds - 4) / (14 - 4)) * 100))}%, #e2e4ef ${Math.max(0, Math.min(100, ((rounds - 4) / (14 - 4)) * 100))}%, #e2e4ef 100%)`,
+              WebkitAppearance: 'none',
+              appearance: 'none',
+              height: 5,
+              borderRadius: 3,
+              outline: 'none',
+              cursor: 'pointer'
+            }}
+            className="rs-thumb rs-thumb-purple"
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, color: '#aaa', marginTop: 3 }}>
             <span>4 (Trivial)</span>
@@ -652,12 +702,16 @@ function AuditorTab() {
                 onClick={() => setAttackerRig(m.id)}
                 style={{
                   flex: 1,
+                  minHeight: 48,
                   padding: '8px 4px',
                   borderRadius: 10,
                   border: `1.5px solid ${attackerRig === m.id ? '#4F8EF7' : 'rgba(0,0,0,0.08)'}`,
                   background: attackerRig === m.id ? 'rgba(79,142,247,0.08)' : '#fafafa',
                   cursor: 'pointer',
-                  textAlign: 'center'
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center'
                 }}
               >
                 <div style={{ fontSize: 11.5, fontWeight: 700, color: attackerRig === m.id ? '#4F8EF7' : '#334155' }}>
@@ -672,7 +726,7 @@ function AuditorTab() {
 
       {/* Primary Metrics Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10 }}>
-        <div style={{ background: '#fff', padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(0,0,0,.08)' }}>
+        <div style={{ background: '#fff', padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(0,0,0,.08)', minHeight: 96, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div style={{ fontSize: 10.5, fontWeight: 700, color: '#888', textTransform: 'uppercase' }}>Entropy</div>
           <div style={{ fontFamily: 'Syne,sans-serif', fontSize: 20, fontWeight: 800, color: '#4F8EF7', marginTop: 2 }}>
             {analysis.entropy} <span style={{ fontSize: 12, fontWeight: 600 }}>bits</span>
@@ -682,7 +736,7 @@ function AuditorTab() {
           </div>
         </div>
 
-        <div style={{ background: '#fff', padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(0,0,0,.08)' }}>
+        <div style={{ background: '#fff', padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(0,0,0,.08)', minHeight: 96, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div style={{ fontSize: 10.5, fontWeight: 700, color: '#888', textTransform: 'uppercase' }}>Bcrypt Cost Multiplier</div>
           <div style={{ fontFamily: 'Syne,sans-serif', fontSize: 20, fontWeight: 800, color: '#9C6FDE', marginTop: 2 }}>
             {analysis.diffFactor >= 1 ? `${analysis.diffFactor}×` : `1/${Math.round(1/analysis.diffFactor)}×`}
@@ -692,7 +746,7 @@ function AuditorTab() {
           </div>
         </div>
 
-        <div style={{ background: '#fff', padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(0,0,0,.08)' }}>
+        <div style={{ background: '#fff', padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(0,0,0,.08)', minHeight: 96, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div style={{ fontSize: 10.5, fontWeight: 700, color: '#888', textTransform: 'uppercase' }}>Offline Mask Resistance</div>
           <div style={{ fontFamily: 'Syne,sans-serif', fontSize: 18, fontWeight: 800, color: '#22c55e', marginTop: 2 }}>
             {analysis.timeEstimate}
@@ -707,7 +761,9 @@ function AuditorTab() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ padding: '12px 14px', borderRadius: 10, background: '#f8fafc', border: `1px solid ${analysis.dictColor}30` }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#0f172a' }}>📖 Dictionary Attack Feasibility</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <BookOpen size={14} style={{ color: analysis.dictColor }} /> Dictionary Attack Feasibility
+            </span>
             <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: `${analysis.dictColor}18`, color: analysis.dictColor }}>
               {text.length < 8 ? 'High Risk' : text.length < 12 ? 'Guarded' : 'Resilient'}
             </span>
@@ -719,7 +775,9 @@ function AuditorTab() {
 
         <div style={{ padding: '12px 14px', borderRadius: 10, background: '#f8fafc', border: `1px solid ${analysis.maskColor}30` }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#0f172a' }}>🎭 Exhaustive Mask / Brute-Force Feasibility</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Cpu size={14} style={{ color: analysis.maskColor }} /> Exhaustive Mask / Brute-Force Feasibility
+            </span>
             <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: `${analysis.maskColor}18`, color: analysis.maskColor }}>
               {analysis.entropy < 40 ? 'Exhaustible' : analysis.entropy < 65 ? 'Challenging' : 'Infeasible'}
             </span>
@@ -734,8 +792,8 @@ function AuditorTab() {
       <div style={{ padding: '14px 16px', borderRadius: 12, background: 'linear-gradient(135deg, rgba(79,142,247,0.06), rgba(156,111,222,0.07))', border: '1px solid rgba(156,111,222,0.2)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
           <div>
-            <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 14, color: '#0d0d1a' }}>
-              💡 Stronger Alternative: Mnemonic Passphrase
+            <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 14, color: '#0d0d1a', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Sparkles size={15} style={{ color: '#9C6FDE' }} /> Stronger Alternative: Mnemonic Passphrase
             </div>
             <div style={{ fontSize: 11.5, color: '#64748b' }}>
               High-entropy multi-word phrases offer superior offline resistance and easy recall.
@@ -745,9 +803,9 @@ function AuditorTab() {
             type="button"
             onClick={generateMnemonic}
             className="btn btn-sm btn-primary"
-            style={{ fontSize: 12, padding: '6px 14px', borderRadius: 999 }}
+            style={{ fontSize: 12, padding: '6px 14px', borderRadius: 999, display: 'flex', alignItems: 'center', gap: 5 }}
           >
-            🎲 Generate Passphrase
+            <Sparkles size={13} /> Generate Passphrase
           </button>
         </div>
 
@@ -760,9 +818,9 @@ function AuditorTab() {
               type="button"
               onClick={() => copy(mnemonic)}
               className="btn btn-outline btn-sm"
-              style={{ fontSize: 12 }}
+              style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}
             >
-              {copied ? '✓ Copied' : '📋 Copy'}
+              {copied ? <><Check size={12} /> Copied</> : <><Copy size={12} /> Copy</>}
             </button>
             <button
               type="button"
@@ -849,8 +907,8 @@ export default function BcryptTool() {
                 </div>
               ))}
             </div>
-            <div className="info-bar blue" style={{ marginTop: 10, marginBottom: 0 }}>
-              🔒 Safe Bcrypt parameters and verification results are saved. Cleartext passwords and raw hashes are never persisted to history.
+            <div className="info-bar blue" style={{ marginTop: 10, marginBottom: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <ShieldCheck size={14} style={{ flexShrink: 0 }} /> Safe Bcrypt parameters and verification results are saved. Cleartext passwords and raw hashes are never persisted to history.
             </div>
           </ToolCard>
         </Reveal>

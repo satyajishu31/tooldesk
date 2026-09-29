@@ -249,7 +249,7 @@ async function testReleaseManifest() {
     assert(fs.existsSync(manifestPath), 'public/releases.json does not exist');
     const raw = fs.readFileSync(manifestPath, 'utf8');
     const manifest = JSON.parse(raw);
-    assert.equal(manifest.version, '1.2.2', 'Manifest version must be 1.2.2');
+    assert.equal(manifest.version, '1.3.0', 'Manifest version must be 1.3.0');
     assert(manifest.platforms.windows, 'Windows platform missing');
     assert(manifest.platforms.macos, 'macOS platform missing');
     assert(manifest.platforms.android, 'Android platform missing');

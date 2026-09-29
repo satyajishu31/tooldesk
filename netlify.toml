@@ -107,52 +107,52 @@
     Cache-Control = "public, max-age=31536000, immutable"
 
 
-# Direct release redirects to GitHub Releases v1.0.2
+# Direct release redirects to GitHub Releases v1.3.0
 [[redirects]]
   from = "/releases/android/ToolDesk.apk"
-  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.2/ToolDesk.apk"
+  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.3.0/ToolDesk.apk"
   status = 302
   force = true
 
 [[redirects]]
   from = "/releases/android/ToolDesk.aab"
-  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.2/ToolDesk.aab"
+  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.3.0/ToolDesk.aab"
   status = 302
   force = true
 
 [[redirects]]
   from = "/releases/macos/ToolDesk.dmg"
-  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.2/ToolDesk-macos-arm64.dmg"
+  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.3.0/ToolDesk-macos-arm64.dmg"
   status = 302
   force = true
 
 [[redirects]]
   from = "/releases/macos/ToolDesk-macOS.zip"
-  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.2/ToolDesk-macos-arm64.zip"
+  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.3.0/ToolDesk-macos-arm64.zip"
   status = 302
   force = true
 
 [[redirects]]
   from = "/releases/windows/ToolDesk-Setup.exe"
-  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.2/ToolDesk-Setup.exe"
+  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.3.0/ToolDesk-Setup.exe"
   status = 302
   force = true
 
 [[redirects]]
   from = "/releases/windows/ToolDesk.msi"
-  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.2/ToolDesk.msi"
+  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.3.0/ToolDesk.msi"
   status = 302
   force = true
 
 [[redirects]]
   from = "/releases/linux/ToolDesk.AppImage"
-  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.2/ToolDesk.AppImage"
+  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.3.0/ToolDesk.AppImage"
   status = 302
   force = true
 
 [[redirects]]
   from = "/releases/linux/ToolDesk.deb"
-  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.0.2/ToolDesk.deb"
+  to = "https://github.com/satyajishu31/tooldesk/releases/download/v1.3.0/ToolDesk.deb"
   status = 302
   force = true
 

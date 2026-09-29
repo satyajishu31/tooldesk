@@ -10,6 +10,8 @@ import { createBatchSession, BATCH_ITEM_STATUS } from '../../utils/batchEngine'
 import { consumePendingInboundFiles } from '../../utils/inboundShare'
 import { convertTextToPdf, convertMarkdownToPdf, getPdfJs } from '../../utils/pdfEngine'
 import { addToHistory } from '../../utils/history'
+import { useToolHistory } from '../../hooks/useToolHistory'
+import { Clock, Trash2, ShieldCheck } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'fileconvert')
 
@@ -846,6 +848,7 @@ function SizeBar({ before, after }) {
    MAIN COMPONENT
 ══════════════════════════════════════════ */
 export default function FileConverter() {
+  const { history: convertHistory, remove: removeHistoryItem, clear: clearToolHistory } = useToolHistory('File Converter', 15)
   const [groupId,  setGroupId]  = useState('doc')
   const [sub,      setSub]      = useState(ALL_SUBS.find(s=>s.groupId==='doc'))
   const [text,     setText]     = useState('')
@@ -1505,6 +1508,51 @@ export default function FileConverter() {
           )}
         </AnimatePresence>
       </ToolCard>
+
+      {convertHistory.length > 0 && (
+        <Reveal delay={0.06}>
+          <ToolCard style={{ marginTop: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Clock size={16} style={{ color: '#4F8EF7' }} />
+                <span style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 14, color: '#0d0d1a' }}>
+                  Recent File Conversions <span style={{ fontSize: 12, fontWeight: 500, color: '#aaa' }}>({convertHistory.length})</span>
+                </span>
+              </div>
+              <motion.button whileTap={{ scale: 0.95 }}
+                onClick={clearToolHistory}
+                className="btn btn-outline btn-sm" style={{ color: '#EF5350', borderColor: 'rgba(239,83,80,.25)' }}>
+                <Trash2 size={13} style={{ marginRight: 4 }} /> Clear
+              </motion.button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 240, overflowY: 'auto' }}>
+              {convertHistory.map((h) => (
+                <div key={h.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: '#fafbff', borderRadius: 10, padding: '8px 12px', border: '1px solid rgba(0,0,0,.06)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, overflow: 'hidden', marginRight: 8 }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 600, color: '#1e293b' }}>
+                      {h.label}
+                    </span>
+                    <span style={{ fontSize: 11, color: '#64748b' }}>
+                      {h.value} • <span style={{ color: '#94a3b8' }}>{h.timestamp}</span>
+                    </span>
+                  </div>
+                  <motion.button whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}
+                    onClick={() => removeHistoryItem(h.id)}
+                    title="Delete entry"
+                    style={{ padding: '4px 8px', borderRadius: 7, border: '1px solid rgba(0,0,0,.08)',
+                      background: '#fff', color: '#94a3b8', fontSize: 11, cursor: 'pointer' }}>
+                    <Trash2 size={11} />
+                  </motion.button>
+                </div>
+              ))}
+            </div>
+            <div className="info-bar blue" style={{ marginTop: 10, marginBottom: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <ShieldCheck size={14} style={{ flexShrink: 0 }} /> Conversion history is kept strictly in local browser storage. File payloads are never persisted or transmitted.
+            </div>
+          </ToolCard>
+        </Reveal>
+      )}
     </ToolShell>
   )
 }

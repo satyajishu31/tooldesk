@@ -487,10 +487,8 @@ export default function VideoScreenshotExtractor(){
       try {
         if (!document.querySelector('script[data-gifshot]')) {
           const script = document.createElement('script')
-          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.3.2/gifshot.min.js'
+          script.src = '/gifshot.min.js'
           script.setAttribute('data-gifshot', 'true')
-          script.crossOrigin = 'anonymous'
-          script.integrity = 'sha384-j34d9QcqMUAh6dmGjkk8xdnaBmm8OcINQMgcgX9/bJB2FPdqeXvuPNIQTLDzWP7q'
           document.body.appendChild(script)
         }
         for (let attempt = 0; attempt < 50; attempt++) {

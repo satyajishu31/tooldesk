@@ -1,10 +1,11 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import ToolShell, { ToolCard } from '../../components/ToolShell'
+import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { TOOLS } from '../../constants'
 import { DocSummaryPanel, ContractAuditorPanel } from '../../components/AIPanel'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import { addToHistory } from '../../utils/history'
+import { useToolHistory } from '../../hooks/useToolHistory'
 import {
   formatBytes,
   PAGE_SIZES,
@@ -35,7 +36,9 @@ import {
   cropPdfPages,
   flattenPdf,
   cleanPdfMetadata,
+  lockPdf,
   unlockPdf,
+  changePdfPassword,
   redactPdfPages,
   signPdf,
   getPdfFormFields,
@@ -51,6 +54,14 @@ import { createBatchSession, BATCH_ITEM_STATUS } from '../../utils/batchEngine'
 import { consumePendingInboundFiles } from '../../utils/inboundShare'
 import ToolChainingBar from '../../components/ToolChainingBar'
 import ChainedInputBanner from '../../components/ChainedInputBanner'
+import {
+  FileUp, FileDown, Layers, ShieldCheck, SlidersHorizontal,
+  FileText, Image, FileCode, Globe, FileSpreadsheet, Code, Code2,
+  Palette, ScanText, Files, Scissors, FileCheck, ArrowUpDown, Trash2,
+  RotateCw, Crop, Archive, Diff, Binary, EyeOff, PenTool, FormInput,
+  LayoutTemplate, FileCheck2, Lock, Unlock, KeyRound, Minimize2, Sparkles,
+  Tag, Droplets, Info, Check, Copy, Clock, AlertTriangle, Eye
+} from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'pdf')
 
@@ -58,18 +69,18 @@ const tool = TOOLS.find(t => t.id === 'pdf')
    STUDIO CATEGORIES & ACTIONS CONFIGURATION
    ══════════════════════════════════════════════════════════ */
 const CATEGORIES = [
-  { id: 'to-pdf',    label: 'Convert to PDF',   icon: '📥', desc: 'Create PDFs from documents, images & data' },
-  { id: 'from-pdf',  label: 'Convert from PDF', icon: '📤', desc: 'Export PDF to high-res images & text' },
-  { id: 'organize',  label: 'Organize',         icon: '📑', desc: 'Merge, split, reorder, delete, rotate, crop & ZIP' },
-  { id: 'security',  label: 'Security & Sign',  icon: '🔒', desc: 'Redact, sign, fill forms, flatten & unlock' },
-  { id: 'optimize',  label: 'Optimize & Edit',  icon: '⚡', desc: 'Compress, clean metadata & watermark' },
+  { id: 'to-pdf',    label: 'Convert to PDF',   icon: <FileUp size={16} />, desc: 'Create PDFs from documents, images & data' },
+  { id: 'from-pdf',  label: 'Convert from PDF', icon: <FileDown size={16} />, desc: 'Export PDF to high-res images & text' },
+  { id: 'organize',  label: 'Organize',         icon: <Layers size={16} />, desc: 'Merge, split, reorder, delete, rotate, crop & ZIP' },
+  { id: 'security',  label: 'Security & Sign',  icon: <ShieldCheck size={16} />, desc: 'Redact, sign, fill forms, lock, unlock & flatten' },
+  { id: 'optimize',  label: 'Optimize & Edit',  icon: <SlidersHorizontal size={16} />, desc: 'Compress, clean metadata & watermark' },
 ]
 
 const ALL_ACTIONS = [
   // ── Convert to PDF ──
   {
     id: 'docx-pdf', cat: 'to-pdf',
-    label: 'DOCX to PDF', icon: '📝',
+    label: 'DOCX to PDF', icon: <FileText size={20} color="#4F8EF7" />,
     desc: 'Word document to vector PDF',
     accept: '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     multiple: false,
@@ -77,7 +88,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'img-pdf', cat: 'to-pdf',
-    label: 'Images to PDF', icon: '🖼️',
+    label: 'Images to PDF', icon: <Image size={20} color="#22c55e" />,
     desc: 'Combine PNG, JPG, WebP into PDF',
     accept: 'image/png,image/jpeg,image/webp,image/gif,image/svg+xml,image/bmp',
     multiple: true,
@@ -85,7 +96,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'md-pdf', cat: 'to-pdf',
-    label: 'Markdown to PDF', icon: '📑',
+    label: 'Markdown to PDF', icon: <FileCode size={20} color="#9C6FDE" />,
     desc: 'Render Markdown with headings & code',
     accept: '.md,.txt,text/markdown,text/plain',
     multiple: false,
@@ -93,7 +104,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'html-pdf', cat: 'to-pdf',
-    label: 'HTML to PDF', icon: '🌐',
+    label: 'HTML to PDF', icon: <Globe size={20} color="#f59e0b" />,
     desc: 'Convert HTML page to PDF document',
     accept: '.html,.htm,text/html',
     multiple: false,
@@ -101,7 +112,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'txt-pdf', cat: 'to-pdf',
-    label: 'TXT to PDF', icon: '📄',
+    label: 'TXT to PDF', icon: <FileText size={20} color="#06b6d4" />,
     desc: 'Plain text to paginated PDF',
     accept: '.txt,text/plain',
     multiple: false,
@@ -109,7 +120,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'csv-pdf', cat: 'to-pdf',
-    label: 'CSV to PDF', icon: '📊',
+    label: 'CSV to PDF', icon: <FileSpreadsheet size={20} color="#10b981" />,
     desc: 'Tabular CSV data to formatted PDF table',
     accept: '.csv,text/csv',
     multiple: false,
@@ -117,7 +128,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'json-pdf', cat: 'to-pdf',
-    label: 'JSON to PDF', icon: '💾',
+    label: 'JSON to PDF', icon: <Code size={20} color="#ec4899" />,
     desc: 'Structured JSON data to PDF document',
     accept: '.json,application/json',
     multiple: false,
@@ -125,7 +136,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'xml-pdf', cat: 'to-pdf',
-    label: 'XML to PDF', icon: '📐',
+    label: 'XML to PDF', icon: <Code2 size={20} color="#6366f1" />,
     desc: 'Hierarchical XML formatted into PDF',
     accept: '.xml,text/xml,application/xml',
     multiple: false,
@@ -135,7 +146,7 @@ const ALL_ACTIONS = [
   // ── Convert from PDF ──
   {
     id: 'pdf-png', cat: 'from-pdf',
-    label: 'PDF to PNG', icon: '🖼️',
+    label: 'PDF to PNG', icon: <Image size={20} color="#4F8EF7" />,
     desc: 'High-res lossless PNG images',
     accept: '.pdf,application/pdf',
     multiple: false,
@@ -143,7 +154,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'pdf-jpg', cat: 'from-pdf',
-    label: 'PDF to JPG', icon: '🎨',
+    label: 'PDF to JPG', icon: <Palette size={20} color="#f59e0b" />,
     desc: 'Compressed JPEG images with quality slider',
     accept: '.pdf,application/pdf',
     multiple: false,
@@ -151,7 +162,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'ocr', cat: 'from-pdf',
-    label: 'PDF / Scanned OCR', icon: '👁️',
+    label: 'PDF / Scanned OCR', icon: <ScanText size={20} color="#9C6FDE" />,
     desc: 'Extract text layer & optical OCR recognition',
     accept: '.pdf,application/pdf,image/*',
     multiple: false,
@@ -161,7 +172,7 @@ const ALL_ACTIONS = [
   // ── Organize ──
   {
     id: 'merge', cat: 'organize',
-    label: 'Merge PDFs', icon: '📚',
+    label: 'Merge PDFs', icon: <Files size={20} color="#4F8EF7" />,
     desc: 'Combine multiple PDFs into one in custom order',
     accept: '.pdf,application/pdf',
     multiple: true,
@@ -169,7 +180,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'split', cat: 'organize',
-    label: 'Split All Pages', icon: '✂️',
+    label: 'Split All Pages', icon: <Scissors size={20} color="#ef4444" />,
     desc: 'Separate each page into its own PDF file',
     accept: '.pdf,application/pdf',
     multiple: false,
@@ -177,7 +188,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'extract', cat: 'organize',
-    label: 'Extract Pages', icon: '🎯',
+    label: 'Extract Pages', icon: <FileCheck size={20} color="#10b981" />,
     desc: 'Visually select specific pages to extract',
     accept: '.pdf,application/pdf',
     multiple: false,
@@ -185,7 +196,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'reorder', cat: 'organize',
-    label: 'Reorder Pages', icon: '🔀',
+    label: 'Reorder Pages', icon: <ArrowUpDown size={20} color="#8b5cf6" />,
     desc: 'Rearrange page sequence with live preview',
     accept: '.pdf,application/pdf',
     multiple: false,
@@ -193,7 +204,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'delete', cat: 'organize',
-    label: 'Delete Pages', icon: '🗑️',
+    label: 'Delete Pages', icon: <Trash2 size={20} color="#f43f5e" />,
     desc: 'Remove unwanted pages with visual selector',
     accept: '.pdf,application/pdf',
     multiple: false,
@@ -201,7 +212,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'rotate', cat: 'organize',
-    label: 'Rotate Pages', icon: '🔄',
+    label: 'Rotate Pages', icon: <RotateCw size={20} color="#06b6d4" />,
     desc: 'Rotate all or specific pages by 90°, 180°, 270°',
     accept: '.pdf,application/pdf',
     multiple: false,
@@ -209,7 +220,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'crop', cat: 'organize',
-    label: 'Crop Pages', icon: '📐',
+    label: 'Crop Pages', icon: <Crop size={20} color="#3b82f6" />,
     desc: 'Visually trim page margins and boundaries',
     accept: '.pdf,application/pdf',
     multiple: false,
@@ -217,7 +228,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'pdf-zip', cat: 'organize',
-    label: 'PDFs to ZIP', icon: '📦',
+    label: 'PDFs to ZIP', icon: <Archive size={20} color="#f59e0b" />,
     desc: 'Package multiple PDFs into a single ZIP archive',
     accept: '.pdf,application/pdf',
     multiple: true,
@@ -225,7 +236,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'compare', cat: 'organize',
-    label: 'Compare PDFs', icon: '🔍',
+    label: 'Compare PDFs', icon: <Diff size={20} color="#0284c7" />,
     desc: 'Compare 2 documents: page counts, metadata & text differences',
     accept: '.pdf,application/pdf',
     multiple: true,
@@ -233,7 +244,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'page-numbers', cat: 'organize',
-    label: 'Page Numbers', icon: '🔢',
+    label: 'Page Numbers', icon: <Binary size={20} color="#6366f1" />,
     desc: 'Add customizable headers, footers & page numbering',
     accept: '.pdf,application/pdf',
     multiple: false,
@@ -241,7 +252,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'header-footer', cat: 'organize',
-    label: 'Header & Footer', icon: '📑',
+    label: 'Header & Footer', icon: <FileText size={20} color="#06b6d4" />,
     desc: 'Add custom headers and footers with page numbers & dates',
     accept: '.pdf,application/pdf',
     multiple: false,
@@ -251,7 +262,7 @@ const ALL_ACTIONS = [
   // ── Security & Sign ──
   {
     id: 'redact', cat: 'security',
-    label: 'Permanent Redaction', icon: '⬛',
+    label: 'Permanent Redaction', icon: <EyeOff size={20} color="#ef4444" />,
     desc: 'Permanently destroy sensitive text & pixel content',
     accept: '.pdf,application/pdf',
     multiple: false,
@@ -259,7 +270,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'sign', cat: 'security',
-    label: 'Sign PDF', icon: '✍️',
+    label: 'Sign PDF', icon: <PenTool size={20} color="#4F8EF7" />,
     desc: 'Draw or upload visual signature on document',
     accept: '.pdf,application/pdf',
     multiple: false,
@@ -267,7 +278,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'forms', cat: 'security',
-    label: 'Fill Forms', icon: '📝',
+    label: 'Fill Forms', icon: <FormInput size={20} color="#10b981" />,
     desc: 'Fill interactive PDF fields & checkboxes',
     accept: '.pdf,application/pdf',
     multiple: false,
@@ -275,7 +286,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'form-builder', cat: 'security',
-    label: 'Form Builder', icon: '📋',
+    label: 'Form Builder', icon: <LayoutTemplate size={20} color="#3b82f6" />,
     desc: 'Add interactive text fields, checkboxes & dropdowns',
     accept: '.pdf,application/pdf',
     multiple: false,
@@ -283,33 +294,41 @@ const ALL_ACTIONS = [
   },
   {
     id: 'flatten', cat: 'security',
-    label: 'Flatten PDF', icon: '📄',
+    label: 'Flatten PDF', icon: <FileCheck2 size={20} color="#8b5cf6" />,
     desc: 'Burn form fields and annotations into static PDF',
     accept: '.pdf,application/pdf',
     multiple: false,
     color: '#8b5cf6',
   },
   {
+    id: 'lock', cat: 'security',
+    label: 'Lock / Encrypt PDF', icon: <Lock size={20} color="#6366f1" />,
+    desc: 'True AES-256 / RC4 password protection & permissions',
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    color: '#6366f1',
+  },
+  {
     id: 'unlock', cat: 'security',
-    label: 'Unlock Encrypted PDF', icon: '🔓',
-    desc: 'Decrypt authorized document with known password',
+    label: 'Unlock Encrypted PDF', icon: <Unlock size={20} color="#22c55e" />,
+    desc: 'Lossless vector decryption with known password',
     accept: '.pdf,application/pdf',
     multiple: false,
     color: '#22c55e',
   },
   {
-    id: 'protect', cat: 'security',
-    label: 'Encryption Status', icon: '🔐',
-    desc: 'Document cryptographic inspection & security advisory',
+    id: 'change-password', cat: 'security',
+    label: 'Change Password', icon: <KeyRound size={20} color="#ec4899" />,
+    desc: 'Update credentials or re-encrypt with new password',
     accept: '.pdf,application/pdf',
     multiple: false,
-    color: '#64748b',
+    color: '#ec4899',
   },
 
   // ── Optimize ──
   {
     id: 'compress', cat: 'optimize',
-    label: 'Compress PDF', icon: '🗜️',
+    label: 'Compress PDF', icon: <Minimize2 size={20} color="#22c55e" />,
     desc: 'Reduce file size with object streams optimization',
     accept: '.pdf,application/pdf',
     multiple: false,
@@ -317,7 +336,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'clean-meta', cat: 'optimize',
-    label: 'Clean Metadata', icon: '🧹',
+    label: 'Clean Metadata', icon: <Sparkles size={20} color="#10b981" />,
     desc: 'Scrub all tracking data, title, author & XMP streams',
     accept: '.pdf,application/pdf',
     multiple: false,
@@ -325,7 +344,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'metadata', cat: 'optimize',
-    label: 'Edit Metadata', icon: '🏷️',
+    label: 'Edit Metadata', icon: <Tag size={20} color="#8b5cf6" />,
     desc: 'View and modify Title, Author, Keywords & Creator',
     accept: '.pdf,application/pdf',
     multiple: false,
@@ -333,7 +352,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'watermark', cat: 'optimize',
-    label: 'Watermark PDF', icon: '💧',
+    label: 'Watermark PDF', icon: <Droplets size={20} color="#4F8EF7" />,
     desc: 'Add custom text or image watermark with opacity & angle',
     accept: '.pdf,application/pdf',
     multiple: false,
@@ -341,7 +360,7 @@ const ALL_ACTIONS = [
   },
   {
     id: 'info', cat: 'optimize',
-    label: 'PDF Inspector', icon: 'ℹ️',
+    label: 'PDF Inspector', icon: <Info size={20} color="#64748b" />,
     desc: 'Inspect dimensions, page count, dates & security',
     accept: '.pdf,application/pdf',
     multiple: false,
@@ -579,9 +598,26 @@ export default function PDFToolkit() {
   const [formValues, setFormValues] = useState({})
   const [loadingFields, setLoadingFields] = useState(false)
 
-  // Unlock state
+  // Security & Encryption state
+  const { history: pdfHistory, remove: removeHistoryItem, clear: clearToolHistory } = useToolHistory('PDF Toolkit', 15)
   const [pdfPassword, setPdfPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [lockPassword, setLockPassword] = useState('')
+  const [lockConfirmPassword, setLockConfirmPassword] = useState('')
+  const [lockOwnerPassword, setLockOwnerPassword] = useState('')
+  const [lockAlgorithm, setLockAlgorithm] = useState('AES-256')
+  const [lockPermissions, setLockPermissions] = useState({
+    printing: 'highResolution',
+    copying: false,
+    annotating: false,
+    fillingForms: true,
+    modifying: false
+  })
+  const [showLockPassword, setShowLockPassword] = useState(false)
+  const [changeOldPassword, setChangeOldPassword] = useState('')
+  const [changeNewPassword, setChangeNewPassword] = useState('')
+  const [changeConfirmPassword, setChangeConfirmPassword] = useState('')
+  const [showChangePassword, setShowChangePassword] = useState(false)
 
   // Watermark image enhancement
   const [watermarkType, setWatermarkType] = useState('text')
@@ -1451,6 +1487,26 @@ export default function PDFToolkit() {
         })
         setStatusMsg({ type: 'success', text: `✅ Flattened ${res.fieldCount} form field(s) & annotations into static pages (${formatBytes(res.size)})` })
 
+      } else if (activeAction.id === 'lock') {
+        if (!lockPassword) {
+          throw new Error('Please enter a password to lock and encrypt the document.')
+        }
+        if (lockPassword !== lockConfirmPassword) {
+          throw new Error('The confirmation password does not match.')
+        }
+        const res = await lockPdf(targetFile, lockPassword, {
+          algorithm: lockAlgorithm,
+          ownerPassword: lockOwnerPassword || undefined,
+          permissions: lockPermissions,
+        }, msg => setProgressMsg(msg))
+        setResult({
+          blob: res.blob,
+          name: res.name,
+          size: res.size,
+          type: 'single-pdf',
+        })
+        setStatusMsg({ type: 'success', text: `✅ Encrypted & password protected with ${lockAlgorithm}! (${formatBytes(res.size)})` })
+
       } else if (activeAction.id === 'unlock') {
         if (!pdfPassword) {
           throw new Error('Please enter the open password to unlock this document.')
@@ -1464,11 +1520,27 @@ export default function PDFToolkit() {
         })
         setStatusMsg({ type: 'success', text: `✅ Unlocked and decrypted! Resulting PDF opens with no password (${formatBytes(res.size)})` })
 
-      } else if (activeAction.id === 'protect') {
-        setStatusMsg({
-          type: 'info',
-          text: 'ℹ️ Encryption Advisory: Standard AES-256 PDF encryption requires native cryptographic binaries not present in client-side pdf-lib. In accordance with ToolDesk Zero Fake Functionality, fake encryption is not provided.',
+      } else if (activeAction.id === 'change-password') {
+        if (!changeOldPassword) {
+          throw new Error('Please enter the current document password.')
+        }
+        if (!changeNewPassword) {
+          throw new Error('Please enter the new document password.')
+        }
+        if (changeNewPassword !== changeConfirmPassword) {
+          throw new Error('The new confirmation password does not match.')
+        }
+        const res = await changePdfPassword(targetFile, changeOldPassword, changeNewPassword, {
+          algorithm: lockAlgorithm,
+          permissions: lockPermissions,
+        }, msg => setProgressMsg(msg))
+        setResult({
+          blob: res.blob,
+          name: res.name,
+          size: res.size,
+          type: 'single-pdf',
         })
+        setStatusMsg({ type: 'success', text: `✅ Password updated & document re-encrypted successfully! (${formatBytes(res.size)})` })
 
       // ── OPTIMIZE & METADATA ──
       } else if (activeAction.id === 'compress') {
@@ -1820,7 +1892,18 @@ export default function PDFToolkit() {
                     max={100}
                     value={jpgQuality}
                     onChange={e => setJpgQuality(+e.target.value)}
-                    style={{ width: '100%', marginTop: 8 }}
+                    style={{
+                      width: '100%',
+                      marginTop: 8,
+                      background: `linear-gradient(to right, #4F8EF7 0%, #4F8EF7 ${Math.max(0, Math.min(100, ((jpgQuality - 50) / (100 - 50)) * 100))}%, #e2e4ef ${Math.max(0, Math.min(100, ((jpgQuality - 50) / (100 - 50)) * 100))}%, #e2e4ef 100%)`,
+                      WebkitAppearance: 'none',
+                      appearance: 'none',
+                      height: 5,
+                      borderRadius: 3,
+                      outline: 'none',
+                      cursor: 'pointer'
+                    }}
+                    className="rs-thumb"
                   />
                 </div>
               )}
@@ -1892,7 +1975,18 @@ export default function PDFToolkit() {
                     step={0.05}
                     value={watermarkOpacity}
                     onChange={e => setWatermarkOpacity(parseFloat(e.target.value))}
-                    style={{ width: '100%', marginTop: 8 }}
+                    style={{
+                      width: '100%',
+                      marginTop: 8,
+                      background: `linear-gradient(to right, #4F8EF7 0%, #4F8EF7 ${Math.max(0, Math.min(100, ((watermarkOpacity - 0.05) / (0.8 - 0.05)) * 100))}%, #e2e4ef ${Math.max(0, Math.min(100, ((watermarkOpacity - 0.05) / (0.8 - 0.05)) * 100))}%, #e2e4ef 100%)`,
+                      WebkitAppearance: 'none',
+                      appearance: 'none',
+                      height: 5,
+                      borderRadius: 3,
+                      outline: 'none',
+                      cursor: 'pointer'
+                    }}
+                    className="rs-thumb"
                   />
                 </div>
                 <div>
@@ -1927,7 +2021,18 @@ export default function PDFToolkit() {
                     step={0.05}
                     value={watermarkOpacity}
                     onChange={e => setWatermarkOpacity(parseFloat(e.target.value))}
-                    style={{ width: '100%', marginTop: 8 }}
+                    style={{
+                      width: '100%',
+                      marginTop: 8,
+                      background: `linear-gradient(to right, #4F8EF7 0%, #4F8EF7 ${Math.max(0, Math.min(100, ((watermarkOpacity - 0.05) / (1 - 0.05)) * 100))}%, #e2e4ef ${Math.max(0, Math.min(100, ((watermarkOpacity - 0.05) / (1 - 0.05)) * 100))}%, #e2e4ef 100%)`,
+                      WebkitAppearance: 'none',
+                      appearance: 'none',
+                      height: 5,
+                      borderRadius: 3,
+                      outline: 'none',
+                      cursor: 'pointer'
+                    }}
+                    className="rs-thumb"
                   />
                 </div>
                 <div>
@@ -1954,7 +2059,17 @@ export default function PDFToolkit() {
                 <input
                   type="range" min={0} max={40} value={cropMargins.top}
                   onChange={e => setCropMargins(m => ({ ...m, top: +e.target.value }))}
-                  style={{ width: '100%' }}
+                  style={{
+                    width: '100%',
+                    background: `linear-gradient(to right, #4F8EF7 0%, #4F8EF7 ${(cropMargins.top / 40) * 100}%, #e2e4ef ${(cropMargins.top / 40) * 100}%, #e2e4ef 100%)`,
+                    WebkitAppearance: 'none',
+                    appearance: 'none',
+                    height: 5,
+                    borderRadius: 3,
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                  className="rs-thumb"
                 />
               </div>
               <div>
@@ -1962,7 +2077,17 @@ export default function PDFToolkit() {
                 <input
                   type="range" min={0} max={40} value={cropMargins.bottom}
                   onChange={e => setCropMargins(m => ({ ...m, bottom: +e.target.value }))}
-                  style={{ width: '100%' }}
+                  style={{
+                    width: '100%',
+                    background: `linear-gradient(to right, #4F8EF7 0%, #4F8EF7 ${(cropMargins.bottom / 40) * 100}%, #e2e4ef ${(cropMargins.bottom / 40) * 100}%, #e2e4ef 100%)`,
+                    WebkitAppearance: 'none',
+                    appearance: 'none',
+                    height: 5,
+                    borderRadius: 3,
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                  className="rs-thumb"
                 />
               </div>
               <div>
@@ -1970,7 +2095,17 @@ export default function PDFToolkit() {
                 <input
                   type="range" min={0} max={40} value={cropMargins.left}
                   onChange={e => setCropMargins(m => ({ ...m, left: +e.target.value }))}
-                  style={{ width: '100%' }}
+                  style={{
+                    width: '100%',
+                    background: `linear-gradient(to right, #4F8EF7 0%, #4F8EF7 ${(cropMargins.left / 40) * 100}%, #e2e4ef ${(cropMargins.left / 40) * 100}%, #e2e4ef 100%)`,
+                    WebkitAppearance: 'none',
+                    appearance: 'none',
+                    height: 5,
+                    borderRadius: 3,
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                  className="rs-thumb"
                 />
               </div>
               <div>
@@ -1978,7 +2113,17 @@ export default function PDFToolkit() {
                 <input
                   type="range" min={0} max={40} value={cropMargins.right}
                   onChange={e => setCropMargins(m => ({ ...m, right: +e.target.value }))}
-                  style={{ width: '100%' }}
+                  style={{
+                    width: '100%',
+                    background: `linear-gradient(to right, #4F8EF7 0%, #4F8EF7 ${(cropMargins.right / 40) * 100}%, #e2e4ef ${(cropMargins.right / 40) * 100}%, #e2e4ef 100%)`,
+                    WebkitAppearance: 'none',
+                    appearance: 'none',
+                    height: 5,
+                    borderRadius: 3,
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                  className="rs-thumb"
                 />
               </div>
             </div>
@@ -2186,11 +2331,128 @@ export default function PDFToolkit() {
           </div>
         )}
 
+        {/* Lock / Encrypt PDF Options */}
+        {activeAction.id === 'lock' && files.length > 0 && (
+          <div style={{ background: 'rgba(99,102,241,.06)', border: '1px solid rgba(99,102,241,.2)', borderRadius: 14, padding: '16px 18px', marginBottom: 20 }}>
+            <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 14, color: '#1a1a2e', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 7 }}>
+              <Lock size={16} color="#6366f1" /> Encrypt & Password Protect PDF
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14, marginBottom: 14 }}>
+              <div className="fgrp">
+                <label className="lbl">Open Password (Required)</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showLockPassword ? 'text' : 'password'}
+                    className="inp"
+                    value={lockPassword}
+                    onChange={e => setLockPassword(e.target.value)}
+                    placeholder="Enter strong document password..."
+                    style={{ paddingRight: 40 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowLockPassword(p => !p)}
+                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+                  >
+                    {showLockPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="fgrp">
+                <label className="lbl">Confirm Password</label>
+                <input
+                  type={showLockPassword ? 'text' : 'password'}
+                  className="inp"
+                  value={lockConfirmPassword}
+                  onChange={e => setLockConfirmPassword(e.target.value)}
+                  placeholder="Re-enter password to confirm..."
+                />
+                {lockConfirmPassword && lockPassword !== lockConfirmPassword && (
+                  <span style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>Passwords do not match</span>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 14 }}>
+              <div className="fgrp">
+                <label className="lbl">Encryption Standard</label>
+                <select className="inp sel" value={lockAlgorithm} onChange={e => setLockAlgorithm(e.target.value)}>
+                  <option value="AES-256">AES-256 (High Security, Modern Standard)</option>
+                  <option value="RC4-128">RC4-128 (Legacy Compatibility, PDF 1.4+)</option>
+                </select>
+              </div>
+
+              <div className="fgrp">
+                <label className="lbl">Permissions / Owner Password (Optional)</label>
+                <input
+                  type="password"
+                  className="inp"
+                  value={lockOwnerPassword}
+                  onChange={e => setLockOwnerPassword(e.target.value)}
+                  placeholder="Master password to alter permissions..."
+                />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label className="lbl" style={{ marginBottom: 8 }}>Granular Document Permissions</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, color: '#334155', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={lockPermissions.printing !== 'none'}
+                    onChange={e => setLockPermissions(p => ({ ...p, printing: e.target.checked ? 'highResolution' : 'none' }))}
+                  />
+                  Allow Printing
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, color: '#334155', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={lockPermissions.copying}
+                    onChange={e => setLockPermissions(p => ({ ...p, copying: e.target.checked }))}
+                  />
+                  Allow Content Copying
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, color: '#334155', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={lockPermissions.annotating}
+                    onChange={e => setLockPermissions(p => ({ ...p, annotating: e.target.checked }))}
+                  />
+                  Allow Annotations
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, color: '#334155', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={lockPermissions.fillingForms}
+                    onChange={e => setLockPermissions(p => ({ ...p, fillingForms: e.target.checked }))}
+                  />
+                  Allow Form Filling
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, color: '#334155', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={lockPermissions.modifying}
+                    onChange={e => setLockPermissions(p => ({ ...p, modifying: e.target.checked }))}
+                  />
+                  Allow Modification
+                </label>
+              </div>
+            </div>
+
+            <div style={{ fontSize: 11, color: '#6366f1', display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(99,102,241,.08)', padding: '8px 12px', borderRadius: 8 }}>
+              <ShieldCheck size={14} style={{ flexShrink: 0 }} /> Pure client-side Web Crypto encryption. Keys and documents never leave your device.
+            </div>
+          </div>
+        )}
+
         {/* Unlock PDF Options */}
         {activeAction.id === 'unlock' && files.length > 0 && (
           <div style={{ background: 'rgba(34,197,94,.06)', border: '1px solid rgba(34,197,94,.2)', borderRadius: 14, padding: '16px 18px', marginBottom: 20 }}>
-            <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 13.5, color: '#1a1a2e', marginBottom: 8 }}>
-              🔓 Authorized PDF Decryption & Unlock
+            <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 13.5, color: '#1a1a2e', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 7 }}>
+              <Unlock size={16} color="#22c55e" /> Authorized PDF Decryption & Unlock
             </div>
             <div style={{ maxWidth: 420 }}>
               <label className="lbl">Document Password</label>
@@ -2207,27 +2469,73 @@ export default function PDFToolkit() {
                   type="button"
                   className="btn btn-outline"
                   onClick={() => setShowPassword(p => !p)}
-                  style={{ padding: '6px 12px', fontSize: 12 }}
+                  style={{ padding: '6px 12px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}
                 >
-                  {showPassword ? 'Hide' : 'Show'}
+                  {showPassword ? <><EyeOff size={13} /> Hide</> : <><Eye size={13} /> Show</>}
                 </button>
               </div>
             </div>
-            <div style={{ fontSize: 11, color: '#666', marginTop: 8 }}>
-              ℹ️ Provide the valid user password to decrypt the document. The exported PDF will open cleanly without any password prompt.
+            <div style={{ fontSize: 11, color: '#15803d', marginTop: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Info size={13} style={{ flexShrink: 0 }} /> Provide the valid user password to losslessly remove document encryption. The exported PDF will open cleanly without passwords.
             </div>
           </div>
         )}
 
-        {/* Protect PDF Status Advisory */}
-        {activeAction.id === 'protect' && (
-          <div style={{ background: 'rgba(100,116,139,.06)', border: '1px solid rgba(100,116,139,.2)', borderRadius: 14, padding: '16px 18px', marginBottom: 20 }}>
-            <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 13.5, color: '#1a1a2e', marginBottom: 6 }}>
-              🔐 PDF Cryptographic Status Advisory
+        {/* Change PDF Password Options */}
+        {activeAction.id === 'change-password' && files.length > 0 && (
+          <div style={{ background: 'rgba(236,72,153,.06)', border: '1px solid rgba(236,72,153,.2)', borderRadius: 14, padding: '16px 18px', marginBottom: 20 }}>
+            <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 13.5, color: '#1a1a2e', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 7 }}>
+              <KeyRound size={16} color="#ec4899" /> Change PDF Security Password
             </div>
-            <p style={{ fontSize: 12.5, color: '#475569', lineHeight: 1.5, margin: 0 }}>
-              <strong>Zero Fake Functionality Policy:</strong> Standard Adobe PDF encryption (AES-256 with user/owner keys and crypt handler permissions) requires low-level native cryptographic libraries not supported in pure browser client-side environments. To protect your data and prevent false security assumptions, ToolDesk does not generate fake or pseudo-password protected files.
-            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 12 }}>
+              <div className="fgrp">
+                <label className="lbl">Current Password</label>
+                <input
+                  type={showChangePassword ? 'text' : 'password'}
+                  className="inp"
+                  value={changeOldPassword}
+                  onChange={e => setChangeOldPassword(e.target.value)}
+                  placeholder="Existing document password..."
+                />
+              </div>
+
+              <div className="fgrp">
+                <label className="lbl">New Password</label>
+                <input
+                  type={showChangePassword ? 'text' : 'password'}
+                  className="inp"
+                  value={changeNewPassword}
+                  onChange={e => setChangeNewPassword(e.target.value)}
+                  placeholder="New strong password..."
+                />
+              </div>
+
+              <div className="fgrp">
+                <label className="lbl">Confirm New Password</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showChangePassword ? 'text' : 'password'}
+                    className="inp"
+                    value={changeConfirmPassword}
+                    onChange={e => setChangeConfirmPassword(e.target.value)}
+                    placeholder="Confirm new password..."
+                    style={{ paddingRight: 40 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowChangePassword(p => !p)}
+                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+                  >
+                    {showChangePassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ fontSize: 11, color: '#be185d', display: 'flex', alignItems: 'center', gap: 5 }}>
+              <ShieldCheck size={13} style={{ flexShrink: 0 }} /> Decrypts losslessly and re-encrypts client-side under your new credentials with modern AES-256.
+            </div>
           </div>
         )}
 
@@ -2612,7 +2920,18 @@ export default function PDFToolkit() {
                   step={0.05}
                   value={sigScale}
                   onChange={e => setSigScale(+e.target.value)}
-                  style={{ width: '100%', marginTop: 8 }}
+                  style={{
+                    width: '100%',
+                    marginTop: 8,
+                    background: `linear-gradient(to right, #4F8EF7 0%, #4F8EF7 ${((sigScale - 0.1) / (0.5 - 0.1)) * 100}%, #e2e4ef ${((sigScale - 0.1) / (0.5 - 0.1)) * 100}%, #e2e4ef 100%)`,
+                    WebkitAppearance: 'none',
+                    appearance: 'none',
+                    height: 5,
+                    borderRadius: 3,
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                  className="rs-thumb"
                 />
               </div>
             </div>
@@ -3056,7 +3375,12 @@ export default function PDFToolkit() {
           onClick={runConversion}
           disabled={loading || files.length === 0}
         >
-          {loading ? '⏳ Processing Document…' : `${activeAction.icon} ${activeAction.label}`}
+          {loading ? 'Processing Document…' : (
+            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              {activeAction.icon}
+              <span>{activeAction.label}</span>
+            </span>
+          )}
         </button>
 
         {/* Progress feedback & Cancel */}
@@ -3462,6 +3786,51 @@ export default function PDFToolkit() {
           <DocSummaryPanel text={extractedOcrText} />
           <ContractAuditorPanel text={extractedOcrText} />
         </div>
+      )}
+
+      {pdfHistory.length > 0 && (
+        <Reveal delay={0.06}>
+          <ToolCard style={{ marginTop: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Clock size={16} style={{ color: '#4F8EF7' }} />
+                <span style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 14, color: '#0d0d1a' }}>
+                  Recent PDF Operations <span style={{ fontSize: 12, fontWeight: 500, color: '#aaa' }}>({pdfHistory.length})</span>
+                </span>
+              </div>
+              <motion.button whileTap={{ scale: 0.95 }}
+                onClick={clearToolHistory}
+                className="btn btn-outline btn-sm" style={{ color: '#EF5350', borderColor: 'rgba(239,83,80,.25)' }}>
+                <Trash2 size={13} style={{ marginRight: 4 }} /> Clear
+              </motion.button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 240, overflowY: 'auto' }}>
+              {pdfHistory.map((h) => (
+                <div key={h.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: '#fafbff', borderRadius: 10, padding: '8px 12px', border: '1px solid rgba(0,0,0,.06)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, overflow: 'hidden', marginRight: 8 }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 600, color: '#1e293b' }}>
+                      {h.label}
+                    </span>
+                    <span style={{ fontSize: 11, color: '#64748b' }}>
+                      {h.value} • <span style={{ color: '#94a3b8' }}>{h.timestamp}</span>
+                    </span>
+                  </div>
+                  <motion.button whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.9 }}
+                    onClick={() => removeHistoryItem(h.id)}
+                    title="Delete entry"
+                    style={{ padding: '4px 8px', borderRadius: 7, border: '1px solid rgba(0,0,0,.08)',
+                      background: '#fff', color: '#94a3b8', fontSize: 11, cursor: 'pointer' }}>
+                    <Trash2 size={11} />
+                  </motion.button>
+                </div>
+              ))}
+            </div>
+            <div className="info-bar blue" style={{ marginTop: 10, marginBottom: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <ShieldCheck size={14} style={{ flexShrink: 0 }} /> Safe PDF operation metadata is stored locally. Document contents and encryption passwords are never stored in history.
+            </div>
+          </ToolCard>
+        </Reveal>
       )}
     </ToolShell>
   )

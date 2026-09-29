@@ -4,7 +4,8 @@
 import assert from 'node:assert/strict'
 import { TOOLS, UNIT_CATEGORIES, CURRENCY_RATES, QUOTES } from '../src/constants.js'
 import { generateQRDataURL, generateQRSVG } from '../src/utils/qrCode.js'
-import { parsePageRangeString, formatBytes, PAGE_SIZES } from '../src/utils/pdfEngine.js'
+import { parsePageRangeString, formatBytes, PAGE_SIZES, lockPdf, unlockPdf, changePdfPassword } from '../src/utils/pdfEngine.js'
+import { PDFDocument } from 'pdf-lib'
 import { resolveApiUrl, getApiBaseUrl, isTauri, isCapacitor, isNativeShell, isDownloadAppAvailable } from '../src/utils/apiConfig.js'
 import { DEFAULT_RELEASE_CONFIG, CURRENT_RELEASE_VERSION, partitionFormatsForPlatform, detectCpuArchitecture } from '../src/utils/releaseConfig.js'
 import { createHash } from 'node:crypto'
@@ -134,6 +135,52 @@ test('PDF Engine: formatBytes accurately formats data sizes', () => {
   assert.equal(formatBytes(1536), '1.5 KB')
   assert.equal(formatBytes(1048576), '1.00 MB')
   assert.equal(formatBytes(5242880), '5.00 MB')
+})
+
+await testAsync('PDF Engine: lockPdf, unlockPdf, and changePdfPassword genuine AES-256 encryption', async () => {
+  const doc = await PDFDocument.create()
+  const page = doc.addPage([400, 300])
+  page.drawText('Confidential ToolDesk v1.3.0 Document')
+  const pdfBytes = await doc.save()
+
+  // 1. Lock document with AES-256
+  const locked = await lockPdf(pdfBytes, 'SuperSecretPass123!', { algorithm: 'AES-256' })
+  assert(locked.size > 0, 'Locked PDF size must be greater than 0')
+  const lockedBytes = new Uint8Array(await locked.blob.arrayBuffer())
+
+  // Verify locked document cannot be parsed without password
+  let failedWithoutPassword = false
+  try {
+    await PDFDocument.load(lockedBytes)
+  } catch (err) {
+    failedWithoutPassword = true
+  }
+  assert(failedWithoutPassword, 'Encrypted PDF must reject unauthenticated loading')
+
+  // 2. Unlock document with correct password (lossless vector decrypt)
+  const unlocked = await unlockPdf(lockedBytes, 'SuperSecretPass123!')
+  assert(unlocked.size > 0, 'Unlocked PDF size must be greater than 0')
+  const unlockedBytes = new Uint8Array(await unlocked.blob.arrayBuffer())
+  const decryptedDoc = await PDFDocument.load(unlockedBytes)
+  assert.equal(decryptedDoc.getPageCount(), 1, 'Decrypted PDF must preserve page count')
+
+  // 3. Verify incorrect password fails
+  let wrongPassFailed = false
+  try {
+    await unlockPdf(lockedBytes, 'WrongPassword999!')
+  } catch (err) {
+    wrongPassFailed = true
+  }
+  assert(wrongPassFailed, 'Unlocking with incorrect password must throw an error')
+
+  // 4. Change password
+  const reEncrypted = await changePdfPassword(lockedBytes, 'SuperSecretPass123!', 'NewPassword456!')
+  assert(reEncrypted.size > 0, 'Re-encrypted PDF must be created')
+  const reEncryptedBytes = new Uint8Array(await reEncrypted.blob.arrayBuffer())
+
+  // Verify can unlock with new password
+  const reUnlocked = await unlockPdf(reEncryptedBytes, 'NewPassword456!')
+  assert(reUnlocked.size > 0, 'Re-encrypted PDF must decrypt with new password')
 })
 
 // ─────────────────────────────────────────────────────────────
@@ -544,7 +591,7 @@ test('Download Logic 12: Installed iOS app - Download App hidden in iOS Capacito
   }
 })
 
-test('Release Integrity: Release version 1.2.2 canonical consistency across files', () => {
+test('Release Integrity: Release version 1.3.0 canonical consistency across files', () => {
   const pkg = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf8'))
   const releasesJson = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'public/releases.json'), 'utf8'))
   const tauriConf = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'src-tauri/tauri.conf.json'), 'utf8'))
@@ -552,19 +599,19 @@ test('Release Integrity: Release version 1.2.2 canonical consistency across file
   const gradle = fs.readFileSync(path.resolve(process.cwd(), 'android/app/build.gradle'), 'utf8')
   const pbxproj = fs.readFileSync(path.resolve(process.cwd(), 'ios/App/App.xcodeproj/project.pbxproj'), 'utf8')
 
-  assert.equal(pkg.version, '1.2.2', 'package.json version must be 1.2.2')
-  assert.equal(releasesJson.version, '1.2.2', 'public/releases.json version must be 1.2.2')
-  assert.equal(DEFAULT_RELEASE_CONFIG.version, '1.2.2', 'DEFAULT_RELEASE_CONFIG.version must be 1.2.2')
-  assert.equal(CURRENT_RELEASE_VERSION, '1.2.2', 'CURRENT_RELEASE_VERSION must be 1.2.2')
-  assert.equal(tauriConf.version, '1.2.2', 'tauri.conf.json version must be 1.2.2')
-  assert(cargoToml.includes('version = "1.2.2"'), 'Cargo.toml must have version 1.2.2')
-  assert(gradle.includes('versionName "1.2.2"'), 'Android build.gradle must have versionName "1.2.2"')
-  assert(gradle.includes('versionCode 12200'), 'Android build.gradle must have versionCode 12200')
-  assert(pbxproj.includes('MARKETING_VERSION = 1.2.2;'), 'iOS pbxproj must have MARKETING_VERSION = 1.2.2')
+  assert.equal(pkg.version, '1.3.0', 'package.json version must be 1.3.0')
+  assert.equal(releasesJson.version, '1.3.0', 'public/releases.json version must be 1.3.0')
+  assert.equal(DEFAULT_RELEASE_CONFIG.version, '1.3.0', 'DEFAULT_RELEASE_CONFIG.version must be 1.3.0')
+  assert.equal(CURRENT_RELEASE_VERSION, '1.3.0', 'CURRENT_RELEASE_VERSION must be 1.3.0')
+  assert.equal(tauriConf.version, '1.3.0', 'tauri.conf.json version must be 1.3.0')
+  assert(cargoToml.includes('version = "1.3.0"'), 'Cargo.toml must have version 1.3.0')
+  assert(gradle.includes('versionName "1.3.0"'), 'Android build.gradle must have versionName "1.3.0"')
+  assert(gradle.includes('versionCode 13000'), 'Android build.gradle must have versionCode 13000')
+  assert(pbxproj.includes('MARKETING_VERSION = 1.3.0;'), 'iOS pbxproj must have MARKETING_VERSION = 1.3.0')
   assert(pbxproj.includes('CURRENT_PROJECT_VERSION = 8;'), 'iOS pbxproj must have CURRENT_PROJECT_VERSION = 8')
 })
 
-test('Release Integrity: Tag v1.0.0, v1.0.1, v1.0.2, v1.0.3, v1.0.4 remain permanently immutable', () => {
+test('Release Integrity: Historical tags remain permanently immutable', () => {
   const checkTag = (tag, expectedHash) => {
     let resolved = ''
     try {
@@ -584,9 +631,10 @@ test('Release Integrity: Tag v1.0.0, v1.0.1, v1.0.2, v1.0.3, v1.0.4 remain perma
   checkTag('v1.0.2', '66e6dbd1f5f669bf219405b397c7f40c58190da2')
   checkTag('v1.0.3', 'e8d1b6c8522ea02d942a084419de814698d60319')
   checkTag('v1.0.4', '550d09b469d70a23632d894104b8a370353ecea9')
+  checkTag('v1.2.2', '7ebe2c74952563181ee29a76f9746cb1260b3758')
 })
 
-test('Release Integrity: Release metadata download URLs reference v1.2.2 and not older releases', () => {
+test('Release Integrity: Release metadata download URLs reference v1.3.0 and not older releases', () => {
   const releasesRaw = fs.readFileSync(path.resolve(process.cwd(), 'public/releases.json'), 'utf8')
   const configRaw = fs.readFileSync(path.resolve(process.cwd(), 'src/utils/releaseConfig.js'), 'utf8')
 
@@ -606,8 +654,10 @@ test('Release Integrity: Release metadata download URLs reference v1.2.2 and not
   assert(!configRaw.includes('/releases/download/v1.2.0/'), 'releaseConfig.js must NOT contain download URLs pointing to v1.2.0')
   assert(!releasesRaw.includes('/releases/download/v1.2.1/'), 'releases.json must NOT contain download URLs pointing to v1.2.1')
   assert(!configRaw.includes('/releases/download/v1.2.1/'), 'releaseConfig.js must NOT contain download URLs pointing to v1.2.1')
-  assert(releasesRaw.includes('/releases/download/v1.2.2/'), 'releases.json MUST contain download URLs pointing to v1.2.2')
-  assert(configRaw.includes('/releases/download/v1.2.2/'), 'releaseConfig.js MUST contain download URLs pointing to v1.2.2')
+  assert(!releasesRaw.includes('/releases/download/v1.2.2/'), 'releases.json must NOT contain download URLs pointing to v1.2.2')
+  assert(!configRaw.includes('/releases/download/v1.2.2/'), 'releaseConfig.js must NOT contain download URLs pointing to v1.2.2')
+  assert(releasesRaw.includes('/releases/download/v1.3.0/'), 'releases.json MUST contain download URLs pointing to v1.3.0')
+  assert(configRaw.includes('/releases/download/v1.3.0/'), 'releaseConfig.js MUST contain download URLs pointing to v1.3.0')
 })
 
 test('Branding: Logo assets existence and optimization across formats', () => {
@@ -707,9 +757,9 @@ test('AI UX & Architecture: Malformed and standard AI response handling', () => 
   assert.equal(emptyRes.error, 'Empty response')
 })
 
-test('Service Worker: Cache version matches v1.2.2 and precaches robot asset', () => {
+test('Service Worker: Cache version matches v1.3.0 and precaches robot asset', () => {
   const swCode = fs.readFileSync(path.resolve(process.cwd(), 'public/sw.js'), 'utf8')
-  assert(swCode.includes("SW_VERSION = 'v1.2.2'"), 'sw.js SW_VERSION must be v1.2.2')
+  assert(swCode.includes("SW_VERSION = 'v1.3.0'"), 'sw.js SW_VERSION must be v1.3.0')
   assert(swCode.includes("CACHE_NAME = `tooldesk-pwa-${SW_VERSION}`"), 'sw.js CACHE_NAME must use SW_VERSION')
   assert(swCode.includes('/robot-assistant-64.webp'), 'sw.js must precache /robot-assistant-64.webp')
   assert(swCode.includes('/logo.png'), 'sw.js must precache /logo.png')
