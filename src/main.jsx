@@ -47,6 +47,24 @@ if (typeof window !== 'undefined') {
   })
 }
 
+// In native shells (Android APK & iOS), actively purge any stale service workers and CacheStorage
+if (typeof window !== 'undefined' && isNativeShell()) {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      for (const reg of registrations) {
+        reg.unregister().catch(() => {})
+      }
+    }).catch(() => {})
+  }
+  if ('caches' in window) {
+    caches.keys().then(keys => {
+      for (const key of keys) {
+        caches.delete(key).catch(() => {})
+      }
+    }).catch(() => {})
+  }
+}
+
 if ('serviceWorker' in navigator && !isNativeShell() && window.location?.protocol?.startsWith('http')) {
   let refreshing = false
   const hadController = Boolean(navigator.serviceWorker.controller)
@@ -60,10 +78,18 @@ if ('serviceWorker' in navigator && !isNativeShell() && window.location?.protoco
 
   const registerSW = () => {
     navigator.serviceWorker.register('/sw.js').then((registration) => {
-      // Periodic update check
+      // Check for updates on startup
+      registration.update().catch(() => {})
+
+      // Check for updates whenever window regains focus
+      window.addEventListener('focus', () => {
+        registration.update().catch(() => {})
+      })
+
+      // Periodic background update check every 30 minutes
       setInterval(() => {
         registration.update().catch(() => {})
-      }, 60 * 60 * 1000)
+      }, 30 * 60 * 1000)
     }).catch(err => {
       console.warn('Service worker registration failed:', err)
     })

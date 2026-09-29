@@ -39,3 +39,29 @@ This manifest documents all file-level and component-level audits, dead code cle
    - Purged hardcoded legacy 302 redirects pointing to `v1.0.2` in `netlify.toml` and pointed them to `v1.3.0`.
 4. **Emoji Controls in Security Tools:**
    - Purged raw unstyled emoji characters across `BcryptTool.jsx` and `PDFToolkit.jsx` action catalog, substituting semantic, accessible Lucide icon components.
+
+---
+
+## 3. Cache Purging, Mobile Sync & Cross-Platform Release Packaging
+
+1. **Redirect Repair in `public/_redirects`:**
+   - Discovered and purged legacy forced `302!` redirects that were still pointing all downloads (`ToolDesk.apk`, `ToolDesk.dmg`, `ToolDesk-Setup.exe`, `ToolDesk.AppImage`, etc.) to ancient `v1.0.4`.
+   - Updated all redirect rules to canonical `v1.3.0` targets on GitHub Releases.
+2. **Netlify Cache-Control Enforcement in `public/_headers`:**
+   - Added strict `no-cache, no-store, must-revalidate` headers for `/sw.js`, `/sw-chunks.json`, and `/index.html` to eliminate stale PWA and WebView caching.
+3. **Android Native WebView Cache Auto-Purge (`MainActivity.java`):**
+   - Added SharedPreferences-driven `last_version_code` check. When upgrading to `versionCode 13000` (v1.3.0), Android automatically calls `getBridge().getWebView().clearCache(true)` to wipe stale HTTP/RAM/disk cache.
+4. **Native Shell Service Worker Cleanup (`src/main.jsx`):**
+   - Proactively unregisters any obsolete service workers and clears CacheStorage when running inside Capacitor native shells (`isNativeShell()`), ensuring Android and iOS always load directly from local bundled assets.
+   - Enhanced web PWA flow to re-check for updates on window focus and every 30 minutes.
+5. **Fresh Native Asset Synchronization:**
+   - Synced fresh v1.3.0 web assets into `android/app/src/main/assets/public/` and `ios/App/App/public/` via `npx cap sync`.
+6. **Fresh Binary Compilation & Packaging:**
+   - Recompiled release APK (`releases/android/ToolDesk.apk`) and AAB (`releases/android/ToolDesk.aab`) with OpenJDK 21 and Gradle 8.14.3.
+   - Recompiled macOS desktop DMG and ZIP installers via Tauri and Rust.
+   - Calculated exact SHA-256 checksums and updated `releases/SHA256SUMS.txt`, `public/SHA256SUMS.txt`, `public/releases.json`, and `src/utils/releaseConfig.js`.
+7. **Official GitHub Release Publication:**
+   - Published official `v1.3.0` release on GitHub (`satyajishu31/tooldesk/releases/tag/v1.3.0`) with verified binary uploads.
+8. **Live Netlify Production Deployment:**
+   - Deployed production bundle to `https://tooldesk-app.netlify.app`. Verified live download redirect resolution with HTTP 200/302.
+

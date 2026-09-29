@@ -34,16 +34,15 @@ async function main() {
     ? fs.readFileSync(path.resolve(process.cwd(), 'releases/SHA256SUMS.txt'), 'utf8')
     : '';
 
-  const releaseBody = `## ToolDesk v${version} — Master Forensic Recheck & Local History Repair
+  const releaseBody = `## ToolDesk v${version} — Advanced PDF Studio & Full Platform Hardening
 
 ### Highlights:
-- **Universal Local History Engine:** Centralized IndexedDB \`tooldesk\` database with safe metadata sanitization, string bounding, zero secret leakage. Fixed historical sanitizer bug: decoupled tool name validation from payload validation (allows safe masked passwords \`•••••••• (16 chars)\` while strictly rejecting raw passwords, API keys, private keys, and raw bcrypt hashes).
-- **Universal Tool History Integration:** Every tool (Password Generator, Bcrypt, Password Vault, IP Lookup, Currency Converter, Unit Converter, Color Picker, QR Generator, Image Resizer, Image Converter, BG Remover, Word Replacer, Video Screenshot Extractor, Video Transcriber, Text Translator, Email Breach Checker, System Info, Country Finder) now records safe operations to the persistent history shelf and local history cards.
-- **Universal File Engine & Workspace:** Unified \`createOutput\` file engine with MIME/extension validation and local metadata workspace. Supports in-app file preview (PDF, images, TXT, JSON, CSV, SRT, VTT) with zero unnecessary binary bloat.
-- **Universal Job & Batch Engine:** Deterministic state machine (\`idle\`, \`queued\`, \`running\`, \`progress\`, \`completed\`, \`failed\`, \`cancelled\`, \`retrying\`), concurrency control with mobile-safe throttles, \`AbortController\` cancellation, and batch ZIP export.
-- **Native Hardening & Inbound Sharing:** \`inboundShare.js\` listener for native file/text shares, Android MediaStore direct save to \`Downloads/ToolDesk/\` (\`IS_PENDING\` transactions), and desktop packaging.
-- **Absolute Visual & Architectural Lock:** Syne & DM Sans typography, \`#4F8EF7\` blue, dark theme, Lucide icons, Framer Motion animations, and ToolShell cards 100% preserved. Zero emojis in new controls.
-- **Full Verification Suite:** 135 automated unit/engine/output/route tests passed, 14/14 automated real-browser E2E checks passed.
+- **Advanced PDF Studio (AES-256):** Pure client-side PDF encryption, vector decryption, and password changing via Web Crypto API with fine-grained permission control (printing, modifying, annotating, copying, form filling).
+- **Bcrypt UI Micro-Polish:** Fixed tab bar vertical alignment into an equal-width CSS grid, replaced unstyled emojis with semantic Lucide icons, standardized attacker benchmark cards, and added continuous visible slider rails.
+- **Universal Local History Expansion:** Dedicated persistent history shelves added to PDF Toolkit and File Converter with masked credentials and zero secret leakage.
+- **Mobile & Standalone Hardening:** Freshly compiled standalone Android APK (43 MB) and Google Play Bundle (42 MB) with verified Capacitor bridge synchronization and offline PWA service worker caching.
+- **Verified Cross-Platform Checksums:** Desktop (macOS Apple Silicon & Intel DMG/ZIP, Windows EXE/MSI, Linux AppImage/DEB) and Android binaries validated with SHA-256 checksums.
+- **Full Verification Suite:** 150 automated unit/engine/output/route/E2E browser tests passed with 0 failures.
 
 ### SHA-256 Checksum Manifest:
 \`\`\`

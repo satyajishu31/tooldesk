@@ -60,6 +60,18 @@ public class MainActivity extends BridgeActivity {
             return windowInsets;
         });
 
+        // Ensure WebView cache is wiped when upgrading to v1.3.0 (versionCode 13000) or on fresh install
+        try {
+            android.content.SharedPreferences prefs = getSharedPreferences("tooldesk_meta", MODE_PRIVATE);
+            int lastVersion = prefs.getInt("last_version_code", -1);
+            if (lastVersion < 13000) {
+                if (getBridge() != null && getBridge().getWebView() != null) {
+                    getBridge().getWebView().clearCache(true);
+                }
+                prefs.edit().putInt("last_version_code", 13000).apply();
+            }
+        } catch (Exception ignored) {}
+
         registerNativeInterface();
         handleIncomingIntent(getIntent());
     }

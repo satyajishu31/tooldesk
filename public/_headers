@@ -52,3 +52,16 @@
   Content-Type: application/vnd.debian.binary-package
   Content-Disposition: attachment; filename="ToolDesk.deb"
   Cache-Control: public, max-age=604800, immutable
+
+/sw.js
+  Content-Type: application/javascript; charset=utf-8
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/sw-chunks.json
+  Content-Type: application/json; charset=utf-8
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/index.html
+  Content-Type: text/html; charset=utf-8
+  Cache-Control: no-cache, no-store, must-revalidate
+

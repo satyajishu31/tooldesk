@@ -72,11 +72,11 @@ export const DEFAULT_RELEASE_CONFIG = {
           label: 'macOS Apple Silicon (.dmg)',
           arch: 'Apple Silicon (arm64)',
           filename: 'ToolDesk-macos-arm64.dmg',
-          size: '26 MB',
+          size: '180 MB',
           status: 'available',
           envKey: 'VITE_MAC_DMG_ARM64_URL',
           url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.3.0/ToolDesk-macos-arm64.dmg',
-          checksum: 'fc6a355a29ccf5872db404220a79210b805a047efe6bdbc87573a6ebc353865a',
+          checksum: '62e90a70a275ab27c4b792302399ee7e8d641ed101a445ffd2e00d45eb446487',
           recommended: true
         },
         {
@@ -96,11 +96,11 @@ export const DEFAULT_RELEASE_CONFIG = {
           label: 'Application Archive (.zip)',
           arch: 'Apple Silicon (arm64)',
           filename: 'ToolDesk-macos-arm64.zip',
-          size: '25 MB',
+          size: '180 MB',
           status: 'available',
           envKey: 'VITE_MAC_APP_URL',
           url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.3.0/ToolDesk-macos-arm64.zip',
-          checksum: 'aee69b410cd9d411094fd783a2066d70831f44ac7a6fd8e6b910d4b7be742c38',
+          checksum: 'a0a891ad98c0cb39e5675297f9aab157459c35c5e407444c8a77c58cacd3ed4f',
           recommended: false
         }
       ]
@@ -150,11 +150,11 @@ export const DEFAULT_RELEASE_CONFIG = {
           label: 'Direct Android APK (.apk)',
           arch: 'arm64-v8a, armeabi-v7a, x86_64',
           filename: 'ToolDesk.apk',
-          size: '41 MB',
+          size: '43 MB',
           status: 'available',
           envKey: 'VITE_ANDROID_APK_URL',
           url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.3.0/ToolDesk.apk',
-          checksum: 'e10a2948d7c1fa5d59c8810722e76340de66db8596cf4d997b729d5f4a1b0d71',
+          checksum: '547ef26ae43e5296906fd0c2a496b80f7c8b494e6eeb62befa80c8dd716ff295',
           recommended: true,
           note: 'Direct standalone binary. Sideload on any Android device.'
         },
@@ -163,11 +163,11 @@ export const DEFAULT_RELEASE_CONFIG = {
           label: 'Google Play Bundle (.aab)',
           arch: 'Universal Play Store Bundle',
           filename: 'ToolDesk.aab',
-          size: '32 MB',
+          size: '42 MB',
           status: 'store-bundle',
           envKey: 'VITE_ANDROID_AAB_URL',
           url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.3.0/ToolDesk.aab',
-          checksum: 'e8e5de97ee5c44d2853848772c0f2258f332364b4638091e750363d021f0f6dc',
+          checksum: '188a6a4a9691ac437154dfb03f3f40cb7a9dbdcf802f19a0ba46ca7fd17abc85',
           recommended: false,
           note: 'Official Play Store publishing package'
         }
