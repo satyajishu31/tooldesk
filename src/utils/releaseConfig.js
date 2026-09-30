@@ -154,7 +154,7 @@ export const DEFAULT_RELEASE_CONFIG = {
           status: 'available',
           envKey: 'VITE_ANDROID_APK_URL',
           url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.3.0/ToolDesk.apk',
-          checksum: '547ef26ae43e5296906fd0c2a496b80f7c8b494e6eeb62befa80c8dd716ff295',
+          checksum: '779ead4b16760782e06770e411906910208068f3cff50defb8a03588d5b277cd',
           recommended: true,
           note: 'Direct standalone binary. Sideload on any Android device.'
         },
@@ -167,7 +167,7 @@ export const DEFAULT_RELEASE_CONFIG = {
           status: 'store-bundle',
           envKey: 'VITE_ANDROID_AAB_URL',
           url: 'https://github.com/satyajishu31/tooldesk/releases/download/v1.3.0/ToolDesk.aab',
-          checksum: '188a6a4a9691ac437154dfb03f3f40cb7a9dbdcf802f19a0ba46ca7fd17abc85',
+          checksum: 'd27d458add26a19a86834bc5c996ddf2035e7afcdeb707192a9e82b7ab5b9128',
           recommended: false,
           note: 'Official Play Store publishing package'
         }

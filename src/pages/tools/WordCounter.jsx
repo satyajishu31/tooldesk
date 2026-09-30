@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useCallback, useDeferredValue, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Type, Hash, Scissors, MessageSquare, Pilcrow, ArrowLeftRight, Lightbulb, BookOpen, FileText, Brain, Sparkles, RefreshCw, AlertCircle, CheckCircle2, ChevronRight, BarChart3, Feather } from 'lucide-react'
+import { Type, Hash, Scissors, MessageSquare, Pilcrow, ArrowLeftRight, Lightbulb, BookOpen, FileText, Brain, Sparkles, RefreshCw, AlertCircle, CheckCircle2, ChevronRight, BarChart3, Feather, Search, Zap, Target, Volume2, Eye, Upload, Download, Copy, Check, Trash2 } from 'lucide-react'
 import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { useCopy } from '../../hooks'
 import { TOOLS } from '../../constants'
@@ -240,25 +240,33 @@ export default function WordCounter() {
   ]
 
   const MODES = [
-    {id:'stats',label:'📊 Stats'},{id:'density',label:'🏆 Words'},
-    {id:'readability',label:'📖 Clarity'},{id:'tone',label:'🤖 AI Voice & Tone'},{id:'tools',label:'🔧 Tools'},
+    {id:'stats', label:'Stats', icon: BarChart3},
+    {id:'density', label:'Words', icon: Hash},
+    {id:'readability', label:'Clarity', icon: BookOpen},
+    {id:'tone', label:'AI Voice & Tone', icon: Sparkles},
+    {id:'tools', label:'Tools', icon: Feather},
   ]
 
   return (
     <ToolShell tool={tool}>
       <ToolCard>
         {/* Mode tabs */}
-        <div style={{display:'flex',gap:3,background:'rgba(0,0,0,.045)',borderRadius:14,padding:4,marginBottom:18,border:'1px solid rgba(0,0,0,.04)'}}>
-          {MODES.map(m=>(
-            <button key={m.id} onClick={()=>setMode(m.id)}
-              style={{flex:1,padding:'8px 4px',borderRadius:10,border:'none',cursor:'pointer',
-                fontFamily:'DM Sans,sans-serif',fontSize:11.5,fontWeight:700,
-                background:mode===m.id?'#ffffff':'transparent',
-                color:mode===m.id?'#4F8EF7':'#777',
-                boxShadow:mode===m.id?'0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)':'none',transition:'all .18s cubic-bezier(.22,1,.36,1)'}}>
-              {m.label}
-            </button>
-          ))}
+        <div style={{display:'flex',gap:3,background:'rgba(0,0,0,.045)',borderRadius:14,padding:4,marginBottom:18,border:'1px solid rgba(0,0,0,.04)',flexWrap:'wrap'}}>
+          {MODES.map(m=>{
+            const ModeIcon = m.icon
+            return (
+              <button key={m.id} onClick={()=>setMode(m.id)}
+                style={{flex:1,minWidth:80,padding:'8px 4px',borderRadius:10,border:'none',cursor:'pointer',
+                  fontFamily:'DM Sans,sans-serif',fontSize:11.5,fontWeight:700,
+                  background:mode===m.id?'#ffffff':'transparent',
+                  color:mode===m.id?'#4F8EF7':'#777',
+                  boxShadow:mode===m.id?'0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)':'none',transition:'all .18s cubic-bezier(.22,1,.36,1)',
+                  display:'inline-flex',alignItems:'center',justifyContent:'center',gap:5}}>
+                <ModeIcon size={13} color={mode===m.id?'#4F8EF7':'#777'} />
+                <span>{m.label}</span>
+              </button>
+            )
+          })}
         </div>
 
         {/* Textarea */}
@@ -268,25 +276,26 @@ export default function WordCounter() {
             <div style={{display:'flex',gap:7,alignItems:'center',flexWrap:'wrap'}}>
               <button onClick={()=>fileRef.current?.click()}
                 style={{fontSize:12,fontWeight:700,color:'#9C6FDE',background:'rgba(156,111,222,.08)',
-                  border:'1px solid rgba(156,111,222,.2)',borderRadius:999,padding:'4px 11px',cursor:'pointer'}}>
-                📂 Load File
+                  border:'1px solid rgba(156,111,222,.2)',borderRadius:999,padding:'4px 11px',cursor:'pointer',display:'inline-flex',alignItems:'center',gap:5}}>
+                <Upload size={12} /> Load File
               </button>
               <input ref={fileRef} type="file" accept=".txt,.md,.csv,.html,.json" style={{display:'none'}}
                 onChange={e=>{loadFile(e.target.files?.[0]);e.target.value=''}}/>
               {text&&<button onClick={()=>copy(text)}
                 style={{fontSize:12,fontWeight:700,color:copied?'#22c55e':'#4F8EF7',background:copied?'rgba(34,197,94,.08)':'rgba(79,142,247,.08)',
-                  border:`1px solid ${copied?'rgba(34,197,94,.2)':'rgba(79,142,247,.2)'}`,borderRadius:999,padding:'4px 11px',cursor:'pointer'}}>
-                {copied?'✓ Copied':'📋 Copy'}
+                  border:`1px solid ${copied?'rgba(34,197,94,.2)':'rgba(79,142,247,.2)'}`,borderRadius:999,padding:'4px 11px',cursor:'pointer',display:'inline-flex',alignItems:'center',gap:4}}>
+                {copied ? <Check size={12} color="#22c55e" /> : <Copy size={12} />}
+                <span>{copied?'Copied':'Copy'}</span>
               </button>}
               {text&&<button onClick={()=>dlText(text,'text.txt')}
                 style={{fontSize:12,fontWeight:700,color:'#FF9800',background:'rgba(255,152,0,.08)',
-                  border:'1px solid rgba(255,152,0,.2)',borderRadius:999,padding:'4px 11px',cursor:'pointer'}}>
-                ⬇ Export
+                  border:'1px solid rgba(255,152,0,.2)',borderRadius:999,padding:'4px 11px',cursor:'pointer',display:'inline-flex',alignItems:'center',gap:4}}>
+                <Download size={12} /> Export
               </button>}
               {text&&<button onClick={()=>setText('')}
                 style={{padding:'4px 11px',borderRadius:999,fontSize:12,fontWeight:600,cursor:'pointer',
-                  border:'1.5px solid rgba(239,68,68,.25)',background:'rgba(239,68,68,.05)',color:'#ef4444'}}>
-                ✕ Clear
+                  border:'1.5px solid rgba(239,68,68,.25)',background:'rgba(239,68,68,.05)',color:'#ef4444',display:'inline-flex',alignItems:'center',gap:4}}>
+                <Trash2 size={12} /> Clear
               </button>}
             </div>
           </div>
@@ -303,7 +312,9 @@ export default function WordCounter() {
 
         {/* Goal + tier */}
         <div style={{display:'flex',gap:9,alignItems:'center',marginBottom:14,flexWrap:'wrap'}}>
-          <span style={{fontSize:12,fontWeight:600,color:'#888',whiteSpace:'nowrap'}}>🎯 Word goal:</span>
+          <span style={{fontSize:12,fontWeight:600,color:'#64748b',whiteSpace:'nowrap',display:'inline-flex',alignItems:'center',gap:5}}>
+            <Target size={13} color="#4F8EF7" /> Word goal:
+          </span>
           <input type="number" value={goal} onChange={e=>setGoal(e.target.value)}
             placeholder="e.g. 500" min={1}
             className="inp" style={{flex:1,minWidth:100,fontSize:13,padding:'7px 12px'}}/>
@@ -314,7 +325,7 @@ export default function WordCounter() {
                   style={{height:'100%',background:goalPct>=100?'#22c55e':'#4F8EF7',borderRadius:3}}/>
               </div>
               <div style={{fontSize:10,color:goalPct>=100?'#22c55e':'#aaa',fontWeight:700,marginTop:3,textAlign:'right'}}>
-                {goalPct>=100?'🎉 Goal reached!':`${stats.words}/${goalNum} (${Math.round(goalPct)}%)`}
+                {goalPct>=100?'✓ Goal reached!':`${stats.words}/${goalNum} (${Math.round(goalPct)}%)`}
               </div>
             </div>
           )}
@@ -345,19 +356,24 @@ export default function WordCounter() {
               <div style={{background:'rgba(34,197,94,.05)',border:'1px solid rgba(34,197,94,.16)',
                 backdropFilter:'blur(8px)',WebkitBackdropFilter:'blur(8px)',boxShadow:'inset 0 1px 0 rgba(255,255,255,0.7)',
                 borderRadius:12,padding:'12px 16px',display:'flex',gap:20,flexWrap:'wrap'}}>
-                {[{icon:'👁',label:'Silent reading',value:stats.readTime,note:'238 wpm'},
-                  {icon:'🗣',label:'Speaking aloud',value:stats.speakTime,note:'125 wpm'},
-                  {icon:'📄',label:'~Pages',value:stats.pages,note:'250 wpm/page'},
-                  {icon:'🧠',label:'Lex density',value:stats.lexDens+'%',note:'unique/total'},
-                ].map(item=>(
-                  <div key={item.label} style={{display:'flex',alignItems:'center',gap:10}}>
-                    <span style={{fontSize:20}}>{item.icon}</span>
-                    <div>
-                      <div style={{fontSize:13.5,fontWeight:700,color:'#1e293b'}}>{item.value}</div>
-                      <div style={{fontSize:12,color:'#64748b'}}>{item.label} · {item.note}</div>
+                {[{icon:Eye,label:'Silent reading',value:stats.readTime,note:'238 wpm'},
+                  {icon:Volume2,label:'Speaking aloud',value:stats.speakTime,note:'125 wpm'},
+                  {icon:FileText,label:'~Pages',value:stats.pages,note:'250 wpm/page'},
+                  {icon:Brain,label:'Lex density',value:stats.lexDens+'%',note:'unique/total'},
+                ].map(item=>{
+                  const ItemIcon = item.icon
+                  return (
+                    <div key={item.label} style={{display:'flex',alignItems:'center',gap:10}}>
+                      <div style={{ width:30, height:30, borderRadius:8, background:'rgba(34,197,94,.12)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                        <ItemIcon size={15} color="#22c55e" />
+                      </div>
+                      <div>
+                        <div style={{fontSize:13.5,fontWeight:700,color:'#1e293b'}}>{item.value}</div>
+                        <div style={{fontSize:12,color:'#64748b'}}>{item.label} · {item.note}</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </>
@@ -472,7 +488,7 @@ export default function WordCounter() {
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:12,marginBottom:16}}>
                 <div>
                   <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
-                    <span style={{fontSize:20}}>🤖</span>
+                    <Brain size={20} color="#9C6FDE" />
                     <h3 style={{fontFamily:'Syne,sans-serif',fontWeight:800,fontSize:17,color:'#0f172a',margin:0}}>
                       AI Tone, Formality & Grade Auditor
                     </h3>
@@ -550,9 +566,13 @@ export default function WordCounter() {
                       padding:'8px 18px',
                       fontSize:12.5,
                       fontWeight:700,
-                      cursor:text.trim() ? 'pointer' : 'not-allowed'
+                      cursor:text.trim() ? 'pointer' : 'not-allowed',
+                      display:'inline-flex',
+                      alignItems:'center',
+                      gap:6
                     }}>
-                    {text.trim() ? '⚡ Run Instant Audit' : 'Type or paste text above first'}
+                    <Sparkles size={13} />
+                    <span>{text.trim() ? 'Run Instant Audit' : 'Type or paste text above first'}</span>
                   </button>
                 </div>
               )}
@@ -694,9 +714,13 @@ export default function WordCounter() {
                         border: `1px solid ${copied ? 'rgba(34,197,94,.2)' : 'rgba(79,142,247,.2)'}`,
                         borderRadius: 8,
                         padding: '6px 14px',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 5
                       }}>
-                      {copied ? '✓ Copied Audit Report' : '📋 Copy Audit Report (Markdown)'}
+                      {copied ? <Check size={12} color="#22c55e" /> : <Copy size={12} />}
+                      <span>{copied ? 'Copied Audit Report' : 'Copy Audit Report (Markdown)'}</span>
                     </button>
                   </div>
                 </div>
@@ -710,8 +734,8 @@ export default function WordCounter() {
           <div>
             {/* Find & Replace */}
             <div style={{marginBottom:16,background:'#f8f9ff',borderRadius:12,padding:'14px',border:'1px solid rgba(79,142,247,.1)'}}>
-              <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:13.5,color:'#0d0d1a',marginBottom:12}}>
-                🔍 Find & Replace
+              <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:13.5,color:'#0d0d1a',marginBottom:12,display:'inline-flex',alignItems:'center',gap:6}}>
+                <Search size={14} color="#4F8EF7" /> Find & Replace
               </div>
               <div className="frow" style={{gap:10,marginBottom:10}}>
                 <div style={{flex:1}}>
@@ -737,8 +761,8 @@ export default function WordCounter() {
             </div>
 
             {/* Transform tools */}
-            <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:13.5,color:'#0d0d1a',marginBottom:12}}>
-              ⚡ Text Transforms
+            <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:13.5,color:'#0d0d1a',marginBottom:12,display:'inline-flex',alignItems:'center',gap:6}}>
+              <Zap size={14} color="#4F8EF7" /> Text Transforms
             </div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(150px,1fr))',gap:8,marginBottom:16}}>
               {[
@@ -777,8 +801,8 @@ export default function WordCounter() {
             </div>
 
             {/* Export options */}
-            <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:13.5,color:'#0d0d1a',marginBottom:10}}>
-              ⬇️ Export
+            <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:13.5,color:'#0d0d1a',marginBottom:10,display:'inline-flex',alignItems:'center',gap:6}}>
+              <Download size={14} color="#4F8EF7" /> Export
             </div>
             <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
               {[

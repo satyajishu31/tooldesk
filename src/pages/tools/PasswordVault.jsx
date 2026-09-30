@@ -6,6 +6,7 @@ import { generateQRDataURL } from '../../utils/qrCode'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import { resolveApiUrl, getApiHeaders } from '../../utils/apiConfig'
 import { addToHistory } from '../../utils/history'
+import { Lock, Unlock, Key, Save, Download, Upload, Copy, FileText, Sparkles, Shield, ShieldCheck, AlertCircle, AlertTriangle, Trash2, QrCode, Cloud, RefreshCw, X, Plus, Check } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'vault')
 const VAULT_KEY = 'tbpro_vault_v1'
@@ -1009,16 +1010,16 @@ export default function PasswordVault() {
                 <button
                   type="button"
                   className={`btn btn-sm ${vaultMode === 'unlock' ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ fontSize:12, padding:'6px 14px' }}
+                  style={{ fontSize:12, padding:'6px 14px', display:'inline-flex', alignItems:'center', gap:5 }}
                   onClick={() => { setVaultMode('unlock'); setAuthError('') }}>
-                  🔐 Unlock Existing Vault
+                  <Lock size={13} /> Unlock Existing Vault
                 </button>
                 <button
                   type="button"
                   className={`btn btn-sm ${vaultMode === 'setup' ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ fontSize:12, padding:'6px 14px' }}
+                  style={{ fontSize:12, padding:'6px 14px', display:'inline-flex', alignItems:'center', gap:5 }}
                   onClick={() => { setVaultMode('setup'); setAuthError('') }}>
-                  ✨ Create New Vault
+                  <Sparkles size={13} /> Create New Vault
                 </button>
               </div>
 
@@ -1050,9 +1051,9 @@ export default function PasswordVault() {
 
               <p style={{ fontSize:12.5, color:'#64748b', marginTop:7, marginBottom:16, lineHeight:1.6 }}>
                 {isCloudSyncEnabled ? (
-                  <span>☁️ <strong style={{ color:'#334155' }}>Cloud Sync Enabled.</strong> Data is Zero-Knowledge encrypted locally before backing up to Supabase.</span>
+                  <span><Cloud size={14} color="#4F8EF7" style={{ display:'inline', verticalAlign:'text-bottom', marginRight:4 }} /> <strong style={{ color:'#334155' }}>Cloud Sync Enabled.</strong> Data is Zero-Knowledge encrypted locally before backing up to Supabase.</span>
                 ) : (
-                  <span>⚠️ <strong style={{ color:'#334155' }}>Your data stays local.</strong> Passwords are AES-GCM-encrypted in localStorage. If you forget your master password, data cannot be recovered.</span>
+                  <span><ShieldCheck size={14} color="#22c55e" style={{ display:'inline', verticalAlign:'text-bottom', marginRight:4 }} /> <strong style={{ color:'#334155' }}>Your data stays local.</strong> Passwords are AES-GCM-encrypted in localStorage. If you forget your master password, data cannot be recovered.</span>
                 )}
               </p>
 
@@ -1063,7 +1064,7 @@ export default function PasswordVault() {
                   color: '#9f1239', textAlign: 'left'
                 }}>
                   <div style={{ fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                    <span>⚠️</span> Existing Vault Detected
+                    <AlertTriangle size={15} color="#e11d48" /> Existing Vault Detected
                   </div>
                   <div style={{ fontSize: 12, lineHeight: 1.5, marginBottom: 12 }}>
                     An encrypted vault already exists on this device. Initializing a new vault will permanently overwrite and delete your existing credentials.
@@ -1092,19 +1093,21 @@ export default function PasswordVault() {
               )}
 
               {vaultMode === 'setup' ? (
-                <button className="btn btn-primary btn-w btn-lg" onClick={() => handleCreateVault(false)} disabled={loading}>
-                  {loading ? '⏳ Initializing Secure Vault…' : '✨ Initialize & Encrypt Vault'}
+                <button className="btn btn-primary btn-w btn-lg" onClick={() => handleCreateVault(false)} disabled={loading} style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                  {loading ? <RefreshCw size={15} className="spin" /> : <Sparkles size={15} />}
+                  {loading ? 'Initializing Secure Vault…' : 'Initialize & Encrypt Vault'}
                 </button>
               ) : (
-                <button className="btn btn-primary btn-w btn-lg" onClick={tryOpen} disabled={loading}>
-                  {loading ? '⏳ Syncing & Decrypting…' : '🔐 Open Vault'}
+                <button className="btn btn-primary btn-w btn-lg" onClick={tryOpen} disabled={loading} style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                  {loading ? <RefreshCw size={15} className="spin" /> : <Lock size={15} />}
+                  {loading ? 'Syncing & Decrypting…' : 'Open Vault'}
                 </button>
               )}
 
               {isCloudSyncEnabled && (
                 <div style={{ marginTop: 24, padding: 14, background: '#fafbff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 14 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>
-                    ☁️ Cloud Sync Settings
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8, display:'inline-flex', alignItems:'center', gap:5 }}>
+                    <Cloud size={13} color="#4F8EF7" /> Cloud Sync Settings
                   </div>
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1121,8 +1124,8 @@ export default function PasswordVault() {
                       <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
                         style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4 }}>
                         <input className="inp" readOnly value={syncToken} style={{ flex: 1, fontFamily: 'monospace', fontSize: 12.5, padding: '6px 10px', background: '#fff' }}/>
-                        <button className="btn btn-secondary btn-sm" onClick={() => { navigator.clipboard?.writeText(syncToken); alert('Sync Code copied!') }} style={{ width: 'auto' }}>
-                          📋 Copy
+                        <button className="btn btn-secondary btn-sm" onClick={() => { navigator.clipboard?.writeText(syncToken); alert('Sync Code copied!') }} style={{ width: 'auto', display:'inline-flex', alignItems:'center', gap:4 }}>
+                          <Copy size={12} /> Copy
                         </button>
                       </motion.div>
                     )}
@@ -1150,27 +1153,30 @@ export default function PasswordVault() {
               {copyMsg && (
                 <motion.div initial={{opacity:0,y:-8}} animate={{opacity:1,y:0}} exit={{opacity:0}}
                   style={{ background:'rgba(34,197,94,.1)', border:'1px solid rgba(34,197,94,.3)', borderRadius:10, padding:'8px 14px', fontSize:13, fontWeight:600, color:'#22c55e', textAlign:'center', marginBottom:14 }}>
-                  ✅ {copyMsg}
+                  ✓ {copyMsg}
                 </motion.div>
               )}
 
               {/* Header */}
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18, flexWrap:'wrap', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ fontFamily:'Syne,sans-serif', fontSize:16, fontWeight:700, color:'#0d0d1a' }}>
-                    🔓 {entries.length} password{entries.length !== 1 ? 's' : ''}
+                  <div style={{ fontFamily:'Syne,sans-serif', fontSize:16, fontWeight:700, color:'#0d0d1a', display:'inline-flex', alignItems:'center', gap:6 }}>
+                    <Unlock size={17} color="#4F8EF7" /> {entries.length} password{entries.length !== 1 ? 's' : ''}
                   </div>
-                  {syncStatus === 'syncing' && <span style={{ fontSize: 12, color: '#4F8EF7', fontWeight: 600 }}>⏳ Syncing…</span>}
+                  {syncStatus === 'syncing' && <span style={{ fontSize: 12, color: '#4F8EF7', fontWeight: 600, display:'inline-flex', alignItems:'center', gap:4 }}><RefreshCw size={12} className="spin" /> Syncing…</span>}
                   {syncStatus === 'synced' && <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>✓ Cloud synced</span>}
-                  {syncStatus === 'failed' && <span style={{ fontSize: 12, color: '#ef4444', fontWeight: 600 }}>⚠️ Cloud sync error (local copy saved)</span>}
+                  {syncStatus === 'failed' && <span style={{ fontSize: 12, color: '#ef4444', fontWeight: 600, display:'inline-flex', alignItems:'center', gap:4 }}><AlertCircle size={12} /> Cloud sync error (local copy saved)</span>}
                 </div>
                 <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-                  <button className="btn btn-blue btn-sm" onClick={() => setShowAdd(a => !a)}>
-                    {showAdd ? '✕ Cancel' : '+ Add New'}
+                  <button className="btn btn-blue btn-sm" onClick={() => setShowAdd(a => !a)} style={{ display:'inline-flex', alignItems:'center', gap:5 }}>
+                    {showAdd ? <X size={13} /> : <Plus size={13} />}
+                    {showAdd ? 'Cancel' : 'Add New'}
                   </button>
-                  <button className="btn btn-outline btn-sm" onClick={lock}>🔐 Lock</button>
-                  <button className="btn btn-outline btn-sm" onClick={openQrSyncModal}>
-                    📱 QR Sync
+                  <button className="btn btn-outline btn-sm" onClick={lock} style={{ display:'inline-flex', alignItems:'center', gap:5 }}>
+                    <Lock size={13} /> Lock
+                  </button>
+                  <button className="btn btn-outline btn-sm" onClick={openQrSyncModal} style={{ display:'inline-flex', alignItems:'center', gap:5 }}>
+                    <QrCode size={13} /> QR Sync
                   </button>
                   <button className="btn btn-outline btn-sm"
                     onClick={async ()=>{
@@ -1189,11 +1195,12 @@ export default function PasswordVault() {
                           metadata: { count: entries.length, format: 'json' }
                         })
                       } catch {}
-                    }}>
-                    ⬇ Export JSON
+                    }}
+                    style={{ display:'inline-flex', alignItems:'center', gap:5 }}>
+                    <Download size={13} /> Export JSON
                   </button>
-                  <label className="btn btn-outline btn-sm" style={{cursor:'pointer',margin:0}}>
-                    📂 Import JSON
+                  <label className="btn btn-outline btn-sm" style={{cursor:'pointer',margin:0, display:'inline-flex', alignItems:'center', gap:5}}>
+                    <Upload size={13} /> Import JSON
                     <input type="file" accept=".json" style={{display:'none'}}
                       onChange={e=>{
                         const f=e.target.files[0]; if(!f) return
@@ -1226,11 +1233,12 @@ export default function PasswordVault() {
                       }}/>
                   </label>
                   <button className="btn btn-outline btn-sm"
-                    onClick={() => exportCSV(entries)}>
-                    📄 Export CSV
+                    onClick={() => exportCSV(entries)}
+                    style={{ display:'inline-flex', alignItems:'center', gap:5 }}>
+                    <FileText size={13} /> Export CSV
                   </button>
-                  <label className="btn btn-outline btn-sm" style={{cursor:'pointer',margin:0}}>
-                    📂 Import CSV
+                  <label className="btn btn-outline btn-sm" style={{cursor:'pointer',margin:0, display:'inline-flex', alignItems:'center', gap:5}}>
+                    <Upload size={13} /> Import CSV
                     <input type="file" accept=".csv" style={{display:'none'}}
                       onChange={e=>{
                         const f=e.target.files[0]; if(!f) return
@@ -1276,14 +1284,20 @@ export default function PasswordVault() {
                         <label className="lbl">Password</label>
                         <div style={{ display:'flex', gap:8 }}>
                           <input className="inp" type="text" value={newPwd} onChange={e => setNewPwd(e.target.value)} placeholder="Enter or generate" style={{ fontFamily:'monospace', fontSize:13 }}/>
-                          <button className="btn btn-outline btn-sm" onClick={genRandom} style={{ flexShrink:0 }}>🎲 Gen</button>
+                          <button className="btn btn-outline btn-sm" onClick={genRandom} style={{ flexShrink:0, display:'inline-flex', alignItems:'center', gap:4 }}>
+                            <Sparkles size={12} /> Gen
+                          </button>
                         </div>
                       </div>
                       <div className="fgrp">
-                        <label className="lbl">🔑 2FA / TOTP Secret Key (optional)</label>
+                        <label className="lbl" style={{ display:'inline-flex', alignItems:'center', gap:5 }}>
+                          <Key size={13} color="#4F8EF7" /> 2FA / TOTP Secret Key (optional)
+                        </label>
                         <input className="inp" type="text" value={newTotp} onChange={e => setNewTotp(e.target.value)} placeholder="e.g. JBSWY3DPEHPK3PXP" style={{ fontFamily:'monospace', fontSize:12 }}/>
                       </div>
-                      <button className="btn btn-primary btn-w" onClick={addEntry}>💾 Save Entry</button>
+                      <button className="btn btn-primary btn-w" onClick={addEntry} style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                        <Save size={14} /> Save Entry
+                      </button>
                     </div>
                   </motion.div>
                 )}
@@ -1291,8 +1305,10 @@ export default function PasswordVault() {
 
               {/* Entries */}
               {entries.length === 0 ? (
-                <div style={{ textAlign:'center', padding:'32px 0', color:'#ccc', fontSize:13 }}>
-                  <div style={{ fontSize:40, marginBottom:10 }}>🏦</div>
+                <div style={{ textAlign:'center', padding:'36px 0', color:'#94a3b8', fontSize:13 }}>
+                  <div style={{ display:'flex', justifyContent:'center', marginBottom:12 }}>
+                    <Shield size={38} color="#cbd5e1" strokeWidth={1.5} />
+                  </div>
                   Vault is empty. Add your first password!
                 </div>
               ) : (
@@ -1349,11 +1365,11 @@ export default function PasswordVault() {
                         }}
                         onMouseEnter={e => e.currentTarget.style.background='rgba(0,0,0,0.08)'}
                         onMouseLeave={e => e.currentTarget.style.background='rgba(0,0,0,0.04)'}>
-                        ✕
+                        <X size={15} />
                       </button>
 
-                      <div style={{ fontFamily:'Syne,sans-serif', fontSize:18, fontWeight:800, color:'#0d0d1a', marginBottom:4 }}>
-                        📱 Zero-Knowledge Device Transfer
+                      <div style={{ fontFamily:'Syne,sans-serif', fontSize:18, fontWeight:800, color:'#0d0d1a', marginBottom:4, display:'inline-flex', alignItems:'center', gap:7 }}>
+                        <QrCode size={19} color="#4F8EF7" /> Zero-Knowledge Device Transfer
                       </div>
                       <p style={{ fontSize:12.5, color:'#666', lineHeight:1.6, marginBottom:16 }}>
                         Transfer your encrypted vault directly between devices without cloud servers. Protected by your master password with AES-GCM 256-bit encryption.
@@ -1420,8 +1436,8 @@ export default function PasswordVault() {
                             const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' })
                             saveFileWithFallback(blob, 'tooldesk-vault-backup.tooldesk-vault')
                           }}
-                          style={{ width:'100%', fontSize:12, padding:'7px 12px' }}>
-                          💾 Export Encrypted Backup File (.tooldesk-vault)
+                          style={{ width:'100%', fontSize:12, padding:'7px 12px', display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                          <Download size={13} /> Export Encrypted Backup (.tooldesk-vault)
                         </button>
                       </div>
 
@@ -1444,15 +1460,16 @@ export default function PasswordVault() {
                             setQrCopied(true)
                             setTimeout(() => setQrCopied(false), 1500)
                           }}
-                          style={{ marginTop:6, width:'100%' }}>
-                          {qrCopied ? '✅ Copied to Clipboard!' : '📋 Copy Encrypted Token'}
+                          style={{ marginTop:6, width:'100%', display:'inline-flex', alignItems:'center', justifyContent:'center', gap:5 }}>
+                          {qrCopied ? <Check size={13} color="#22c55e" /> : <Copy size={13} />}
+                          {qrCopied ? 'Copied to Clipboard!' : 'Copy Encrypted Token'}
                         </button>
                       </div>
 
                       {/* Import Section */}
                       <div style={{ borderTop:'1px solid rgba(0,0,0,.08)', paddingTop:16 }}>
-                        <div style={{ fontFamily:'Syne,sans-serif', fontSize:14, fontWeight:700, color:'#0d0d1a', marginBottom:6 }}>
-                          📥 Import / Restore from Another Device
+                        <div style={{ fontFamily:'Syne,sans-serif', fontSize:14, fontWeight:700, color:'#0d0d1a', marginBottom:6, display:'inline-flex', alignItems:'center', gap:5 }}>
+                          <Upload size={14} color="#4F8EF7" /> Import / Restore from Another Device
                         </div>
                         <textarea
                           className="inp"
@@ -1464,8 +1481,9 @@ export default function PasswordVault() {
                         <button
                           className="btn btn-blue btn-sm btn-w"
                           disabled={!qrImportText.trim()}
-                          onClick={handleQrImport}>
-                          🔓 Decrypt &amp; Merge Passwords
+                          onClick={handleQrImport}
+                          style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                          <Unlock size={14} /> Decrypt &amp; Merge Passwords
                         </button>
                       </div>
 

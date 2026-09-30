@@ -4,6 +4,7 @@ import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { TOOLS } from '../../constants'
 import { addToHistory } from '../../utils/history'
 import DeveloperUtilities from '../../components/DeveloperUtilities'
+import { Laptop, Shield, Wrench, ShieldCheck, Fingerprint, RefreshCw, BarChart3, Cpu, Monitor, Globe, Search, AlertTriangle, Wifi } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'systeminfo')
 
@@ -353,43 +354,50 @@ export default function SystemInfo() {
         }}
       >
         {[
-          { id: 'audit', label: 'System & Hardware', icon: '💻' },
-          { id: 'fingerprint', label: 'Fingerprint Surface', icon: '🛡️' },
-          { id: 'dev', label: 'Developer Utilities Studio', icon: '🛠️' },
-        ].map(tab => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveSection(tab.id)}
-            style={{
-              flex: '1 1 140px',
-              padding: '10px 14px',
-              borderRadius: 10,
-              border: 'none',
-              background: activeSection === tab.id ? '#ffffff' : 'transparent',
-              color: activeSection === tab.id ? '#0f172a' : '#64748b',
-              boxShadow: activeSection === tab.id ? '0 2px 10px rgba(0,0,0,0.06)' : 'none',
-              fontFamily: 'DM Sans, sans-serif',
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              transition: 'all 0.18s ease',
-              textAlign: 'center',
-            }}
-          >
-            <span style={{ marginRight: 6 }}>{tab.icon}</span>
-            {tab.label}
-          </button>
-        ))}
+          { id: 'audit', label: 'System & Hardware', icon: Laptop },
+          { id: 'fingerprint', label: 'Fingerprint Surface', icon: Shield },
+          { id: 'dev', label: 'Developer Utilities Studio', icon: Wrench },
+        ].map(tab => {
+          const TabIcon = tab.icon
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveSection(tab.id)}
+              style={{
+                flex: '1 1 140px',
+                padding: '10px 14px',
+                borderRadius: 10,
+                border: 'none',
+                background: activeSection === tab.id ? '#ffffff' : 'transparent',
+                color: activeSection === tab.id ? '#0f172a' : '#64748b',
+                boxShadow: activeSection === tab.id ? '0 2px 10px rgba(0,0,0,0.06)' : 'none',
+                fontFamily: 'DM Sans, sans-serif',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.18s ease',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 7,
+                textAlign: 'center',
+              }}
+            >
+              <TabIcon size={15} color={activeSection === tab.id ? '#4F8EF7' : '#64748b'} />
+              <span>{tab.label}</span>
+            </button>
+          )
+        })}
       </div>
 
       {/* 0. DEVELOPER UTILITIES STUDIO */}
       {activeSection === 'dev' && (
         <Reveal delay={0.04}>
           <ToolCard style={{ marginBottom: 20 }}>
-            <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>
-              🛠️ Developer Utilities Studio
+            <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 800, color: '#0f172a', marginBottom: 4, display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+              <Wrench size={18} color="#4F8EF7" /> Developer Utilities Studio
             </h3>
             <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 16px 0' }}>
               Full suite of client-side developer tools: JSON Studio, JWT Inspector, Regex Studio, SQL Formatter, UUID Generator, Timestamp Studio, and URL Toolkit.
@@ -407,9 +415,9 @@ export default function SystemInfo() {
               
               {/* Hardware & System */}
               <div style={{ background: 'rgba(0,0,0,0.02)', padding: 20, borderRadius: 16, border: '1px solid rgba(0,0,0,0.06)' }}>
-                <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: 16, fontWeight: 700, marginBottom: 16, color: 'var(--blue)' }}>
-                💻 Hardware & Core OS
-              </h3>
+                <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: 16, fontWeight: 700, marginBottom: 16, color: 'var(--blue)', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+                  <Laptop size={16} color="var(--blue)" /> Hardware & Core OS
+                </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div style={styles.statRow}>
                   <span style={styles.statLabel}>Operating System</span>
@@ -438,8 +446,8 @@ export default function SystemInfo() {
 
             {/* Browser Privacy & Auditing */}
             <div style={{ background: 'rgba(0,0,0,0.02)', padding: 20, borderRadius: 16, border: '1px solid rgba(0,0,0,0.06)' }}>
-              <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: 16, fontWeight: 700, marginBottom: 16, color: 'var(--purple, #9C6FDE)' }}>
-                🛡️ Privacy & Security Audit
+              <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: 16, fontWeight: 700, marginBottom: 16, color: 'var(--purple, #9C6FDE)', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+                <ShieldCheck size={16} color="var(--purple, #9C6FDE)" /> Privacy & Security Audit
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div style={styles.statRow}>
@@ -484,8 +492,8 @@ export default function SystemInfo() {
         <ToolCard style={{ marginBottom: 20, border: '1px solid rgba(156,111,222,0.25)', background: 'linear-gradient(180deg, rgba(156,111,222,0.03) 0%, rgba(0,0,0,0.01) 100%)' }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 18 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(156,111,222,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
-                🔬
+              <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(156,111,222,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Fingerprint size={18} color="#9C6FDE" />
               </div>
               <div>
                 <h3 style={{ fontFamily: 'Syne, sans-serif', fontSize: 17, fontWeight: 800, margin: 0, color: '#111' }}>
@@ -510,12 +518,13 @@ export default function SystemInfo() {
                   fontSize: 12,
                   fontWeight: 600,
                   cursor: fpData.loading ? 'not-allowed' : 'pointer',
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
                   gap: 6
                 }}
               >
-                🔄 {fpData.loading ? 'Sampling...' : 'Re-Sample Surface'}
+                <RefreshCw size={12} className={fpData.loading ? 'spin' : ''} />
+                <span>{fpData.loading ? 'Sampling...' : 'Re-Sample Surface'}</span>
               </button>
 
               <div
@@ -536,31 +545,38 @@ export default function SystemInfo() {
           </div>
 
           {/* Navigation Sub-Tabs */}
-          <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid rgba(0,0,0,0.08)', paddingBottom: 10, marginBottom: 18 }}>
+          <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid rgba(0,0,0,0.08)', paddingBottom: 10, marginBottom: 18, flexWrap: 'wrap' }}>
             {[
-              { id: 'audit', label: '📊 Surface Analysis' },
-              { id: 'signals', label: '🧬 Hardware Signals' },
-              { id: 'mitigations', label: '🛡️ Privacy Trade-offs' }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveFpTab(tab.id)}
-                style={{
-                  background: activeFpTab === tab.id ? 'var(--blue, #2563eb)' : 'transparent',
-                  color: activeFpTab === tab.id ? '#fff' : '#666',
-                  border: 'none',
-                  padding: '6px 14px',
-                  borderRadius: 8,
-                  fontSize: 12.5,
-                  fontWeight: activeFpTab === tab.id ? 700 : 500,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                {tab.label}
-              </button>
-            ))}
+              { id: 'audit', label: 'Surface Analysis', icon: BarChart3 },
+              { id: 'signals', label: 'Hardware Signals', icon: Cpu },
+              { id: 'mitigations', label: 'Privacy Trade-offs', icon: ShieldCheck }
+            ].map(tab => {
+              const TabIcon = tab.icon
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveFpTab(tab.id)}
+                  style={{
+                    background: activeFpTab === tab.id ? 'var(--blue, #2563eb)' : 'transparent',
+                    color: activeFpTab === tab.id ? '#fff' : '#666',
+                    border: 'none',
+                    padding: '6px 14px',
+                    borderRadius: 8,
+                    fontSize: 12.5,
+                    fontWeight: activeFpTab === tab.id ? 700 : 500,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}
+                >
+                  <TabIcon size={14} />
+                  <span>{tab.label}</span>
+                </button>
+              )
+            })}
           </div>
 
           {/* Tab 1: Surface Analysis */}
@@ -650,7 +666,9 @@ export default function SystemInfo() {
           {activeFpTab === 'signals' && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: 14 }}>
               <div style={{ padding: 14, background: '#fff', borderRadius: 12, border: '1px solid rgba(0,0,0,0.06)' }}>
-                <h4 style={{ margin: '0 0 10px 0', fontSize: 13, fontWeight: 700, color: '#111' }}>🎮 WebGL Environment</h4>
+                <h4 style={{ margin: '0 0 10px 0', fontSize: 13, fontWeight: 700, color: '#111', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Cpu size={14} color="#4F8EF7" /> WebGL Environment
+                </h4>
                 <div style={{ fontSize: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <div><strong style={{ color: '#666' }}>Unmasked Vendor:</strong> <span style={{ fontFamily: 'monospace' }}>{fpData.webglVendor}</span></div>
                   <div><strong style={{ color: '#666' }}>Unmasked Renderer:</strong> <span style={{ fontFamily: 'monospace' }}>{fpData.webglRenderer}</span></div>
@@ -659,7 +677,9 @@ export default function SystemInfo() {
               </div>
 
               <div style={{ padding: 14, background: '#fff', borderRadius: 12, border: '1px solid rgba(0,0,0,0.06)' }}>
-                <h4 style={{ margin: '0 0 10px 0', fontSize: 13, fontWeight: 700, color: '#111' }}>🖥️ Display & Input Architecture</h4>
+                <h4 style={{ margin: '0 0 10px 0', fontSize: 13, fontWeight: 700, color: '#111', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Monitor size={14} color="#4F8EF7" /> Display & Input Architecture
+                </h4>
                 <div style={{ fontSize: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <div><strong style={{ color: '#666' }}>Screen Geometry:</strong> <span style={{ fontFamily: 'monospace' }}>{fpData.screenMetrics}</span></div>
                   <div><strong style={{ color: '#666' }}>Device Pixel Ratio (DPR):</strong> <span style={{ fontFamily: 'monospace' }}>{fpData.devicePixelRatio}x</span></div>
@@ -668,7 +688,9 @@ export default function SystemInfo() {
               </div>
 
               <div style={{ padding: 14, background: '#fff', borderRadius: 12, border: '1px solid rgba(0,0,0,0.06)' }}>
-                <h4 style={{ margin: '0 0 10px 0', fontSize: 13, fontWeight: 700, color: '#111' }}>🌐 Temporal & Locale Anchor</h4>
+                <h4 style={{ margin: '0 0 10px 0', fontSize: 13, fontWeight: 700, color: '#111', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Globe size={14} color="#4F8EF7" /> Temporal & Locale Anchor
+                </h4>
                 <div style={{ fontSize: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <div><strong style={{ color: '#666' }}>System Timezone:</strong> <span style={{ fontFamily: 'monospace' }}>{fpData.timezone}</span></div>
                   <div><strong style={{ color: '#666' }}>Language Priorities:</strong> <span style={{ fontFamily: 'monospace' }}>{fpData.locale}</span></div>
@@ -680,8 +702,8 @@ export default function SystemInfo() {
           {/* Tab 3: Mitigations & Realistic Trade-offs */}
           {activeFpTab === 'mitigations' && (
             <div style={{ background: '#fff', padding: 16, borderRadius: 12, border: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#111' }}>
-                🛡️ Understanding Fingerprint Mitigations & Trade-Offs
+              <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#111', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <ShieldCheck size={16} color="#2563eb" /> Understanding Fingerprint Mitigations & Trade-Offs
               </h4>
               <p style={{ margin: 0, fontSize: 12.5, color: '#555', lineHeight: 1.5 }}>
                 Browser fingerprinting does not rely on stored cookies or local storage. Instead, advertising trackers and fraud engines silently measure micro-variations in your device hardware, GPU driver quirks, and system fonts to calculate a semi-unique identifier.
@@ -723,14 +745,14 @@ export default function SystemInfo() {
           <Reveal delay={0.12}>
             <ToolCard style={{ marginBottom: 20 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px' }}>
-                  🔍 Graphic Renderer GPU (WebGL Fingerprint)
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <Search size={12} color="#4F8EF7" /> Graphic Renderer GPU (WebGL Fingerprint)
                 </span>
                 <span style={{ fontFamily: 'monospace', fontSize: 13.5, color: '#0d0d1a', wordBreak: 'break-all' }}>
                   {sysData.gpuRenderer}
                 </span>
-                <span style={{ fontSize: 11, color: '#888', marginTop: 4, lineHeight: 1.5 }}>
-                  ⚠️ WebGL unmasks your physical GPU model. Advertisers and tracking engines use this data combined with window specs to build a unique hardware signature of your device (Fingerprinting).
+                <span style={{ fontSize: 11, color: '#888', marginTop: 4, lineHeight: 1.5, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <AlertTriangle size={12} color="#f59e0b" style={{ flexShrink: 0 }} /> WebGL unmasks your physical GPU model. Advertisers and tracking engines use this data combined with window specs to build a unique hardware signature of your device (Fingerprinting).
                 </span>
               </div>
             </ToolCard>
@@ -740,8 +762,8 @@ export default function SystemInfo() {
           <Reveal delay={0.16}>
             <ToolCard style={{ marginBottom: 20 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px' }}>
-                  ⚡ Network Connection Details
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <Wifi size={12} color="#4F8EF7" /> Network Connection Details
                 </span>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginTop: 4 }}>
                   <div>
@@ -761,8 +783,8 @@ export default function SystemInfo() {
           <Reveal delay={0.22}>
             <ToolCard style={{ marginBottom: 20 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px' }}>
-                  🌐 Complete User Agent Header
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.5px', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <Globe size={12} color="#4F8EF7" /> Complete User Agent Header
                 </span>
                 <span style={{ fontFamily: 'monospace', fontSize: 12.5, color: '#555', wordBreak: 'break-all', lineHeight: 1.6 }}>
                   {sysData.userAgent}

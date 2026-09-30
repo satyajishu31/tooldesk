@@ -9,7 +9,7 @@ import { saveFileWithFallback } from '../../utils/fileSaver'
 import { safeFetchJSON } from '../../utils/safeFetch'
 import { addToHistory } from '../../utils/history'
 import { useToolHistory } from '../../hooks/useToolHistory'
-import { Clock, Trash2 } from 'lucide-react'
+import { Clock, Trash2, QrCode, ScanLine, Barcode, Link2, FileText, Mail, Phone, MessageSquare, Wifi, User, CreditCard, SlidersHorizontal, Sparkles, Wand2, Download, Copy, Check, Palette, AlertTriangle, X } from 'lucide-react'
 
 const QRScanner = lazy(() => import('./QRScanner'))
 const BarcodeTool = lazy(() => import('./BarcodeTool'))
@@ -17,21 +17,21 @@ const BarcodeTool = lazy(() => import('./BarcodeTool'))
 const tool = TOOLS.find(t => t.id === 'qrcode')
 
 const STUDIO_TABS = [
-  { id: 'generator', label: '🔲 QR Code Generator', desc: 'Create URLs, text, Wi-Fi, vCard & UPI codes' },
-  { id: 'scanner',   label: '📷 QR Code Scanner',   desc: 'Scan QR via camera, upload, or paste' },
-  { id: 'barcode',   label: '🏷️ Barcode Studio',    desc: 'Generate & scan multi-format barcodes' },
+  { id: 'generator', label: 'QR Code Generator', icon: QrCode, desc: 'Create URLs, text, Wi-Fi, vCard & UPI codes' },
+  { id: 'scanner',   label: 'QR Code Scanner',   icon: ScanLine, desc: 'Scan QR via camera, upload, or paste' },
+  { id: 'barcode',   label: 'Barcode Studio',    icon: Barcode, desc: 'Generate & scan multi-format barcodes' },
 ]
 
 const QR_MODES = [
-  { id:'url',    label:'URL / Link',  icon:'🔗', placeholder:'https://tooldesk.app' },
-  { id:'text',   label:'Plain Text',  icon:'📝', placeholder:'Your message here…' },
-  { id:'email',  label:'Email',       icon:'📧', placeholder:'hello@example.com' },
-  { id:'phone',  label:'Phone',       icon:'📞', placeholder:'+1 555 123 4567' },
-  { id:'sms',    label:'SMS',         icon:'💬', placeholder:'+1 555 123 4567' },
-  { id:'wifi',   label:'WiFi',        icon:'📶', placeholder:'Network name (SSID)' },
-  { id:'vcard',  label:'vCard',       icon:'👤', placeholder:'Full Name' },
-  { id:'upi',    label:'UPI Pay',     icon:'💳', placeholder:'username@upi' },
-  { id:'custom', label:'Custom/Raw',  icon:'⚙️', placeholder:'Raw payload data...' },
+  { id:'url',    label:'URL / Link',  icon: Link2, placeholder:'https://tooldesk.app' },
+  { id:'text',   label:'Plain Text',  icon: FileText, placeholder:'Your message here…' },
+  { id:'email',  label:'Email',       icon: Mail, placeholder:'hello@example.com' },
+  { id:'phone',  label:'Phone',       icon: Phone, placeholder:'+1 555 123 4567' },
+  { id:'sms',    label:'SMS',         icon: MessageSquare, placeholder:'+1 555 123 4567' },
+  { id:'wifi',   label:'WiFi',        icon: Wifi, placeholder:'Network name (SSID)' },
+  { id:'vcard',  label:'vCard',       icon: User, placeholder:'Full Name' },
+  { id:'upi',    label:'UPI Pay',     icon: CreditCard, placeholder:'username@upi' },
+  { id:'custom', label:'Custom/Raw',  icon: SlidersHorizontal, placeholder:'Raw payload data...' },
 ]
 
 const SIZES  = [150, 250, 350, 500, 750, 1000]
@@ -415,33 +415,41 @@ export default function QRGenerator() {
           border: '1px solid rgba(0,0,0,.04)',
           flexWrap: 'wrap'
         }}>
-          {STUDIO_TABS.map(tab => (
-            <button
-              key={tab.id}
-              type="button"
-              className="qr-studio-tab-item"
-              onClick={() => setStudioTab(tab.id)}
-              style={{
-                flex: '1 1 100px',
-                minWidth: 88,
-                boxSizing: 'border-box',
-                padding: '10px 8px',
-                borderRadius: 10,
-                border: 'none',
-                cursor: 'pointer',
-                fontFamily: 'DM Sans,sans-serif',
-                fontSize: 13,
-                fontWeight: 700,
-                background: studioTab === tab.id ? '#ffffff' : 'transparent',
-                color: studioTab === tab.id ? '#0d0d1a' : '#64748b',
-                boxShadow: studioTab === tab.id ? '0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.03)' : 'none',
-                transition: 'all .18s cubic-bezier(.22,1,.36,1)',
-                textAlign: 'center',
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
+          {STUDIO_TABS.map(tab => {
+            const TabIcon = tab.icon
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                className="qr-studio-tab-item"
+                onClick={() => setStudioTab(tab.id)}
+                style={{
+                  flex: '1 1 100px',
+                  minWidth: 88,
+                  boxSizing: 'border-box',
+                  padding: '10px 8px',
+                  borderRadius: 10,
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: 'DM Sans,sans-serif',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  background: studioTab === tab.id ? '#ffffff' : 'transparent',
+                  color: studioTab === tab.id ? '#0d0d1a' : '#64748b',
+                  boxShadow: studioTab === tab.id ? '0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.03)' : 'none',
+                  transition: 'all .18s cubic-bezier(.22,1,.36,1)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  textAlign: 'center',
+                }}
+              >
+                <TabIcon size={15} color={studioTab === tab.id ? '#4F8EF7' : '#64748b'} />
+                <span>{tab.label}</span>
+              </button>
+            )
+          })}
         </div>
       </Reveal>
 
@@ -462,7 +470,7 @@ export default function QRGenerator() {
               gap: 10
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 20 }}>🪄</span>
+                <Wand2 size={18} color="#4F8EF7" />
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#0d0d1a' }}>AI Smart Intent & Magic Paste</div>
                   <div style={{ fontSize: 11.5, color: '#64748b' }}>Paste signatures, business cards, Wi-Fi stickers, or payment slips to auto-extract fields</div>
@@ -472,9 +480,9 @@ export default function QRGenerator() {
                 type="button"
                 onClick={() => { setMagicOpen(true); setMagicError(''); setMagicSuccess('') }}
                 className="btn btn-sm btn-primary"
-                style={{ fontSize: 12, padding: '7px 14px', borderRadius: 9, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}
+                style={{ fontSize: 12, padding: '7px 14px', borderRadius: 9, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}
               >
-                ✨ Magic Paste
+                <Sparkles size={13} /> Magic Paste
               </button>
             </div>
           </Reveal>
@@ -482,17 +490,22 @@ export default function QRGenerator() {
           {/* Mode tabs */}
           <Reveal>
         <div style={{ display:'flex', background:'rgba(0,0,0,.045)', borderRadius:14, padding:4, gap:3, marginBottom:16, flexWrap:'wrap', border:'1px solid rgba(0,0,0,.04)' }}>
-          {QR_MODES.map(m => (
-            <button key={m.id} onClick={() => { setMode(m.id); setValue(''); setQrUrl('') }}
-              style={{ flex:1, minWidth:80, padding:'9px 8px', borderRadius:10, border:'none',
-                cursor:'pointer', fontSize:12, fontWeight:700,
-                background: mode === m.id ? '#ffffff' : 'transparent',
-                color: mode === m.id ? '#0d0d1a' : '#64748b',
-                boxShadow: mode === m.id ? '0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none',
-                transition:'all .18s cubic-bezier(.22,1,.36,1)' }}>
-              {m.icon} {m.label}
-            </button>
-          ))}
+          {QR_MODES.map(m => {
+            const ModeIcon = m.icon
+            return (
+              <button key={m.id} onClick={() => { setMode(m.id); setValue(''); setQrUrl('') }}
+                style={{ flex:1, minWidth:80, padding:'9px 8px', borderRadius:10, border:'none',
+                  cursor:'pointer', fontSize:12, fontWeight:700,
+                  background: mode === m.id ? '#ffffff' : 'transparent',
+                  color: mode === m.id ? '#0d0d1a' : '#64748b',
+                  boxShadow: mode === m.id ? '0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none',
+                  transition:'all .18s cubic-bezier(.22,1,.36,1)',
+                  display:'inline-flex', alignItems:'center', justifyContent:'center', gap:5 }}>
+                <ModeIcon size={13} color={mode === m.id ? '#4F8EF7' : '#64748b'} />
+                <span>{m.label}</span>
+              </button>
+            )
+          })}
         </div>
       </Reveal>
 
@@ -589,8 +602,9 @@ export default function QRGenerator() {
                 style={{ width:'100%', marginTop:14, padding:'13px', borderRadius:13, border:'none',
                   background:'linear-gradient(135deg,#0d0d1a,#1e1040)',
                   color:'#fff', fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:15,
-                  cursor:'pointer', boxShadow:'0 6px 20px rgba(13,13,26,.25)' }}>
-                ✨ Generate QR Code
+                  cursor:'pointer', boxShadow:'0 6px 20px rgba(13,13,26,.25)',
+                  display:'inline-flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                <Sparkles size={16} /> Generate QR Code
               </motion.button>
             </ToolCard>
           </Reveal>
@@ -598,8 +612,8 @@ export default function QRGenerator() {
           {/* Customization */}
           <Reveal delay={.06}>
             <ToolCard style={{ marginBottom:14 }}>
-              <div style={{ fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:13, color:'#0d0d1a', marginBottom:14 }}>
-                🎨 Customize
+              <div style={{ fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:13, color:'#0d0d1a', marginBottom:14, display:'inline-flex', alignItems:'center', gap:6 }}>
+                <Palette size={14} color="#4F8EF7" /> Customize
               </div>
 
               {/* Size */}
@@ -702,8 +716,9 @@ export default function QRGenerator() {
                 Preview
               </div>
               {error && (
-                <div style={{ padding:'8px 10px', background:'rgba(239,68,68,.1)', border:'1.5px solid rgba(239,68,68,.3)', borderRadius:10, color:'#ef4444', fontSize:11, marginBottom:10, textAlign:'center', lineHeight:1.4 }}>
-                  ⚠️ {error}
+                <div style={{ padding:'8px 10px', background:'rgba(239,68,68,.1)', border:'1.5px solid rgba(239,68,68,.3)', borderRadius:10, color:'#ef4444', fontSize:11, marginBottom:10, textAlign:'center', lineHeight:1.4, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', boxSizing:'border-box' }}>
+                  <AlertTriangle size={13} color="#ef4444" style={{ flexShrink:0 }} />
+                  <span>{error}</span>
                 </div>
               )}
               <div style={{ borderRadius:14, overflow:'hidden', marginBottom:14, minHeight:200,
@@ -717,8 +732,10 @@ export default function QRGenerator() {
                       style={{ width:'100%', display:'block', imageRendering:'pixelated' }}/>
                   ) : (
                     <motion.div key="empty" initial={{ opacity:0 }} animate={{ opacity:1 }}
-                      style={{ textAlign:'center', padding:20, color:'#888' }}>
-                      <div style={{ fontSize:40, marginBottom:8 }}>⬛</div>
+                      style={{ textAlign:'center', padding:20, color:'#94a3b8' }}>
+                      <div style={{ display:'flex', justifyContent:'center', marginBottom:8 }}>
+                        <QrCode size={40} color="#cbd5e1" strokeWidth={1.5} />
+                      </div>
                       <div style={{ fontSize:12.5 }}>QR appears here</div>
                     </motion.div>
                   )}
@@ -730,20 +747,21 @@ export default function QRGenerator() {
                   <motion.button whileHover={{ scale:1.02 }} whileTap={{ scale:.96 }}
                     onClick={downloadPng}
                     className="btn btn-primary"
-                    style={{ width:'100%', padding:'10px', fontSize:13, fontWeight:700 }}>
-                    ⬇ Download PNG
+                    style={{ width:'100%', padding:'10px', fontSize:13, fontWeight:700, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                    <Download size={14} /> Download PNG
                   </motion.button>
                   <motion.button whileHover={{ scale:1.02 }} whileTap={{ scale:.96 }}
                     onClick={downloadSvg}
                     className="btn btn-outline"
-                    style={{ width:'100%', padding:'9px', fontSize:12, fontWeight:700 }}>
-                    📐 Download SVG (Vector)
+                    style={{ width:'100%', padding:'9px', fontSize:12, fontWeight:700, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                    <Download size={14} /> Download SVG (Vector)
                   </motion.button>
                   <motion.button whileHover={{ scale:1.02 }} whileTap={{ scale:.96 }}
                     onClick={() => copy(buildQRValue())}
                     className="btn btn-outline"
-                    style={{ width:'100%', padding:'8px', fontSize:12 }}>
-                    {copied ? '✓ Copied Payload' : '📋 Copy Payload'}
+                    style={{ width:'100%', padding:'8px', fontSize:12, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                    {copied ? <Check size={14} color="#22c55e" /> : <Copy size={14} />}
+                    <span>{copied ? 'Copied Payload' : 'Copy Payload'}</span>
                   </motion.button>
                 </div>
               )}
@@ -867,7 +885,7 @@ export default function QRGenerator() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
                 <div>
                   <div style={{ fontFamily: 'Syne,sans-serif', fontSize: 18, fontWeight: 700, color: '#0d0d1a', display: 'flex', alignItems: 'center', gap: 7 }}>
-                    <span>🪄</span> AI Magic QR Intent Parser
+                    <Wand2 size={18} color="#4F8EF7" /> AI Magic QR Intent Parser
                   </div>
                   <div style={{ fontSize: 13, color: '#475569', marginTop: 4, lineHeight: 1.5 }}>
                     Paste unstructured text to automatically route and populate vCard, Wi-Fi, UPI, SMS, URL, or Text.
@@ -876,9 +894,9 @@ export default function QRGenerator() {
                 <button
                   type="button"
                   onClick={() => setMagicOpen(false)}
-                  style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#64748b', padding: '0 4px' }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '0 4px', display:'flex', alignItems:'center', justifyContent:'center' }}
                 >
-                  ✕
+                  <X size={18} />
                 </button>
               </div>
 
@@ -889,25 +907,25 @@ export default function QRGenerator() {
                   type="button"
                   onClick={() => setMagicText("Alex Chen, Product Lead at Nexus Systems. Phone: +1 415 555 9812. Email: alex.chen@nexussys.io. Org: Nexus Systems")}
                   className="btn btn-sm btn-outline"
-                  style={{ fontSize: 12.5, padding: '5px 12px', minHeight: 32, borderRadius: 8 }}
+                  style={{ fontSize: 12.5, padding: '5px 12px', minHeight: 32, borderRadius: 8, display:'inline-flex', alignItems:'center', gap:5 }}
                 >
-                  👤 Contact Card
+                  <User size={13} color="#4F8EF7" /> Contact Card
                 </button>
                 <button
                   type="button"
                   onClick={() => setMagicText("Office Guest Wi-Fi: SSID 'Nexus_Guest_5G' Password 'FastWiFi#2026' Security WPA2")}
                   className="btn btn-sm btn-outline"
-                  style={{ fontSize: 12.5, padding: '5px 12px', minHeight: 32, borderRadius: 8 }}
+                  style={{ fontSize: 12.5, padding: '5px 12px', minHeight: 32, borderRadius: 8, display:'inline-flex', alignItems:'center', gap:5 }}
                 >
-                  📶 Wi-Fi Slip
+                  <Wifi size={13} color="#4F8EF7" /> Wi-Fi Slip
                 </button>
                 <button
                   type="button"
                   onClick={() => setMagicText("Pay Alex for Q3 Freelance Design sprint: VPA alex@hdfcbank, Amount INR 4500, Note: Design Milestone")}
                   className="btn btn-sm btn-outline"
-                  style={{ fontSize: 12.5, padding: '5px 12px', minHeight: 32, borderRadius: 8 }}
+                  style={{ fontSize: 12.5, padding: '5px 12px', minHeight: 32, borderRadius: 8, display:'inline-flex', alignItems:'center', gap:5 }}
                 >
-                  💳 UPI Invoice
+                  <CreditCard size={13} color="#4F8EF7" /> UPI Invoice
                 </button>
               </div>
 
@@ -920,8 +938,9 @@ export default function QRGenerator() {
               />
 
               {magicError && (
-                <div style={{ padding: '9px 13px', background: 'rgba(239,68,68,0.1)', border: '1.5px solid rgba(239,68,68,0.3)', borderRadius: 10, color: '#dc2626', fontSize: 13, marginBottom: 12 }}>
-                  ⚠️ {magicError}
+                <div style={{ padding: '9px 13px', background: 'rgba(239,68,68,0.1)', border: '1.5px solid rgba(239,68,68,0.3)', borderRadius: 10, color: '#dc2626', fontSize: 13, marginBottom: 12, display:'inline-flex', alignItems:'center', gap:6, width:'100%', boxSizing:'border-box' }}>
+                  <AlertTriangle size={14} color="#dc2626" style={{ flexShrink:0 }} />
+                  <span>{magicError}</span>
                 </div>
               )}
               {magicSuccess && (
@@ -944,7 +963,7 @@ export default function QRGenerator() {
                   onClick={handleMagicIntent}
                   disabled={magicLoading || !magicText.trim()}
                   className="btn btn-primary"
-                  style={{ padding: '9px 20px', fontSize: 13.5, display: 'flex', alignItems: 'center', gap: 6 }}
+                  style={{ padding: '9px 20px', fontSize: 13.5, display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >
                   {magicLoading ? (
                     <>
@@ -953,7 +972,7 @@ export default function QRGenerator() {
                     </>
                   ) : (
                     <>
-                      <span>✨</span>
+                      <Sparkles size={14} />
                       <span>Auto-Extract & Fill</span>
                     </>
                   )}
