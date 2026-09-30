@@ -1776,7 +1776,7 @@ export default function VideoTranscriber() {
               <Download size={16} color="#4F8EF7" /> Export Transcript
             </div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-              <div style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap', padding: 4, background: 'rgba(0,0,0,0.03)', borderRadius: 14 }}>
+              <div className="tool-tabs apple-segmented" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: 4, background: 'rgba(0,0,0,0.03)', borderRadius: 14, overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', maxWidth: '100%', boxSizing: 'border-box' }}>
                 {[
                   { f: 'TXT', Icon: FileText },
                   { f: 'SRT', Icon: Film },
@@ -1785,6 +1785,7 @@ export default function VideoTranscriber() {
                   { f: 'MD', Icon: FileCode }
                 ].map(({ f, Icon }) => (
                   <button key={f} onClick={() => setExportFmt(f)}
+                    className={`tool-tab apple-segmented-item ${exportFmt === f ? 'active' : ''}`}
                     style={{
                       padding: '8px 14px', borderRadius: 11,
                       border: `1.5px solid ${exportFmt === f ? 'rgba(79,142,247,0.35)' : 'rgba(0,0,0,.06)'}`,
@@ -1792,9 +1793,11 @@ export default function VideoTranscriber() {
                       boxShadow: exportFmt === f ? '0 2px 8px rgba(79,142,247,0.15)' : 'none',
                       cursor: 'pointer', fontFamily: 'DM Sans,sans-serif', fontWeight: 700,
                       fontSize: 12.5, color: exportFmt === f ? '#3B7BE8' : '#555', transition: 'all .16s ease',
-                      display: 'inline-flex', alignItems: 'center', gap: 6
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      flex: '1 0 auto', minWidth: 'max-content', whiteSpace: 'nowrap', boxSizing: 'border-box'
                     }}>
-                    <Icon size={14} /> {f}
+                    <Icon size={14} style={{ flexShrink: 0 }} />
+                    <span style={{ display: 'inline-block', whiteSpace: 'nowrap', minWidth: 'max-content' }}>{f}</span>
                   </button>
                 ))}
               </div>

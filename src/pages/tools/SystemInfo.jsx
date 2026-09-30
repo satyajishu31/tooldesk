@@ -545,7 +545,7 @@ export default function SystemInfo() {
           </div>
 
           {/* Navigation Sub-Tabs */}
-          <div style={{ display: 'flex', gap: 3, background: 'rgba(0,0,0,0.042)', padding: 4, borderRadius: 14, border: '1px solid rgba(0,0,0,0.035)', marginBottom: 18, flexWrap: 'wrap' }}>
+          <div className="tool-tabs apple-segmented" style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(0,0,0,0.042)', padding: 4, borderRadius: 14, border: '1px solid rgba(0,0,0,0.035)', marginBottom: 18, overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
             {[
               { id: 'audit', label: 'Surface Analysis', icon: BarChart3 },
               { id: 'signals', label: 'Hardware Signals', icon: Cpu },
@@ -558,25 +558,31 @@ export default function SystemInfo() {
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveFpTab(tab.id)}
+                  className={`tool-tab apple-segmented-item ${isAct ? 'active' : ''}`}
                   style={{
                     background: isAct ? '#ffffff' : 'transparent',
-                    color: isAct ? '#0d0d1a' : '#666',
-                    boxShadow: isAct ? '0 2px 8px rgba(15,23,42,0.08)' : 'none',
+                    color: isAct ? '#0d0d1a' : '#64748b',
+                    boxShadow: isAct ? '0 2px 10px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none',
                     border: 'none',
-                    padding: '8px 14px',
+                    padding: '9px 16px',
                     borderRadius: 12,
-                    fontSize: 12.5,
-                    fontWeight: isAct ? 700 : 500,
-                    minHeight: 38,
+                    fontSize: 13,
+                    fontWeight: isAct ? 700 : 600,
+                    minHeight: 42,
                     cursor: 'pointer',
-                    transition: 'all 0.15s ease',
+                    transition: 'all 0.18s cubic-bezier(.22,1,.36,1)',
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: 6
+                    justifyContent: 'center',
+                    gap: 7,
+                    flex: '1 0 auto',
+                    minWidth: 'max-content',
+                    whiteSpace: 'nowrap',
+                    boxSizing: 'border-box'
                   }}
                 >
-                  <TabIcon size={14} />
-                  <span>{tab.label}</span>
+                  <TabIcon size={14} style={{ flexShrink: 0 }} />
+                  <span style={{ display: 'inline-block', whiteSpace: 'nowrap', minWidth: 'max-content' }}>{tab.label}</span>
                 </button>
               )
             })}

@@ -403,8 +403,9 @@ export default function QRGenerator() {
     <ToolShell tool={tool}>
       {/* Studio Top Navigation Tabs */}
       <Reveal>
-        <div className="qr-studio-tabs" style={{
+        <div className="qr-studio-tabs tool-tabs apple-segmented" style={{
           display: 'flex',
+          alignItems: 'center',
           background: 'rgba(0,0,0,.042)',
           backdropFilter: 'blur(10px)',
           WebkitBackdropFilter: 'blur(10px)',
@@ -413,7 +414,14 @@ export default function QRGenerator() {
           gap: 4,
           marginBottom: 20,
           border: '1px solid rgba(0,0,0,.035)',
-          flexWrap: 'wrap'
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box'
         }}>
           {STUDIO_TABS.map(tab => {
             const TabIcon = tab.icon
@@ -422,13 +430,13 @@ export default function QRGenerator() {
               <button
                 key={tab.id}
                 type="button"
-                className="qr-studio-tab-item"
+                className={`qr-studio-tab-item tool-tab apple-segmented-item ${isActive ? 'active' : ''}`}
                 onClick={() => setStudioTab(tab.id)}
                 style={{
-                  flex: '1 1 100px',
-                  minWidth: 88,
+                  flex: '1 0 auto',
+                  minWidth: 'max-content',
                   boxSizing: 'border-box',
-                  padding: '10px 12px',
+                  padding: '10px 16px',
                   borderRadius: 12,
                   border: 'none',
                   cursor: 'pointer',
@@ -444,13 +452,14 @@ export default function QRGenerator() {
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 6,
+                  gap: 7,
                   textAlign: 'center',
                   minHeight: 44,
+                  whiteSpace: 'nowrap'
                 }}
               >
-                <TabIcon size={15} color={isActive ? '#4F8EF7' : '#64748b'} />
-                <span>{tab.label}</span>
+                <TabIcon size={15} color={isActive ? '#4F8EF7' : '#64748b'} style={{ flexShrink: 0 }} />
+                <span style={{ display: 'inline-block', whiteSpace: 'nowrap', minWidth: 'max-content' }}>{tab.label}</span>
               </button>
             )
           })}
@@ -493,26 +502,61 @@ export default function QRGenerator() {
 
           {/* Mode tabs */}
           <Reveal>
-        <div style={{ display:'flex', background:'rgba(0,0,0,.042)', borderRadius:14, padding:4, gap:3, marginBottom:16, flexWrap:'wrap', border:'1px solid rgba(0,0,0,.035)' }}>
-          {QR_MODES.map(m => {
-            const ModeIcon = m.icon
-            const isActive = mode === m.id
-            return (
-              <button key={m.id} onClick={() => { setMode(m.id); setValue(''); setQrUrl('') }}
-                style={{ flex:1, minWidth:80, padding:'9px 10px', borderRadius:12, border:'none',
-                  cursor:'pointer', fontSize:12, fontWeight:700, minHeight:40,
-                  background: isActive ? 'rgba(255,255,255,0.95)' : 'transparent',
-                  color: isActive ? '#0d0d1a' : '#64748b',
-                  boxShadow: isActive ? '0 2px 10px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none',
-                  transition:'all .18s cubic-bezier(.22,1,.36,1)',
-                  display:'inline-flex', alignItems:'center', justifyContent:'center', gap:5 }}>
-                <ModeIcon size={13} color={isActive ? '#4F8EF7' : '#64748b'} />
-                <span>{m.label}</span>
-              </button>
-            )
-          })}
-        </div>
-      </Reveal>
+            <div className="tool-tabs apple-segmented" style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: 'rgba(0,0,0,.042)',
+              borderRadius: 14,
+              padding: 4,
+              gap: 4,
+              marginBottom: 16,
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              WebkitOverflowScrolling: 'touch',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              border: '1px solid rgba(0,0,0,.035)',
+              width: '100%',
+              maxWidth: '100%',
+              boxSizing: 'border-box'
+            }}>
+              {QR_MODES.map(m => {
+                const ModeIcon = m.icon
+                const isActive = mode === m.id
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => { setMode(m.id); setValue(''); setQrUrl('') }}
+                    className={`tool-tab apple-segmented-item ${isActive ? 'active' : ''}`}
+                    style={{
+                      flex: '0 0 auto',
+                      minWidth: 'max-content',
+                      padding: '9px 12px',
+                      borderRadius: 12,
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 12.5,
+                      fontWeight: 700,
+                      minHeight: 40,
+                      background: isActive ? 'rgba(255,255,255,0.95)' : 'transparent',
+                      color: isActive ? '#0d0d1a' : '#64748b',
+                      boxShadow: isActive ? '0 2px 10px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none',
+                      transition: 'all .18s cubic-bezier(.22,1,.36,1)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      whiteSpace: 'nowrap',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <ModeIcon size={14} color={isActive ? '#4F8EF7' : '#64748b'} style={{ flexShrink: 0 }} />
+                    <span style={{ display: 'inline-block', whiteSpace: 'nowrap', minWidth: 'max-content' }}>{m.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </Reveal>
 
       <div className="qr-grid-layout" style={{ display:'grid', gridTemplateColumns:'1fr auto', gap:16, alignItems:'start' }}>
         {/* Left: inputs + customization */}

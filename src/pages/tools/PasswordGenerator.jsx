@@ -265,7 +265,7 @@ export default function PasswordGenerator() {
       <ToolCard style={{ marginBottom: 20 }}>
 
         {/* Mode tabs */}
-        <div className="tool-mode-tabs" style={{ display:'flex', background:'rgba(0,0,0,.042)', borderRadius:14, padding:4, gap:3, marginBottom:20, border:'1px solid rgba(0,0,0,.035)' }}>
+        <div className="tool-mode-tabs tool-tabs apple-segmented" style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,.042)', borderRadius: 14, padding: 4, gap: 4, marginBottom: 20, border: '1px solid rgba(0,0,0,.035)', overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
           {[
             { id: 'password', label: 'Password', icon: Lock },
             { id: 'passphrase', label: 'Passphrase', icon: KeyRound },
@@ -275,16 +275,34 @@ export default function PasswordGenerator() {
             const Icon = item.icon
             const isAct = mode === item.id
             return (
-              <button key={item.id} onClick={() => setMode(item.id)}
-                style={{ flex:1, padding:'8px 8px', borderRadius:12, border:'none', cursor:'pointer',
-                  fontSize:12, fontWeight:700, minHeight:40,
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  background: isAct ? 'rgba(255,255,255,0.95)' : 'transparent',
-                  color:      isAct ? '#0d0d1a' : '#777',
-                  boxShadow:  isAct ? '0 2px 10px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none',
-                  transition:'all .18s cubic-bezier(.22,1,.36,1)' }}>
-                <Icon size={14} />
-                <span>{item.label}</span>
+              <button
+                key={item.id}
+                onClick={() => setMode(item.id)}
+                className={`tool-tab apple-segmented-item ${isAct ? 'active' : ''}`}
+                style={{
+                  flex: '1 0 auto',
+                  minWidth: 'max-content',
+                  padding: '9px 16px',
+                  borderRadius: 12,
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  minHeight: 42,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 7,
+                  background: isAct ? '#ffffff' : 'transparent',
+                  color: isAct ? '#0d0d1a' : '#64748b',
+                  boxShadow: isAct ? '0 2px 10px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none',
+                  transition: 'all .18s cubic-bezier(.22,1,.36,1)',
+                  whiteSpace: 'nowrap',
+                  boxSizing: 'border-box'
+                }}
+              >
+                <Icon size={14} style={{ flexShrink: 0 }} />
+                <span style={{ display: 'inline-block', whiteSpace: 'nowrap', minWidth: 'max-content' }}>{item.label}</span>
               </button>
             )
           })}

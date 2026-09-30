@@ -1697,31 +1697,36 @@ main, section, article, .tool-shell {
     grid-template-columns: 1fr !important;
   }
 
-  /* Segmented tabs on compact mobile */
+  /* Tool tabs on compact mobile: maintain intrinsic sizing and padding */
   .apple-segmented {
-    gap: 3px !important;
-    padding: 3px !important;
+    gap: 4px !important;
+    padding: 4px !important;
   }
   .apple-segmented-item {
-    padding: 8px 8px !important;
+    padding: 8px 12px !important;
     font-size: 12.5px !important;
   }
   .cat-tab-label {
-    font-size: 12px !important;
-    white-space: normal !important;
-    line-height: 1.2;
+    font-size: 12.5px !important;
+    white-space: nowrap !important;
+    min-width: max-content !important;
+    line-height: 1 !important;
   }
 }
 
 @media (max-width: 360px) {
   .cat-tab-label {
     display: inline-block !important;
-    font-size: 11.5px !important;
-    line-height: 1.15;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+    min-width: max-content !important;
+    line-height: 1 !important;
   }
   .apple-segmented-item {
-    padding: 7px 4px !important;
+    padding: 8px 10px !important;
     font-size: 12px !important;
+    white-space: nowrap !important;
+    min-width: max-content !important;
   }
 }
 
@@ -1729,80 +1734,81 @@ main, section, article, .tool-shell {
    STUDIO SUITE MOBILE OPTIMIZATIONS
    ═══════════════════════════════════════════ */
 @media (max-width: 768px) {
-  /* Image Tools Studio responsive layout: zero horizontal cut-off */
+  /* Image Tools Studio responsive layout: multi-line option cards */
   .image-studio-tab-bar {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
-    gap: 8px !important;
-    overflow-x: visible !important;
-    padding-bottom: 0 !important;
-    margin-bottom: 16px !important;
+    display: flex !important;
     flex-wrap: wrap !important;
-  }
-  .image-studio-tab-bar::-webkit-scrollbar {
-    display: none !important;
+    gap: 8px !important;
+    margin-bottom: 16px !important;
   }
   .image-studio-tab-item {
-    min-width: 0 !important;
-    max-width: none !important;
-    width: 100% !important;
+    min-width: 140px !important;
+    flex: 1 1 calc(50% - 8px) !important;
     box-sizing: border-box !important;
     padding: 10px 12px !important;
   }
   .image-studio-tab-item span:first-child {
     font-size: 13px !important;
     font-weight: 700 !important;
-    white-space: normal !important;
-    word-break: break-word !important;
     line-height: 1.25 !important;
   }
   .image-studio-tab-item span:last-child {
     font-size: 11px !important;
     color: #64748b !important;
     display: block !important;
-    white-space: normal !important;
     margin-top: 3px !important;
-    overflow: visible !important;
   }
 }
 
 @media (max-width: 480px) {
-  .image-studio-tab-bar {
-    grid-template-columns: 1fr !important;
+  .image-studio-tab-item {
+    flex: 1 1 100% !important;
+    min-width: 100% !important;
   }
 }
 
 @media (max-width: 768px) {
-  /* PDF Studio responsive grid: all categories clearly visible */
+  /* PDF Studio responsive tabs: horizontal scroll rail, zero wrapping */
   .pdf-studio-categories {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
-    overflow-x: visible !important;
-    gap: 6px !important;
-    padding: 6px !important;
+    display: flex !important;
+    align-items: center !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    flex-wrap: nowrap !important;
+    gap: 4px !important;
+    padding: 4px !important;
   }
   .pdf-studio-categories::-webkit-scrollbar {
     display: none !important;
   }
   .pdf-studio-category-item {
-    min-width: 0 !important;
-    text-align: center !important;
-    white-space: normal !important;
-    padding: 8px 10px !important;
+    flex: 1 0 auto !important;
+    min-width: max-content !important;
+    white-space: nowrap !important;
+    padding: 8px 12px !important;
     font-size: 12.5px !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
   }
 }
 
 @media (max-width: 640px) {
-  /* QR Studio compact 3-way layout */
+  /* QR Studio compact rail */
   .qr-studio-tabs {
+    display: flex !important;
+    align-items: center !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    flex-wrap: nowrap !important;
     gap: 4px !important;
     padding: 4px !important;
   }
   .qr-studio-tab-item {
-    min-width: unset !important;
-    padding: 8px 6px !important;
+    flex: 1 0 auto !important;
+    min-width: max-content !important;
+    white-space: nowrap !important;
+    padding: 8px 12px !important;
     font-size: 12.5px !important;
     font-weight: 700 !important;
   }
@@ -2078,57 +2084,128 @@ main, section, article, .tool-shell {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   TOOL-PAGE TAB / SEGMENTED CONTROL SYSTEM v1.3.0
-   Unified premium treatment for all tool-page segmented controls.
-   Subtle glass active state (~30% glass).
+   GLOBAL TOOL-PAGE TAB / SEGMENTED CONTROL SYSTEM v1.3.0
+   Responsive Modes:
+     Mode A (Fit): When tabs fit, stretch cleanly (flex: 1 0 auto)
+     Mode B (Compressed): Balanced padding & gap, full text preserved
+     Mode C (Scroll): Tab rail scrolls horizontally, document zero overflow
+   Guarantees:
+     - Zero text / icon overlap
+     - Intrinsic max-content sizing
+     - Stable active-state dimensions
+     - Zero document-level horizontal overflow
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Base segmented rail shared across all tool tabs */
-.tool-page .apple-segmented {
-  border-radius: var(--tool-radius-panel);
-  padding: var(--tool-spacing-xs);
-  gap: var(--tool-spacing-xs);
-  background: var(--tool-glass-tab-rail-bg);
-  border: var(--tool-glass-tab-rail-border);
+/* Segmented rails shared across all tool tabs */
+.tool-tabs,
+.tool-page .apple-segmented,
+.tool-mode-tabs,
+.pdf-studio-categories,
+.wa-tabs,
+.qr-studio-tabs {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  flex-wrap: nowrap !important;
+  border-radius: var(--tool-radius-panel, 14px);
+  padding: 4px;
+  gap: 4px;
+  background: var(--tool-glass-tab-rail-bg, rgba(0, 0, 0, 0.042));
+  border: 1px solid var(--tool-glass-tab-rail-border, rgba(0, 0, 0, 0.035));
 }
-.tool-page .apple-segmented-item {
-  border-radius: var(--tool-radius-control);
-  min-height: var(--tool-tab-height-sm);
-  padding: 9px 14px;
+
+.tool-tabs::-webkit-scrollbar,
+.tool-page .apple-segmented::-webkit-scrollbar,
+.tool-mode-tabs::-webkit-scrollbar,
+.pdf-studio-categories::-webkit-scrollbar,
+.wa-tabs::-webkit-scrollbar,
+.qr-studio-tabs::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Individual tab items */
+.tool-tab,
+.tool-page .apple-segmented-item,
+.tool-mode-tabs button,
+.pdf-studio-category-item,
+.qr-studio-tab-item {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 1 0 auto !important;
+  min-width: max-content !important;
+  box-sizing: border-box !important;
+  white-space: nowrap !important;
+  border-radius: var(--tool-radius-control, 11px);
+  min-height: var(--tool-tab-height-sm, 42px);
+  padding: 9px 16px;
+  font-family: var(--dm, 'DM Sans', sans-serif);
   font-size: 13px;
   font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: all 0.18s var(--ease);
+  cursor: pointer;
+  color: #64748b;
+  background: transparent;
+  border: 1.5px solid transparent;
+  gap: 7px;
+  line-height: 1;
+  transition: color 0.18s var(--ease), background 0.18s var(--ease), box-shadow 0.18s var(--ease), border-color 0.18s var(--ease);
+  user-select: none;
 }
-.tool-page .apple-segmented-item:hover:not(.active) {
+
+.tool-tab:hover:not(.active),
+.tool-page .apple-segmented-item:hover:not(.active),
+.tool-mode-tabs button:hover:not(.active),
+.pdf-studio-category-item:hover:not(.active),
+.qr-studio-tab-item:hover:not(.active) {
   background: rgba(255, 255, 255, 0.45);
   color: #334155;
 }
-.tool-page .apple-segmented-item.active {
-  background: var(--tool-glass-selected-bg);
-  color: #0f172a;
-  box-shadow: var(--tool-glass-selected-shadow);
+
+/* Active tab state lock: same padding and border so dimensions never push neighbors */
+.tool-tab.active,
+.tool-page .apple-segmented-item.active,
+.pdf-studio-category-item.active,
+.qr-studio-tab-item.active {
+  background: var(--tool-glass-selected-bg, #ffffff) !important;
+  color: #0f172a !important;
+  border-color: rgba(0, 0, 0, 0.04) !important;
+  box-shadow: var(--tool-glass-selected-shadow, 0 2px 10px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 1)) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 
-/* QR Studio Tabs refinement */
-.tool-page .qr-studio-tab-item {
-  border-radius: var(--tool-radius-control) !important;
-  min-height: var(--tool-tab-height-sm) !important;
-  font-size: 13px !important;
-  font-weight: 700 !important;
-  transition: all 0.18s var(--ease) !important;
+/* Protect icon & label as a coherent layout unit */
+.tool-tab svg,
+.tool-page .apple-segmented-item svg,
+.tool-mode-tabs button svg,
+.pdf-studio-category-item svg,
+.qr-studio-tab-item svg,
+.tool-tab > span:first-child,
+.tool-page .apple-segmented-item > span:first-child {
+  flex-shrink: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
-/* PDF Studio category items refinement */
-.tool-page .pdf-studio-category-item {
-  border-radius: var(--tool-radius-control) !important;
-  min-height: var(--tool-tab-height-sm) !important;
-  padding: 9px 10px !important;
+.tool-tab > span:last-child,
+.tool-page .apple-segmented-item > span:last-child,
+.tool-mode-tabs button > span:last-child,
+.cat-tab-label {
+  display: inline-block !important;
+  white-space: nowrap !important;
+  min-width: max-content !important;
+  line-height: 1 !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -2143,30 +2220,33 @@ main, section, article, .tool-shell {
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TOOL-PAGE MOBILE TAB OVERFLOW BEHAVIOR
-   Prevents destructive wrapping on small screens.
-   Uses horizontal scroll with hidden scrollbar for overflowing tabs.
+   Zero wrapping, zero text overlap, scrollable internal rail.
    ═══════════════════════════════════════════════════════════════════════════ */
 @media (max-width: 480px) {
-  /* Bcrypt, PDF, and similar multi-tab tool bars */
-  .tool-page .apple-segmented {
+  .tool-tabs,
+  .tool-page .apple-segmented,
+  .tool-mode-tabs,
+  .pdf-studio-categories,
+  .qr-studio-tabs {
     padding: 3px !important;
     gap: 3px !important;
     border-radius: var(--tool-radius-control) !important;
   }
-  .tool-page .apple-segmented-item {
+  .tool-tab,
+  .tool-page .apple-segmented-item,
+  .tool-mode-tabs button,
+  .pdf-studio-category-item,
+  .qr-studio-tab-item {
     min-height: 38px !important;
-    padding: 8px 10px !important;
+    padding: 8px 12px !important;
     font-size: 12.5px !important;
+    gap: 5px !important;
+    flex: 1 0 auto !important;
+    min-width: max-content !important;
+    white-space: nowrap !important;
   }
 
-  /* QR mode tabs — 9 items need horizontal scroll on small screens */
-  .tool-page .qr-studio-tab-item {
-    min-height: 38px !important;
-    padding: 8px 6px !important;
-    font-size: 12px !important;
-  }
-
-  /* Ensure all inline tool tabs have touch-safe sizing */
+  /* Ensure all inline tool buttons have touch-safe sizing */
   .tool-page .btn {
     min-height: 42px;
   }
@@ -2178,18 +2258,17 @@ main, section, article, .tool-shell {
 }
 
 @media (max-width: 380px) {
-  .tool-page .apple-segmented-item {
-    padding: 7px 6px !important;
+  .tool-tab,
+  .tool-page .apple-segmented-item,
+  .tool-mode-tabs button,
+  .pdf-studio-category-item,
+  .qr-studio-tab-item {
+    padding: 7px 10px !important;
     font-size: 12px !important;
     gap: 4px !important;
-  }
-  .tool-page .pdf-studio-category-item {
-    padding: 7px 6px !important;
-    font-size: 11.5px !important;
-  }
-  .tool-page .qr-studio-tab-item {
-    padding: 7px 4px !important;
-    font-size: 11.5px !important;
+    flex: 1 0 auto !important;
+    min-width: max-content !important;
+    white-space: nowrap !important;
   }
 }
 

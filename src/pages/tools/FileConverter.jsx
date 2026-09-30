@@ -603,21 +603,40 @@ async function doConvert(sub, textInput, binaryInput, mediaOpts, fileBlob, signa
 ══════════════════════════════════════════ */
 function GroupTabs({ active, onChange }) {
   return (
-    <div style={{display:'flex',gap:3,marginBottom:20,flexWrap:'wrap',background:'rgba(0,0,0,.042)',padding:4,borderRadius:14,border:'1px solid rgba(0,0,0,.035)'}}>
-      {GROUPS.map(g=>{
+    <div className="tool-tabs apple-segmented" style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 20, background: 'rgba(0,0,0,.042)', padding: 4, borderRadius: 14, border: '1px solid rgba(0,0,0,.035)', overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+      {GROUPS.map(g => {
         const Icon = g.icon
         const isAct = active === g.id
         return (
-          <button key={g.id} onClick={()=>onChange(g.id)}
-            style={{display:'inline-flex',alignItems:'center',gap:7,padding:'9px 16px',minHeight:40,
-              borderRadius:12,cursor:'pointer',transition:'all .18s',
+          <button
+            key={g.id}
+            onClick={() => onChange(g.id)}
+            className={`tool-tab apple-segmented-item ${isAct ? 'active' : ''}`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 7,
+              padding: '9px 16px',
+              minHeight: 42,
+              borderRadius: 12,
+              cursor: 'pointer',
+              transition: 'all .18s',
               border: isAct ? `1px solid ${g.color}35` : '1px solid transparent',
               background: isAct ? '#ffffff' : 'transparent',
               boxShadow: isAct ? '0 2px 8px rgba(15,23,42,0.08)' : 'none',
               color: isAct ? g.color : '#555',
-              fontFamily:'DM Sans,sans-serif',fontWeight:isAct?700:600,fontSize:13}}>
-            {Icon && <Icon size={15} />}
-            <span>{g.label}</span>
+              fontFamily: 'DM Sans,sans-serif',
+              fontWeight: isAct ? 700 : 600,
+              fontSize: 13,
+              flex: '1 0 auto',
+              minWidth: 'max-content',
+              whiteSpace: 'nowrap',
+              boxSizing: 'border-box'
+            }}
+          >
+            {Icon && <Icon size={15} style={{ flexShrink: 0 }} />}
+            <span style={{ display: 'inline-block', whiteSpace: 'nowrap', minWidth: 'max-content' }}>{g.label}</span>
           </button>
         )
       })}

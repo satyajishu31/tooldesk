@@ -371,25 +371,43 @@ export default function FaviconGenerator() {
         </div>
 
         {/* ── MODE TABS ── */}
-        <div style={{ display: 'flex', gap: 3, marginBottom: 22, borderRadius: 14, padding: 4, border: '1px solid rgba(0,0,0,.035)', background: 'rgba(0,0,0,.042)' }}>
+        <div className="tool-tabs apple-segmented" style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 22, borderRadius: 14, padding: 4, border: '1px solid rgba(0,0,0,.035)', background: 'rgba(0,0,0,.042)', overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
           {TABS.map(tab => {
             const Icon = tab.icon
             const isActive = mode === tab.id
             return (
-            <button key={tab.id} onClick={() => setMode(tab.id)}
-              style={{
-                flex: 1, padding: '9px 4px', border: 'none', cursor: 'pointer', borderRadius: 12,
-                fontFamily: 'DM Sans,sans-serif', fontSize: 13, fontWeight: 600, minHeight: 40,
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                background: isActive ? 'rgba(255,255,255,0.95)' : 'transparent',
-                color: isActive ? '#0d0d1a' : '#666',
-                boxShadow: isActive ? '0 2px 10px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none',
-                transition: 'all .18s cubic-bezier(.22,1,.36,1)',
-              }}>
-              <Icon size={14} />
-              <span>{tab.label}</span>
-            </button>
-          )})}
+              <button
+                key={tab.id}
+                onClick={() => setMode(tab.id)}
+                className={`tool-tab apple-segmented-item ${isActive ? 'active' : ''}`}
+                style={{
+                  flex: '1 0 auto',
+                  minWidth: 'max-content',
+                  padding: '9px 16px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderRadius: 12,
+                  fontFamily: 'DM Sans,sans-serif',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  minHeight: 42,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 7,
+                  background: isActive ? '#ffffff' : 'transparent',
+                  color: isActive ? '#0d0d1a' : '#64748b',
+                  boxShadow: isActive ? '0 2px 10px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none',
+                  transition: 'all .18s cubic-bezier(.22,1,.36,1)',
+                  whiteSpace: 'nowrap',
+                  boxSizing: 'border-box'
+                }}
+              >
+                <Icon size={14} style={{ flexShrink: 0 }} />
+                <span style={{ display: 'inline-block', whiteSpace: 'nowrap', minWidth: 'max-content' }}>{tab.label}</span>
+              </button>
+            )
+          })}
         </div>
 
         {/* ── TEXT / EMOJI MODE ── */}

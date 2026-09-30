@@ -371,22 +371,24 @@ export default function QRScanner({ isEmbedded = false }) {
   const card = (
     <ToolCard>
         {/* Navigation Tabs */}
-        <div style={{ display: 'flex', gap: 3, marginBottom: 18, background: 'rgba(0,0,0,.042)', padding: 4, borderRadius: 14, border: '1px solid rgba(0,0,0,.035)' }}>
+        <div className="tool-tabs apple-segmented" style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 18, background: 'rgba(0,0,0,.042)', padding: 4, borderRadius: 14, border: '1px solid rgba(0,0,0,.035)', overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
           <button
             type="button"
-            className={`btn btn-sm ${activeTab === 'camera' ? 'btn-primary' : 'btn-outline'}`}
-            style={{ flex: 1, padding: '9px 12px', fontSize: 13, fontWeight: 700, borderRadius: 12, minHeight: 40, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
+            className={`tool-tab apple-segmented-item ${activeTab === 'camera' ? 'active' : ''}`}
+            style={{ flex: '1 0 auto', minWidth: 'max-content', padding: '10px 16px', fontSize: 13, fontWeight: 700, borderRadius: 12, minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, whiteSpace: 'nowrap', boxSizing: 'border-box', border: 'none', cursor: 'pointer', background: activeTab === 'camera' ? '#ffffff' : 'transparent', color: activeTab === 'camera' ? '#0d0d1a' : '#64748b', boxShadow: activeTab === 'camera' ? '0 2px 10px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none' }}
             onClick={() => setActiveTab('camera')}
           >
-            <Camera size={15} /> Real-Time Camera
+            <Camera size={15} style={{ flexShrink: 0 }} />
+            <span style={{ display: 'inline-block', whiteSpace: 'nowrap', minWidth: 'max-content' }}>Real-Time Camera</span>
           </button>
           <button
             type="button"
-            className={`btn btn-sm ${activeTab === 'upload' ? 'btn-primary' : 'btn-outline'}`}
-            style={{ flex: 1, padding: '9px 12px', fontSize: 13, fontWeight: 700, borderRadius: 12, minHeight: 40, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
+            className={`tool-tab apple-segmented-item ${activeTab === 'upload' ? 'active' : ''}`}
+            style={{ flex: '1 0 auto', minWidth: 'max-content', padding: '10px 16px', fontSize: 13, fontWeight: 700, borderRadius: 12, minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, whiteSpace: 'nowrap', boxSizing: 'border-box', border: 'none', cursor: 'pointer', background: activeTab === 'upload' ? '#ffffff' : 'transparent', color: activeTab === 'upload' ? '#0d0d1a' : '#64748b', boxShadow: activeTab === 'upload' ? '0 2px 10px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none' }}
             onClick={() => setActiveTab('upload')}
           >
-            <UploadCloud size={15} /> Upload Image / Paste Screenshot
+            <UploadCloud size={15} style={{ flexShrink: 0 }} />
+            <span style={{ display: 'inline-block', whiteSpace: 'nowrap', minWidth: 'max-content' }}>Upload Image / Paste Screenshot</span>
           </button>
         </div>
 

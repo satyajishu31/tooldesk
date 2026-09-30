@@ -1650,28 +1650,32 @@ export default function PDFToolkit() {
         {/* ── 1. HIGH-LEVEL CATEGORY SELECTOR (Apple-Style Glass Segmented Tabs) ── */}
         <div style={{ marginBottom: 22 }}>
           <label className="lbl" style={{ marginBottom: 10 }}>STUDIO SUITE</label>
-          <div className="apple-segmented pdf-studio-categories" style={{ padding: 4, borderRadius: 14, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 4, background: 'rgba(0,0,0,.042)', border: '1px solid rgba(0,0,0,.035)' }}>
+          <div className="apple-segmented tool-tabs pdf-studio-categories" style={{ padding: 4, borderRadius: 14, display: 'flex', alignItems: 'center', overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', gap: 4, background: 'rgba(0,0,0,.042)', border: '1px solid rgba(0,0,0,.035)', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
             {CATEGORIES.map(cat => (
               <button
                 key={cat.id}
                 type="button"
                 onClick={() => handleCategoryChange(cat.id)}
-                className={`apple-segmented-item pdf-studio-category-item ${activeCategory === cat.id ? 'active' : ''}`}
+                className={`apple-segmented-item tool-tab pdf-studio-category-item ${activeCategory === cat.id ? 'active' : ''}`}
                 style={{
-                  padding: '9px 8px',
+                  padding: '9px 14px',
                   borderRadius: 12,
                   fontSize: 13,
                   fontWeight: 700,
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 6,
                   minHeight: 44,
+                  flex: '1 0 auto',
+                  minWidth: 'max-content',
+                  whiteSpace: 'nowrap',
+                  boxSizing: 'border-box',
                   transition: 'all .18s var(--ease)',
                 }}
               >
-                <span>{cat.icon}</span>
-                <span className="cat-tab-label">{cat.label}</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>{cat.icon}</span>
+                <span className="cat-tab-label" style={{ whiteSpace: 'nowrap', minWidth: 'max-content', display: 'inline-block' }}>{cat.label}</span>
               </button>
             ))}
           </div>

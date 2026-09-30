@@ -22,26 +22,37 @@ function Spinner() {
 
 function TabBar({ tabs, active, onChange }) {
   return (
-    <div style={{
-      display: 'grid',
-      gridAutoFlow: 'column',
-      gridAutoColumns: '1fr',
-      gap: 4,
-      background: 'rgba(0, 0, 0, 0.042)',
-      borderRadius: 14,
-      padding: 4,
-      marginBottom: 24,
-      overflowX: 'auto',
-      WebkitOverflowScrolling: 'touch',
-      scrollbarWidth: 'none',
-      msOverflowStyle: 'none',
-      border: '1px solid rgba(0, 0, 0, 0.035)'
-    }}>
+    <div
+      className="tool-tabs apple-segmented"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 4,
+        background: 'rgba(0, 0, 0, 0.042)',
+        borderRadius: 14,
+        padding: 4,
+        marginBottom: 24,
+        overflowX: 'auto',
+        overflowY: 'hidden',
+        WebkitOverflowScrolling: 'touch',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        border: '1px solid rgba(0, 0, 0, 0.035)',
+        width: '100%',
+        maxWidth: '100%',
+        boxSizing: 'border-box'
+      }}
+    >
       {tabs.map(t => (
-        <motion.button key={t.id} type="button" onClick={() => onChange(t.id)} whileTap={{ scale: 0.96 }}
+        <motion.button
+          key={t.id}
+          type="button"
+          onClick={() => onChange(t.id)}
+          whileTap={{ scale: 0.96 }}
+          className={`tool-tab apple-segmented-item ${active === t.id ? 'active' : ''}`}
           style={{
             minHeight: 44,
-            padding: '10px 14px',
+            padding: '10px 16px',
             borderRadius: 12,
             border: 'none',
             cursor: 'pointer',
@@ -53,6 +64,8 @@ function TabBar({ tabs, active, onChange }) {
             alignItems: 'center',
             justifyContent: 'center',
             gap: 7,
+            flex: '1 0 auto',
+            minWidth: 'max-content',
             background: active === t.id ? 'linear-gradient(135deg,#4F8EF7,#9C6FDE)' : 'transparent',
             color: active === t.id ? '#fff' : '#64748b',
             boxShadow: active === t.id
@@ -63,10 +76,12 @@ function TabBar({ tabs, active, onChange }) {
             boxSizing: 'border-box'
           }}
         >
-          <span style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             {t.icon}
           </span>
-          <span style={{ display: 'inline-block', lineHeight: 1 }}>{t.label}</span>
+          <span style={{ display: 'inline-block', lineHeight: 1, whiteSpace: 'nowrap', minWidth: 'max-content' }}>
+            {t.label}
+          </span>
         </motion.button>
       ))}
     </div>

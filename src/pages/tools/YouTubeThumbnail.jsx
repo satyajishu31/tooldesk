@@ -457,23 +457,37 @@ export default function SocialMediaThumbnail() {
             textTransform:'uppercase', letterSpacing:'.5px', marginBottom:10 }}>
             Select Platform
           </div>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:4, background:'rgba(0,0,0,.042)', padding:4, borderRadius:14, border:'1px solid rgba(0,0,0,.035)' }}>
+          <div className="tool-tabs apple-segmented" style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(0,0,0,.042)', padding: 4, borderRadius: 14, border: '1px solid rgba(0,0,0,.035)', overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
             {PLATFORMS.map(p => {
               const isAct = activePlatform === p.id
               return (
               <motion.button key={p.id}
                 onClick={() => switchPlatform(p.id)}
                 whileHover={{ scale:1.02 }} whileTap={{ scale:.98 }}
-                style={{ display:'inline-flex', alignItems:'center', gap:7,
-                  padding:'9px 16px', borderRadius:12, minHeight:40,
-                  border: isAct ? `1.5px solid ${p.color}` : '1px solid transparent',
+                className={`tool-tab apple-segmented-item ${isAct ? 'active' : ''}`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 7,
+                  padding: '9px 16px',
+                  borderRadius: 12,
+                  minHeight: 42,
+                  border: isAct ? `1.5px solid ${p.color}` : '1.5px solid transparent',
                   background: isAct ? '#ffffff' : 'transparent',
-                  boxShadow: isAct ? '0 2px 8px rgba(15,23,42,0.08)' : 'none',
-                  color: isAct ? p.color : '#666',
-                  fontSize:12.5, fontWeight:700, cursor:'pointer',
-                  transition:'all .18s cubic-bezier(.22,1,.36,1)' }}>
-                <span style={{ fontSize:15 }}>{p.icon}</span>
-                <span>{p.name}</span>
+                  boxShadow: isAct ? '0 2px 10px rgba(15,23,42,0.08)' : 'none',
+                  color: isAct ? p.color : '#64748b',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all .18s cubic-bezier(.22,1,.36,1)',
+                  flex: '1 0 auto',
+                  minWidth: 'max-content',
+                  whiteSpace: 'nowrap',
+                  boxSizing: 'border-box'
+                }}>
+                <span style={{ fontSize: 15, display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>{p.icon}</span>
+                <span style={{ display: 'inline-block', whiteSpace: 'nowrap', minWidth: 'max-content' }}>{p.name}</span>
               </motion.button>
             )})}
           </div>

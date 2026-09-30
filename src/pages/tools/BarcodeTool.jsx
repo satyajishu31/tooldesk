@@ -393,22 +393,24 @@ export default function BarcodeTool({ isEmbedded = false }) {
   const card = (
     <ToolCard>
         {/* Main Tab Switcher */}
-        <div style={{ display: 'flex', gap: 3, marginBottom: 20, background: 'rgba(0,0,0,.042)', padding: 4, borderRadius: 14, border: '1px solid rgba(0,0,0,.035)' }}>
+        <div className="tool-tabs apple-segmented" style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 20, background: 'rgba(0,0,0,.042)', padding: 4, borderRadius: 14, border: '1px solid rgba(0,0,0,.035)', overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
           <button
             type="button"
-            className={`btn btn-sm ${activeTab === 'generate' ? 'btn-primary' : 'btn-outline'}`}
-            style={{ flex: 1, padding: '10px 14px', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 12, minHeight: 40 }}
+            className={`tool-tab apple-segmented-item ${activeTab === 'generate' ? 'active' : ''}`}
+            style={{ flex: '1 0 auto', minWidth: 'max-content', padding: '10px 16px', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 12, minHeight: 44, whiteSpace: 'nowrap', boxSizing: 'border-box', border: 'none', cursor: 'pointer', background: activeTab === 'generate' ? '#ffffff' : 'transparent', color: activeTab === 'generate' ? '#0d0d1a' : '#64748b', boxShadow: activeTab === 'generate' ? '0 2px 10px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none' }}
             onClick={() => setActiveTab('generate')}
           >
-            <Barcode size={15} /> Barcode Generator
+            <Barcode size={15} style={{ flexShrink: 0 }} />
+            <span style={{ display: 'inline-block', whiteSpace: 'nowrap', minWidth: 'max-content' }}>Barcode Generator</span>
           </button>
           <button
             type="button"
-            className={`btn btn-sm ${activeTab === 'scan' ? 'btn-primary' : 'btn-outline'}`}
-            style={{ flex: 1, padding: '10px 14px', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 12, minHeight: 40 }}
+            className={`tool-tab apple-segmented-item ${activeTab === 'scan' ? 'active' : ''}`}
+            style={{ flex: '1 0 auto', minWidth: 'max-content', padding: '10px 16px', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 12, minHeight: 44, whiteSpace: 'nowrap', boxSizing: 'border-box', border: 'none', cursor: 'pointer', background: activeTab === 'scan' ? '#ffffff' : 'transparent', color: activeTab === 'scan' ? '#0d0d1a' : '#64748b', boxShadow: activeTab === 'scan' ? '0 2px 10px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none' }}
             onClick={() => setActiveTab('scan')}
           >
-            <ScanLine size={15} /> Barcode Scanner
+            <ScanLine size={15} style={{ flexShrink: 0 }} />
+            <span style={{ display: 'inline-block', whiteSpace: 'nowrap', minWidth: 'max-content' }}>Barcode Scanner</span>
           </button>
         </div>
 
@@ -571,22 +573,24 @@ export default function BarcodeTool({ isEmbedded = false }) {
            ══════════════════════════════════════════════════════ */}
         {activeTab === 'scan' && (
           <div>
-            <div style={{ display: 'flex', gap: 3, marginBottom: 16, background: 'rgba(0,0,0,.042)', padding: 4, borderRadius: 12, border: '1px solid rgba(0,0,0,.035)' }}>
+            <div className="tool-tabs apple-segmented" style={{ display: 'flex', alignItems: 'center', gap: 3, marginBottom: 16, background: 'rgba(0,0,0,.042)', padding: 4, borderRadius: 12, border: '1px solid rgba(0,0,0,.035)', overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
               <button
                 type="button"
-                className={`btn btn-sm ${scanMode === 'camera' ? 'btn-primary' : 'btn-outline'}`}
-                style={{ padding: '7px 14px', fontSize: 12.5, display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 10, minHeight: 36 }}
+                className={`tool-tab apple-segmented-item ${scanMode === 'camera' ? 'active' : ''}`}
+                style={{ padding: '8px 14px', fontSize: 12.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: 10, minHeight: 38, flex: '1 0 auto', minWidth: 'max-content', whiteSpace: 'nowrap', border: 'none', cursor: 'pointer', background: scanMode === 'camera' ? '#ffffff' : 'transparent', color: scanMode === 'camera' ? '#0d0d1a' : '#64748b', boxShadow: scanMode === 'camera' ? '0 2px 8px rgba(0,0,0,.06)' : 'none' }}
                 onClick={() => setScanMode('camera')}
               >
-                <Camera size={14} /> Live Camera
+                <Camera size={14} style={{ flexShrink: 0 }} />
+                <span style={{ display: 'inline-block', whiteSpace: 'nowrap', minWidth: 'max-content' }}>Live Camera</span>
               </button>
               <button
                 type="button"
-                className={`btn btn-sm ${scanMode === 'upload' ? 'btn-primary' : 'btn-outline'}`}
-                style={{ padding: '7px 14px', fontSize: 12.5, display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 10, minHeight: 36 }}
+                className={`tool-tab apple-segmented-item ${scanMode === 'upload' ? 'active' : ''}`}
+                style={{ padding: '8px 14px', fontSize: 12.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: 10, minHeight: 38, flex: '1 0 auto', minWidth: 'max-content', whiteSpace: 'nowrap', border: 'none', cursor: 'pointer', background: scanMode === 'upload' ? '#ffffff' : 'transparent', color: scanMode === 'upload' ? '#0d0d1a' : '#64748b', boxShadow: scanMode === 'upload' ? '0 2px 8px rgba(0,0,0,.06)' : 'none' }}
                 onClick={() => setScanMode('upload')}
               >
-                <UploadCloud size={14} /> Upload / Paste Image
+                <UploadCloud size={14} style={{ flexShrink: 0 }} />
+                <span style={{ display: 'inline-block', whiteSpace: 'nowrap', minWidth: 'max-content' }}>Upload / Paste Image</span>
               </button>
             </div>
 
