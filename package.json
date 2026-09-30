@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "test": "node scripts/test-all-tools.js && node scripts/test-v110-engines.js && node scripts/test-download-outputs.js && node scripts/test-routes.js",
+    "test": "node scripts/test-all-tools.js && node scripts/test-v110-engines.js && node scripts/test-download-outputs.js && node scripts/test-routes.js && node scripts/test-ai-assistant.js",
     "desktop:dev": "export PATH=\"$HOME/.cargo/bin:$PATH\" && tauri dev",
     "desktop:build": "./scripts/build-desktop.sh",
     "mobile:sync": "cap sync && rm -rf android/app/src/main/assets/public/releases && rm -rf ios/App/App/public/releases",

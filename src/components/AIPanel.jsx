@@ -5,6 +5,7 @@ import React, { useState, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCopy } from '../hooks'
 import { useGroqAI, AI_GRADIENT } from '../hooks/useGroqAI'
+import { AITypewriterText } from './AITypewriterText'
 
 /* ── Shared styles ── */
 const S = {
@@ -50,6 +51,7 @@ const S = {
     padding: '10px 14px', background: 'rgba(239,68,68,.06)',
     border: '1px solid rgba(239,68,68,.18)', borderRadius: 10,
     fontSize: 13, color: '#b91c1c', marginTop: 10, lineHeight: 1.65,
+    transition: 'opacity 0.2s ease',
   },
   pillBtn: (active) => ({
     padding: '6px 14px', borderRadius: 999, fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
@@ -61,11 +63,13 @@ const S = {
   }),
 }
 
-/* ── Spinner ── */
+/* ── Spinner / Thinking dots ── */
 const Spin = () => (
-  <motion.div animate={{rotate:360}} transition={{duration:.7,repeat:Infinity,ease:'linear'}}
-    style={{width:15,height:15,borderRadius:'50%',
-      border:'2.5px solid rgba(255,255,255,.3)',borderTopColor:'#fff',flexShrink:0}}/>
+  <span className="ai-thinking-dots" style={{ marginRight: 6 }}>
+    <span className="ai-thinking-dot" style={{ background: '#ffffff', width: 4, height: 4 }} />
+    <span className="ai-thinking-dot" style={{ background: '#ffffff', width: 4, height: 4 }} />
+    <span className="ai-thinking-dot" style={{ background: '#ffffff', width: 4, height: 4 }} />
+  </span>
 )
 
 /* ── Copy button ── */
@@ -83,7 +87,7 @@ function CopyBtn({ text, style = {} }) {
   )
 }
 
-/* ── Result text block ── */
+/* ── Result text block with typewriter progressive reveal ── */
 function ResultText({ label, text, mono = false }) {
   if (!text) return null
   return (
@@ -96,7 +100,7 @@ function ResultText({ label, text, mono = false }) {
       <div style={{fontSize:13.5,color:'#1a1a2e',lineHeight:1.85,
         fontFamily:mono?'monospace':'DM Sans,sans-serif',
         whiteSpace:'pre-line',wordBreak:'break-word'}}>
-        {text}
+        <AITypewriterText text={text} speed={25} />
       </div>
     </motion.div>
   )

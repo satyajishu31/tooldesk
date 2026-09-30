@@ -2340,3 +2340,133 @@ body.scroll-lock {
   touch-action: none;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   AI ASSISTANT MICRO-ANIMATION SYSTEM (v1.3.0)
+   Apple-inspired subtle typing, thinking dots, cursor, and micro-interactions
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── AI Thinking Dots ── */
+.ai-thinking-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 18px;
+  padding: 0 4px;
+  vertical-align: middle;
+}
+
+.ai-thinking-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--blue, #4F8EF7);
+  opacity: 0.25;
+  will-change: transform, opacity;
+  animation: aiDotSoftPulse 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.ai-thinking-dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.ai-thinking-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.ai-thinking-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes aiDotSoftPulse {
+  0%, 100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.95;
+    transform: translateY(-1.5px);
+  }
+}
+
+/* ── AI Typing Cursor ── */
+.ai-typing-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: var(--blue, #4F8EF7);
+  border-radius: 1px;
+  animation: aiCursorFade 0.75s ease-in-out infinite;
+  will-change: opacity;
+}
+
+@keyframes aiCursorFade {
+  0%, 100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 0.15;
+  }
+}
+
+/* ── AI Action Buttons Micro-interactions ── */
+.ai-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 6px;
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ai-action-btn:hover {
+  color: #4F8EF7;
+  background: rgba(79, 142, 247, 0.08);
+}
+
+.ai-action-btn.copied {
+  color: #16a34a;
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.ai-action-btn:active {
+  transform: scale(0.96);
+}
+
+/* ── AI Input Micro-interactions ── */
+.ai-chat-input {
+  transition: border-color 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ai-chat-input:focus {
+  border-color: rgba(79, 142, 247, 0.45) !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(79, 142, 247, 0.12) !important;
+}
+
+/* ── Reduced Motion Accessibility ── */
+@media (prefers-reduced-motion: reduce) {
+  .ai-thinking-dot {
+    animation: none !important;
+    opacity: 0.7 !important;
+    transform: none !important;
+  }
+  .ai-typing-cursor {
+    animation: none !important;
+    opacity: 0.8 !important;
+  }
+  .ai-action-btn {
+    transition: none !important;
+  }
+}
+
+

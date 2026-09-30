@@ -82,14 +82,17 @@ function getSuggestions(tool) {
   ]
 }
 
+import AITypewriterText from './AITypewriterText'
+
 /* ── Isolated Chat Input: isolates input state from whole panel re-renders ── */
-const ChatInputForm = memo(function ChatInputForm({ onSend, onStop, loading, placeholder }) {
+const ChatInputForm = memo(function ChatInputForm({ onSend, onStop, aiState, placeholder }) {
   const [localInput, setLocalInput] = useState('')
+  const isBusy = aiState === 'thinking' || aiState === 'typing'
 
   const handleSubmit = (e) => {
     e.preventDefault()
     const text = localInput.trim()
-    if (!text || loading) return
+    if (!text || isBusy) return
     setLocalInput('')
     onSend(text)
   }
@@ -104,6 +107,7 @@ const ChatInputForm = memo(function ChatInputForm({ onSend, onStop, loading, pla
     }}>
       <input
         type="text"
+        className="ai-chat-input"
         value={localInput}
         onChange={e => setLocalInput(e.target.value)}
         placeholder={placeholder}
@@ -122,12 +126,14 @@ const ChatInputForm = memo(function ChatInputForm({ onSend, onStop, loading, pla
           boxSizing: 'border-box',
         }}
       />
-      {loading ? (
-        <button
+      {isBusy ? (
+        <motion.button
           type="button"
           onClick={onStop}
-          title="Stop response"
-          aria-label="Stop response"
+          title="Stop generating"
+          aria-label="Stop generating"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.94 }}
           style={{
             width: 36,
             height: 36,
@@ -141,14 +147,17 @@ const ChatInputForm = memo(function ChatInputForm({ onSend, onStop, loading, pla
             justifyContent: 'center',
             flexShrink: 0,
             boxSizing: 'border-box',
+            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)',
             transition: 'background .15s',
           }}>
-          <Square size={13} fill="#ffffff" />
-        </button>
+          <Square size={12} fill="#ffffff" />
+        </motion.button>
       ) : (
-        <button
+        <motion.button
           type="submit"
           disabled={!localInput.trim()}
+          whileHover={localInput.trim() ? { scale: 1.05 } : {}}
+          whileTap={localInput.trim() ? { scale: 0.94 } : {}}
           style={{
             width: 36,
             height: 36,
@@ -160,13 +169,14 @@ const ChatInputForm = memo(function ChatInputForm({ onSend, onStop, loading, pla
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: 16,
+            fontSize: 15,
             flexShrink: 0,
             boxSizing: 'border-box',
-            transition: 'background .15s',
+            boxShadow: localInput.trim() ? '0 2px 8px rgba(79, 142, 247, 0.3)' : 'none',
+            transition: 'background .15s, box-shadow .15s',
           }}>
           ➔
-        </button>
+        </motion.button>
       )}
     </form>
   )
@@ -213,7 +223,7 @@ export default function AIHelper() {
   const [messages, setMessages] = useState([
     { role: 'assistant', content: getWelcomeMessage(currentTool) }
   ])
-  const [loading, setLoading]   = useState(false)
+  const [aiState, setAiState]   = useState('idle') // 'idle' | 'thinking' | 'typing' | 'complete' | 'error' | 'stopped'
   const [copiedIndex, setCopiedIndex] = useState(null)
   const chatEndRef = useRef(null)
   const panelRef = useRef(null)
@@ -221,7 +231,6 @@ export default function AIHelper() {
   const abortControllerRef = useRef(null)
   const requestIdRef = useRef(0)
   const copyTimerRef = useRef(null)
-  const streamIntervalRef = useRef(null)
 
   useEffect(() => {
     return () => {
@@ -231,15 +240,12 @@ export default function AIHelper() {
       if (copyTimerRef.current) {
         clearTimeout(copyTimerRef.current)
       }
-      if (streamIntervalRef.current) {
-        clearInterval(streamIntervalRef.current)
-      }
     }
   }, [])
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, loading])
+  }, [messages, aiState])
 
   // Handle Escape key and outside click to dismiss
   useEffect(() => {
@@ -283,18 +289,15 @@ export default function AIHelper() {
       abortControllerRef.current.abort()
       abortControllerRef.current = null
     }
-    if (streamIntervalRef.current) {
-      clearInterval(streamIntervalRef.current)
-      streamIntervalRef.current = null
-    }
-    setLoading(false)
+    setMessages(prev => prev.map(m => m.isRevealing ? { ...m, isRevealing: false } : m))
+    setAiState('stopped')
   }, [])
 
   const copyMessage = useCallback((text, idx) => {
     navigator.clipboard?.writeText(text)
     setCopiedIndex(idx)
     if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
-    copyTimerRef.current = setTimeout(() => setCopiedIndex(null), 2000)
+    copyTimerRef.current = setTimeout(() => setCopiedIndex(null), 1800)
   }, [])
 
   const sendText = useCallback(async (text) => {
@@ -304,17 +307,13 @@ export default function AIHelper() {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
     }
-    if (streamIntervalRef.current) {
-      clearInterval(streamIntervalRef.current)
-      streamIntervalRef.current = null
-    }
     const controller = new AbortController()
     abortControllerRef.current = controller
     const reqId = ++requestIdRef.current
 
     const userMsg = { role: 'user', content: cleanText }
     setMessages(prev => [...prev, userMsg])
-    setLoading(true)
+    setAiState('thinking')
 
     try {
       const history = [...messages, userMsg].map(m => ({ role: m.role, content: m.content }))
@@ -336,56 +335,32 @@ export default function AIHelper() {
 
       const finalResponse = data?.response || data?.result
       if (finalResponse) {
-        // Progressive token streaming simulation for buttery-smooth reading
-        const words = finalResponse.split(' ')
-        if (words.length > 8) {
-          setMessages(prev => [...prev, { role: 'assistant', content: words.slice(0, 3).join(' ') }])
-          let currentWordIdx = 3
-          streamIntervalRef.current = setInterval(() => {
-            if (reqId !== requestIdRef.current) {
-              if (streamIntervalRef.current) {
-                clearInterval(streamIntervalRef.current)
-                streamIntervalRef.current = null
-              }
-              return
-            }
-            currentWordIdx += 3
-            if (currentWordIdx >= words.length) {
-              if (streamIntervalRef.current) {
-                clearInterval(streamIntervalRef.current)
-                streamIntervalRef.current = null
-              }
-              setMessages(prev => {
-                const next = [...prev]
-                next[next.length - 1] = { role: 'assistant', content: finalResponse }
-                return next
-              })
-              setLoading(false)
-            } else {
-              setMessages(prev => {
-                const next = [...prev]
-                next[next.length - 1] = { role: 'assistant', content: words.slice(0, currentWordIdx).join(' ') }
-                return next
-              })
-            }
-          }, 35)
-          return
+        const isReducedMotion = typeof window !== 'undefined' &&
+          window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+
+        if (isReducedMotion) {
+          setMessages(prev => [...prev, { role: 'assistant', content: finalResponse, isRevealing: false }])
+          setAiState('complete')
         } else {
-          setMessages(prev => [...prev, { role: 'assistant', content: finalResponse }])
+          setMessages(prev => [...prev, { role: 'assistant', content: finalResponse, isRevealing: true }])
+          setAiState('typing')
         }
       } else if (data?.error) {
-        setMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${data.error}` }])
+        setMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${data.error}`, isError: true }])
+        setAiState('error')
       } else {
-        setMessages(prev => [...prev, { role: 'assistant', content: "⚠️ Sorry, I encountered an issue. Please try again." }])
+        setMessages(prev => [...prev, { role: 'assistant', content: "⚠️ Sorry, I encountered an issue. Please try again.", isError: true }])
+        setAiState('error')
       }
     } catch (e) {
       if (e?.name === 'AbortError' || controller.signal.aborted) return
       if (reqId === requestIdRef.current) {
-        setMessages(prev => [...prev, { role: 'assistant', content: "⚠️ Connection error. Please check your network." }])
+        setMessages(prev => [...prev, { role: 'assistant', content: "⚠️ Connection error. Please check your network.", isError: true }])
+        setAiState('error')
       }
     } finally {
-      if (reqId === requestIdRef.current) {
-        setLoading(false)
+      if (reqId === requestIdRef.current && abortControllerRef.current === controller) {
+        abortControllerRef.current = null
       }
     }
   }, [messages, currentPageLabel, currentTool])
@@ -512,55 +487,47 @@ export default function AIHelper() {
                     <div style={{
                       padding: '10px 14px',
                       borderRadius: m.role === 'user' ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
-                      background: m.role === 'user' ? 'var(--blue, #4F8EF7)' : '#ffffff',
-                      color: m.role === 'user' ? '#ffffff' : '#1e293b',
+                      background: m.role === 'user' ? 'var(--blue, #4F8EF7)' : m.isError ? 'rgba(239, 68, 68, 0.05)' : '#ffffff',
+                      color: m.role === 'user' ? '#ffffff' : m.isError ? '#b91c1c' : '#1e293b',
                       fontSize: 13.5,
                       lineHeight: 1.62,
                       boxShadow: m.role === 'user' ? '0 2px 8px rgba(79,142,247,0.2)' : '0 2px 6px rgba(0,0,0,0.04)',
-                      border: m.role === 'user' ? 'none' : '1px solid rgba(0,0,0,0.05)'
+                      border: m.role === 'user' ? 'none' : m.isError ? '1px solid rgba(239,68,68,0.18)' : '1px solid rgba(0,0,0,0.05)',
+                      transition: 'background 0.2s, border-color 0.2s',
                     }}>
-                      {m.content}
+                      {m.role === 'assistant' && m.isRevealing ? (
+                        <AITypewriterText
+                          text={m.content}
+                          speed={24}
+                          onComplete={() => {
+                            m.isRevealing = false
+                            setAiState('complete')
+                          }}
+                        />
+                      ) : (
+                        m.content
+                      )}
                     </div>
                   </div>
 
-                  {m.role === 'assistant' && idx > 0 && (
-                    <div style={{ display: 'flex', gap: 8, paddingLeft: 30 }}>
+                  {m.role === 'assistant' && !m.isRevealing && idx > 0 && (
+                    <div style={{ display: 'flex', gap: 6, paddingLeft: 30 }}>
                       <button
                         onClick={() => copyMessage(m.content, idx)}
-                        style={{
-                          border: 'none',
-                          background: 'transparent',
-                          color: copiedIndex === idx ? '#16a34a' : '#94a3b8',
-                          fontSize: 11,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 3,
-                          padding: 0
-                        }}
+                        className={`ai-action-btn ${copiedIndex === idx ? 'copied' : ''}`}
+                        title="Copy answer"
                       >
-                        {copiedIndex === idx ? <Check size={11} /> : <Copy size={11} />}
+                        {copiedIndex === idx ? <Check size={12} /> : <Copy size={12} />}
                         {copiedIndex === idx ? 'Copied' : 'Copy'}
                       </button>
 
-                      {idx === messages.length - 1 && !loading && (
+                      {idx === messages.length - 1 && aiState !== 'thinking' && (
                         <button
                           onClick={regenerateLast}
-                          style={{
-                            border: 'none',
-                            background: 'transparent',
-                            color: '#94a3b8',
-                            fontSize: 11,
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 3,
-                            padding: 0
-                          }}
+                          className="ai-action-btn"
+                          title="Regenerate answer"
                         >
-                          <RotateCcw size={11} />
+                          <RotateCcw size={12} />
                           Regenerate
                         </button>
                       )}
@@ -568,24 +535,39 @@ export default function AIHelper() {
                   )}
                 </div>
               ))}
-              {loading && (
+
+              {aiState === 'thinking' && (
                 <div style={{
                   alignSelf: 'flex-start',
-                  padding: '10px 14px',
-                  background: '#ffffff',
-                  borderRadius: '16px 16px 16px 2px',
-                  border: '1px solid rgba(0,0,0,0.05)',
                   display: 'flex',
-                  gap: 4,
+                  gap: 8,
                   alignItems: 'center'
                 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#94a3b8', animation: 'pulse2 1s infinite' }}/>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#94a3b8', animation: 'pulse2 1s infinite 0.2s' }}/>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#94a3b8', animation: 'pulse2 1s infinite 0.4s' }}/>
+                  <img
+                    src="/robot-assistant-64.webp"
+                    alt="Assistant"
+                    style={{ width: 22, height: 22, objectFit: 'contain', flexShrink: 0 }}
+                    onError={e => { e.currentTarget.src = '/robot-assistant-64.png' }}
+                  />
+                  <div style={{
+                    padding: '8px 12px',
+                    background: '#ffffff',
+                    borderRadius: '16px 16px 16px 2px',
+                    border: '1px solid rgba(0,0,0,0.06)',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}>
+                    <div className="ai-thinking-dots" aria-label="ToolDesk AI is thinking">
+                      <span className="ai-thinking-dot" />
+                      <span className="ai-thinking-dot" />
+                      <span className="ai-thinking-dot" />
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {messages.length === 1 && !loading && (
+              {messages.length === 1 && aiState === 'idle' && (
                 <ChatSuggestions
                   suggestions={suggestions}
                   onSelect={sendText}
@@ -599,7 +581,7 @@ export default function AIHelper() {
             <ChatInputForm
               onSend={sendText}
               onStop={stopRequest}
-              loading={loading}
+              aiState={aiState}
               placeholder={currentTool ? `Ask about ${currentTool.title}…` : 'Ask anything…'}
             />
           </motion.div>
