@@ -7,6 +7,7 @@ import { saveFileWithFallback } from '../../utils/fileSaver'
 import { addToHistory } from '../../utils/history'
 import { safeFetchJSON } from '../../utils/safeFetch'
 import { resolveApiUrl, getApiHeaders } from '../../utils/apiConfig'
+import { Search, Music, Scissors, Sparkles, GitMerge, Check, CheckCircle2, Film, HardDrive, Clock, X, AlertTriangle, Zap, UploadCloud, Loader2 } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'videotranscriber')
 
@@ -632,12 +633,12 @@ const Waveform = memo(function Waveform({ active }) {
    analyze → extract → chunk → ai → merge → done
 ───────────────────────────────────────────── */
 const PIPELINE = [
-  { id: 'analyze', label: 'Analyze', icon: '🔍' },
-  { id: 'extract', label: 'Extract', icon: '🎵' },
-  { id: 'chunk', label: 'Chunking', icon: '✂️' },
-  { id: 'ai', label: 'AI', icon: '🤖' },
-  { id: 'merge', label: 'Merge', icon: '🔗' },
-  { id: 'done', label: 'Done', icon: '✅' },
+  { id: 'analyze', label: 'Analyze', icon: Search },
+  { id: 'extract', label: 'Extract', icon: Music },
+  { id: 'chunk', label: 'Chunking', icon: Scissors },
+  { id: 'ai', label: 'AI', icon: Sparkles },
+  { id: 'merge', label: 'Merge', icon: GitMerge },
+  { id: 'done', label: 'Done', icon: Check },
 ]
 const PHASE_ORDER = ['', 'analyze', 'extract', 'chunk', 'ai', 'merge', 'done']
 
@@ -648,6 +649,7 @@ function PipelineBar({ phase }) {
       {PIPELINE.map((s, i) => {
         const isActive = cur === i + 1
         const isDone = cur > i + 1
+        const IconComp = s.icon
         return (
           <div key={s.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
             <motion.div
@@ -656,11 +658,11 @@ function PipelineBar({ phase }) {
               style={{
                 width: 34, height: 34, borderRadius: '50%',
                 background: isDone ? '#22c55e' : isActive ? '#4F8EF7' : '#e8eaef',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'background .3s',
                 boxShadow: isActive ? '0 0 0 6px rgba(79,142,247,.15)' : isDone ? '0 0 0 4px rgba(34,197,94,.15)' : 'none'
               }}>
-              {isDone ? '✓' : s.icon}
+              {isDone ? <Check size={16} color="#ffffff" /> : <IconComp size={15} color={isActive ? '#ffffff' : '#64748b'} />}
             </motion.div>
             <div style={{
               fontSize: 9, fontWeight: 600, textAlign: 'center', letterSpacing: '.2px',
@@ -690,9 +692,9 @@ function FileBar({ info, onClear }) {
         width: 46, height: 46, borderRadius: 13, flexShrink: 0,
         background: 'linear-gradient(135deg,#4F8EF7,#9C6FDE)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 22, boxShadow: '0 4px 14px rgba(79,142,247,.3)'
+        boxShadow: '0 4px 14px rgba(79,142,247,.3)'
       }}>
-        {info.isAudio ? '🎵' : '🎬'}
+        {info.isAudio ? <Music size={22} color="#fff" /> : <Film size={22} color="#fff" />}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
@@ -700,19 +702,20 @@ function FileBar({ info, onClear }) {
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
         }}>{info.name}</div>
         <div style={{ fontSize: 11.5, color: '#888', marginTop: 3, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <span>📦 {fmtBytes(info.size)}</span>
-          {info.duration && <span>⏱️ {fmtDur(info.duration)}</span>}
-          <span style={{ color: info.isAudio ? '#22c55e' : '#f59e0b', fontWeight: 600 }}>
-            {info.isAudio ? '🎵 Audio file' : '🎬 Video file'}
+          <span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><HardDrive size={12} /> {fmtBytes(info.size)}</span>
+          {info.duration && <span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Clock size={12} /> {fmtDur(info.duration)}</span>}
+          <span style={{ color: info.isAudio ? '#22c55e' : '#f59e0b', fontWeight: 600, display:'inline-flex', alignItems:'center', gap:4 }}>
+            {info.isAudio ? <><Music size={12} /> Audio file</> : <><Film size={12} /> Video file</>}
           </span>
         </div>
       </div>
       <button onClick={onClear}
         style={{
           padding: '7px 14px', borderRadius: 999, border: '1.5px solid rgba(0,0,0,.1)',
-          background: '#fff', fontSize: 12, fontWeight: 600, color: '#666', cursor: 'pointer', flexShrink: 0
+          background: '#fff', fontSize: 12, fontWeight: 600, color: '#666', cursor: 'pointer', flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
-        ✕
+        <X size={14} />
       </button>
     </motion.div>
   )
@@ -1039,7 +1042,8 @@ export default function VideoTranscriber() {
                 background: 'linear-gradient(135deg,rgba(79,142,247,.1),rgba(156,111,222,.08))',
                 border: '1px solid rgba(79,142,247,.2)'
               }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#4F8EF7' }}>⚡ Up to {MAX_FILE_MB} MB</span>
+                <Zap size={13} color="#4F8EF7" />
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#4F8EF7' }}>Up to {MAX_FILE_MB} MB</span>
               </div>
               <br />
               <div style={{
@@ -1048,14 +1052,14 @@ export default function VideoTranscriber() {
                 padding: '14px 34px', borderRadius: 999, fontFamily: 'Syne,sans-serif',
                 fontWeight: 700, fontSize: 14, boxShadow: '0 8px 26px rgba(13,13,26,.28)'
               }}>
-                📁 Choose File
+                <UploadCloud size={16} /> Choose File
               </div>
             </motion.div>
           </motion.label>
 
           {/* Feature badges */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 18 }}>
-            {['🔍 Auto-Analysis', '🎵 Audio Extraction', '✂️ Smart Chunking', '🤖 Groq Whisper v3', '🌐 27 Languages', '📄 TXT · SRT · VTT'].map(t => (
+            {['Auto-Analysis', 'Audio Extraction', 'Smart Chunking', 'Groq Whisper v3', '27 Languages', 'TXT · SRT · VTT'].map(t => (
               <span key={t} style={{
                 fontSize: 11.5, padding: '5px 13px', borderRadius: 999, fontWeight: 600,
                 background: 'rgba(79,142,247,.07)', color: '#4F8EF7', border: '1px solid rgba(79,142,247,.16)'
@@ -1070,8 +1074,9 @@ export default function VideoTranscriber() {
       {/* ── ANALYZING SPINNER ── */}
       {phase === 'loading' && (
         <ToolCard style={{ marginBottom: 18, textAlign: 'center', padding: '36px 24px' }}>
-          <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-            style={{ fontSize: 40, display: 'inline-block', marginBottom: 12 }}>🔍</motion.div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+            <Loader2 size={38} color="#4F8EF7" className="spin" />
+          </div>
           <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a' }}>
             Analyzing file…
           </div>
@@ -1090,7 +1095,7 @@ export default function VideoTranscriber() {
               borderRadius: 14, padding: '14px 18px', marginBottom: 16, fontSize: 13,
               color: '#b91c1c', lineHeight: 1.75
             }}>
-            <strong>⚠️ {running ? 'Warning:' : 'Error:'}</strong> {error}
+            <span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><AlertTriangle size={15} color="#b91c1c" /> <strong>{running ? 'Warning:' : 'Error:'}</strong></span> {error}
             <button onClick={() => setError('')}
               style={{
                 marginLeft: 14, fontSize: 12, fontWeight: 700, color: '#b91c1c',
@@ -1113,16 +1118,16 @@ export default function VideoTranscriber() {
                 background: 'linear-gradient(135deg,rgba(34,197,94,.06),rgba(79,142,247,.04))',
                 border: '1px solid rgba(34,197,94,.2)', borderRadius: 13, padding: '13px 16px', marginBottom: 16
               }}>
-              <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 13, color: '#166534', marginBottom: 6 }}>
-                ✅ File Analyzed
+              <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 13, color: '#166534', marginBottom: 6, display:'flex', alignItems:'center', gap:6 }}>
+                <CheckCircle2 size={15} color="#166534" /> File Analyzed
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12.5, color: '#3f6b4f' }}>
-                <span>📦 Size: <strong>{fmtBytes(fileInfo.size)}</strong></span>
-                {fileInfo.duration && <span>⏱️ Duration: <strong>{fmtDur(fileInfo.duration)}</strong></span>}
-                <span>{fileInfo.isVideo ? '🎬' : '🎵'} Type: <strong>{fileInfo.isVideo ? 'Video' : 'Audio'}</strong></span>
+                <span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><HardDrive size={12} /> Size: <strong>{fmtBytes(fileInfo.size)}</strong></span>
+                {fileInfo.duration && <span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Clock size={12} /> Duration: <strong>{fmtDur(fileInfo.duration)}</strong></span>}
+                <span style={{ display:'inline-flex', alignItems:'center', gap:4 }}>{fileInfo.isVideo ? <Film size={12} /> : <Music size={12} />} Type: <strong>{fileInfo.isVideo ? 'Video' : 'Audio'}</strong></span>
                 {fileInfo.isVideo && (
-                  <span style={{ color: '#1e3a8a', fontWeight: 600 }}>
-                    🎵 Audio will be extracted before transcription
+                  <span style={{ color: '#1e3a8a', fontWeight: 600, display:'inline-flex', alignItems:'center', gap:4 }}>
+                    <Music size={12} /> Audio will be extracted before transcription
                   </span>
                 )}
               </div>

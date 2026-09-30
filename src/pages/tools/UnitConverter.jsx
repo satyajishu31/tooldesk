@@ -5,7 +5,10 @@ import { TOOLS, UNIT_CATEGORIES } from '../../constants'
 import { UnitExplainPanel } from '../../components/AIPanel'
 import { addToHistory } from '../../utils/history'
 import { useToolHistory } from '../../hooks/useToolHistory'
-import { Clock, Trash2 } from 'lucide-react'
+import { 
+  Clock, Trash2, Ruler, Scale, Thermometer, FlaskConical, 
+  Gauge, Maximize2, HardDrive, Zap, Compass, ArrowLeftRight, Check, Hash 
+} from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'units')
 
@@ -38,8 +41,16 @@ function convert(value, cat, from, to) {
 }
 
 const CAT_ICONS = {
-  Length:'📏', Weight:'⚖️', Temperature:'🌡️', Volume:'🧪', Speed:'💨',
-  Area:'📐', Time:'⏱️', Data:'💾', Energy:'⚡', Pressure:'🔵',
+  Length: Ruler,
+  Weight: Scale,
+  Temperature: Thermometer,
+  Volume: FlaskConical,
+  Speed: Gauge,
+  Area: Maximize2,
+  Time: Clock,
+  Data: HardDrive,
+  Energy: Zap,
+  Pressure: Compass,
 }
 
 export default function UnitConverter() {
@@ -107,16 +118,20 @@ export default function UnitConverter() {
         <div className="fgrp">
           <label className="lbl">Category</label>
           <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-            {Object.keys(UNIT_CATEGORIES).map(c => (
-              <button key={c} onClick={() => handleCatChange(c)}
-                style={{ padding:'7px 14px', borderRadius:999, fontSize:12.5, fontWeight:700,
-                  cursor:'pointer', transition:'all .18s cubic-bezier(.22,1,.36,1)', display:'flex', alignItems:'center', gap:5,
-                  border:`1.5px solid ${cat===c?'#4F8EF7':'rgba(0,0,0,.1)'}`,
-                  background:cat===c?'rgba(79,142,247,.1)':'#fafafa',
-                  color:cat===c?'#4F8EF7':'#666' }}>
-                <span>{CAT_ICONS[c]||'🔢'}</span>{c}
-              </button>
-            ))}
+            {Object.keys(UNIT_CATEGORIES).map(c => {
+              const Icon = CAT_ICONS[c] || Hash
+              return (
+                <button key={c} onClick={() => handleCatChange(c)}
+                  style={{ padding:'7px 14px', borderRadius:999, fontSize:12.5, fontWeight:700,
+                    cursor:'pointer', transition:'all .18s cubic-bezier(.22,1,.36,1)', display:'inline-flex', alignItems:'center', gap:6,
+                    border:`1.5px solid ${cat===c?'#4F8EF7':'rgba(0,0,0,.1)'}`,
+                    background:cat===c?'rgba(79,142,247,.1)':'#fafafa',
+                    color:cat===c?'#4F8EF7':'#666' }}>
+                  <Icon size={14} style={{ color: cat===c ? '#4F8EF7' : '#666', flexShrink: 0 }} />
+                  {c}
+                </button>
+              )
+            })}
           </div>
         </div>
 
@@ -130,12 +145,14 @@ export default function UnitConverter() {
               </select>
             </div>
             <button onClick={swap}
+              title="Swap units"
               style={{ padding:'11px 14px', marginBottom:0, borderRadius:12, border:'1.5px solid rgba(79,142,247,.25)',
-                background:'rgba(79,142,247,.06)', cursor:'pointer', fontSize:18,
+                background:'rgba(79,142,247,.06)', cursor:'pointer',
+                display:'inline-flex', alignItems:'center', justifyContent:'center',
                 alignSelf:'flex-end', transition:'all .2s cubic-bezier(.22,1,.36,1)' }}
               onMouseEnter={e=>{e.currentTarget.style.background='rgba(79,142,247,.15)';e.currentTarget.style.transform='rotate(180deg)'}}
               onMouseLeave={e=>{e.currentTarget.style.background='rgba(79,142,247,.06)';e.currentTarget.style.transform='none'}}>
-              ⇌
+              <ArrowLeftRight size={17} style={{ color: '#4F8EF7' }} />
             </button>
             <div>
               <label className="lbl">To</label>
@@ -169,8 +186,9 @@ export default function UnitConverter() {
               <span style={{ fontFamily:'Syne,sans-serif', fontSize:20, fontWeight:800,
                 color:'#4F8EF7', wordBreak:'break-all', textAlign:'center' }}>{result}</span>
             </div>
-            <div style={{ textAlign:'center', fontSize:11.5, color: copied?'#22c55e':'#71717a', marginTop:4, fontWeight:600 }}>
-              {copied ? '✓ Copied!' : `${to} — click to copy`}
+            <div style={{ textAlign:'center', fontSize:11.5, color: copied?'#22c55e':'#71717a', marginTop:4, fontWeight:600, display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
+              {copied ? <Check size={12} /> : null}
+              {copied ? 'Copied!' : `${to} — click to copy`}
             </div>
           </div>
         </div>

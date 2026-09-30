@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Square, Grid, Cloud, EyeOff, Upload, Sparkles, Loader2, Undo2, Trash2, RotateCcw, Download, CheckCircle2, AlertTriangle, Info } from 'lucide-react'
 import { Reveal } from '../../components/ToolShell'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import Tesseract from 'tesseract.js'
 
 const REDACTION_MODES = [
-  { id: 'blackout', label: 'Blackout Box', icon: '⬛', desc: 'Solid opaque block' },
-  { id: 'pixelate', label: 'Pixelate',     icon: '🔲', desc: 'Mosaic downsampling' },
-  { id: 'blur',     label: 'Blur',         icon: '🌫️', desc: 'Gaussian softening' },
+  { id: 'blackout', label: 'Blackout Box', icon: Square, desc: 'Solid opaque block' },
+  { id: 'pixelate', label: 'Pixelate',     icon: Grid,   desc: 'Mosaic downsampling' },
+  { id: 'blur',     label: 'Blur',         icon: Cloud,  desc: 'Gaussian softening' },
 ]
 
 const COLORS = [
@@ -227,16 +228,16 @@ export default function ImageRedactor({ isEmbedded = false }) {
 
       if (matchedRegions.length > 0) {
         recordHistory([...regions, ...matchedRegions])
-        setDetectStatus(`✅ Redacted ${matchedRegions.length} sensitive items (card numbers, emails, or IDs)!`)
+        setDetectStatus({ type: 'success', text: `Redacted ${matchedRegions.length} sensitive items (card numbers, emails, or IDs)!` })
       } else {
-        setDetectStatus('ℹ️ No sensitive PII detected in recognized text.')
+        setDetectStatus({ type: 'info', text: 'No sensitive PII detected in recognized text.' })
       }
     } catch (err) {
       console.warn('PII detection error:', err)
-      setDetectStatus('⚠️ Auto-detection encountered an error. You can still manually redact.')
+      setDetectStatus({ type: 'warning', text: 'Auto-detection encountered an error. You can still manually redact.' })
     } finally {
       setIsDetecting(false)
-      setTimeout(() => setDetectStatus(''), 4500)
+      setTimeout(() => setDetectStatus(null), 4500)
     }
   }
 
@@ -518,10 +519,10 @@ export default function ImageRedactor({ isEmbedded = false }) {
             <div style={{
               width: 76, height: 76, borderRadius: 20, margin: '0 auto 18px',
               background: 'rgba(239,68,68,.08)', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', fontSize: 36, color: '#ef4444',
+              justifyContent: 'center', color: '#ef4444',
               border: '1.5px dashed rgba(239,68,68,.3)'
             }}>
-              🙈
+              <EyeOff size={36} color="#ef4444" />
             </div>
             <h3 style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 20, color: '#0d0d1a', marginBottom: 6 }}>
               Image Redactor
@@ -531,7 +532,8 @@ export default function ImageRedactor({ isEmbedded = false }) {
             </p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
               <label className="btn btn-primary btn-lg" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                <span>📁 Upload Image</span>
+                <Upload size={16} />
+                <span>Upload Image</span>
                 <input type="file" accept="image/*" onChange={handleFileInput} style={{ display: 'none' }} />
               </label>
             </div>
@@ -547,8 +549,8 @@ export default function ImageRedactor({ isEmbedded = false }) {
             {/* Header & Undo Toolbar */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
               <div>
-                <h3 style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 18, color: '#0d0d1a', margin: 0 }}>
-                  🙈 Image Redactor
+                <h3 style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 18, color: '#0d0d1a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <EyeOff size={18} color="#ef4444" /> Image Redactor
                 </h3>
                 <p style={{ fontSize: 12, color: '#888', margin: '4px 0 0' }}>
                   {regions.length} redaction area{regions.length !== 1 ? 's' : ''} applied · Click & drag on image to create
@@ -561,40 +563,61 @@ export default function ImageRedactor({ isEmbedded = false }) {
                   className="btn btn-primary btn-sm"
                   disabled={isDetecting}
                   onClick={detectAndRedactPII}
-                  style={{ background: 'linear-gradient(135deg, #7c3aed, #4F8EF7)', color: '#fff', border: 'none' }}
+                  style={{ background: 'linear-gradient(135deg, #7c3aed, #4F8EF7)', color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                   title="Auto-detect emails, credit cards, phones, and IDs using local AI vision">
-                  {isDetecting ? '🔍 Scanning PII…' : '🤖 Auto-Redact PII'}
+                  {isDetecting ? <Loader2 size={13} className="spin" /> : <Sparkles size={13} />}
+                  <span>{isDetecting ? 'Scanning PII…' : 'Auto-Redact PII'}</span>
                 </button>
                 <button
                   type="button"
                   className="btn btn-secondary btn-sm"
                   disabled={history.length === 0}
                   onClick={handleUndo}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                   title="Undo last change (Ctrl+Z)">
-                  ↩ Undo
+                  <Undo2 size={13} />
+                  <span>Undo</span>
                 </button>
                 <button
                   type="button"
                   className="btn btn-secondary btn-sm"
                   disabled={!selectedId}
                   onClick={handleDeleteSelected}
-                  style={{ color: selectedId ? '#ef4444' : undefined }}
+                  style={{ color: selectedId ? '#ef4444' : undefined, display: 'inline-flex', alignItems: 'center', gap: 6 }}
                   title="Delete currently selected region">
-                  🗑️ Delete Selected
+                  <Trash2 size={13} />
+                  <span>Delete Selected</span>
                 </button>
                 <button
                   type="button"
                   className="btn btn-secondary btn-sm"
                   disabled={regions.length === 0}
-                  onClick={handleResetAll}>
-                  ↺ Clear All
+                  onClick={handleResetAll}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <RotateCcw size={13} />
+                  <span>Clear All</span>
                 </button>
-                <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer', margin: 0 }}>
+                <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer', margin: 0, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Upload size={13} />
                   <span>Change Image</span>
                   <input type="file" accept="image/*" onChange={handleFileInput} style={{ display: 'none' }} />
                 </label>
               </div>
             </div>
+
+            {detectStatus && (
+              <div style={{
+                padding: '8px 14px', borderRadius: 8, fontSize: 12.5, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8,
+                background: detectStatus.type === 'success' ? 'rgba(34,197,94,.1)' : detectStatus.type === 'warning' ? 'rgba(239,68,68,.1)' : 'rgba(59,130,246,.1)',
+                border: `1px solid ${detectStatus.type === 'success' ? 'rgba(34,197,94,.3)' : detectStatus.type === 'warning' ? 'rgba(239,68,68,.3)' : 'rgba(59,130,246,.3)'}`,
+                color: detectStatus.type === 'success' ? '#15803d' : detectStatus.type === 'warning' ? '#b91c1c' : '#1d4ed8'
+              }}>
+                {detectStatus.type === 'success' && <CheckCircle2 size={14} />}
+                {detectStatus.type === 'warning' && <AlertTriangle size={14} />}
+                {detectStatus.type === 'info' && <Info size={14} />}
+                <span>{detectStatus.text}</span>
+              </div>
+            )}
 
             {/* Redaction Style Controls */}
             <div style={{
@@ -603,16 +626,20 @@ export default function ImageRedactor({ isEmbedded = false }) {
               border: '1px solid rgba(79,142,247,.12)', marginBottom: 16
             }}>
               <div style={{ display: 'flex', gap: 6 }}>
-                {REDACTION_MODES.map(m => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => setActiveMode(m.id)}
-                    className={`btn btn-sm ${activeMode === m.id ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{ fontSize: 12, padding: '6px 14px', borderRadius: 999 }}>
-                    <span>{m.icon} {m.label}</span>
-                  </button>
-                ))}
+                {REDACTION_MODES.map(m => {
+                  const Icon = m.icon
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setActiveMode(m.id)}
+                      className={`btn btn-sm ${activeMode === m.id ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ fontSize: 12, padding: '6px 14px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <Icon size={13} />
+                      <span>{m.label}</span>
+                    </button>
+                  )
+                })}
               </div>
 
               {activeMode === 'blackout' && (
@@ -808,7 +835,8 @@ export default function ImageRedactor({ isEmbedded = false }) {
               disabled={isProcessing || regions.length === 0}
               onClick={handleDownload}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <span>💾 Download Permanently Redacted Image ({regions.length} region{regions.length !== 1 ? 's' : ''})</span>
+              <Download size={16} />
+              <span>Download Permanently Redacted Image ({regions.length} region{regions.length !== 1 ? 's' : ''})</span>
             </button>
           </Reveal>
         )}

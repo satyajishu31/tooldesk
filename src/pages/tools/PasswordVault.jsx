@@ -6,7 +6,7 @@ import { generateQRDataURL } from '../../utils/qrCode'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import { resolveApiUrl, getApiHeaders } from '../../utils/apiConfig'
 import { addToHistory } from '../../utils/history'
-import { Lock, Unlock, Key, Save, Download, Upload, Copy, FileText, Sparkles, Shield, ShieldCheck, AlertCircle, AlertTriangle, Trash2, QrCode, Cloud, RefreshCw, X, Plus, Check } from 'lucide-react'
+import { Lock, Unlock, Key, KeyRound, Save, Download, Upload, Copy, FileText, Sparkles, Shield, ShieldCheck, AlertCircle, AlertTriangle, Trash2, QrCode, Cloud, RefreshCw, X, Plus, Check, Info, ChevronLeft, ChevronRight } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'vault')
 const VAULT_KEY = 'tbpro_vault_v1'
@@ -264,15 +264,17 @@ function TOTPBadge({ secret }) {
       padding: '4px 10px', borderRadius: 8, background: 'rgba(79,142,247,.08)',
       border: '1px solid rgba(79,142,247,.2)', marginTop: 6, cursor: 'pointer'
     }} onClick={copyCode} title="Click to copy 2FA Passcode">
-      <span style={{ fontSize: 12, fontWeight: 700, color: '#4F8EF7' }}>🔑 2FA:</span>
+      <span style={{ fontSize: 12, fontWeight: 700, color: '#4F8EF7', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <KeyRound size={13} /> 2FA:
+      </span>
       <span style={{ fontFamily: 'monospace', fontSize: 13.5, fontWeight: 800, color: '#0d0d1a', letterSpacing: '1px' }}>
         {totp.code.slice(0, 3)} {totp.code.slice(3)}
       </span>
       <span style={{ fontSize: 11.5, fontWeight: 700, color: totp.remaining <= 5 ? '#ef4444' : '#64748b' }}>
         ({totp.remaining}s)
       </span>
-      <span style={{ fontSize: 11.5, color: copied ? '#22c55e' : '#64748b' }}>
-        {copied ? '✓' : '📋'}
+      <span style={{ fontSize: 11.5, color: copied ? '#22c55e' : '#64748b', display: 'inline-flex', alignItems: 'center' }}>
+        {copied ? <Check size={12} /> : <Copy size={12} />}
       </span>
     </div>
   )
@@ -433,15 +435,16 @@ function VaultDoor({ isOpen, isShaking }) {
         {/* Vault interior (visible when open) */}
         {isOpen && (
           <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:.5 }}
-            style={{ position:'absolute', inset:0, zIndex:-1, background:'linear-gradient(135deg,#1a1a2e,#0d0d1a)', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', fontSize:32 }}>
-            🏦
+            style={{ position:'absolute', inset:0, zIndex:-1, background:'linear-gradient(135deg,#1a1a2e,#0d0d1a)', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <ShieldCheck size={32} style={{ color: '#4F8EF7' }} />
           </motion.div>
         )}
       </div>
       <motion.div
         animate={{ color: isShaking ? '#ef4444' : isOpen ? '#22c55e' : '#607D8B' }}
-        style={{ fontSize:12, fontWeight:700, transition:'color .3s' }}>
-        {isShaking ? '❌ Wrong Password' : isOpen ? '🔓 Vault Open' : '🔐 Vault Locked'}
+        style={{ fontSize:12, fontWeight:700, transition:'color .3s', display:'inline-flex', alignItems:'center', gap:5 }}>
+        {isShaking ? <AlertCircle size={14} /> : isOpen ? <Unlock size={14} /> : <Lock size={14} />}
+        {isShaking ? 'Wrong Password' : isOpen ? 'Vault Open' : 'Vault Locked'}
       </motion.div>
     </motion.div>
   )
@@ -497,14 +500,14 @@ function VaultCard({ entry, onDelete, onCopy }) {
             <div style={{ display:'flex', gap:8, flexShrink:0 }}>
               <button onClick={e => { e.stopPropagation(); handleCopy() }}
                 aria-label="Copy password"
-                style={{ width:36, height:36, borderRadius:10, border:'1px solid rgba(79,142,247,.22)', background:'rgba(79,142,247,.08)', boxShadow:'inset 0 1px 0 rgba(255,255,255,.8)', cursor:'pointer', fontSize:15, display:'flex', alignItems:'center', justifyContent:'center', position:'relative', overflow:'hidden', touchAction:'manipulation' }}>
-                🔑
-                {keyFlying && <motion.div initial={{ scale:0, y:0 }} animate={{ scale:1.5, y:-30, opacity:0 }} transition={{ duration:.7 }} style={{ position:'absolute', fontSize:16, pointerEvents:'none' }}>🔑</motion.div>}
+                style={{ width:36, height:36, borderRadius:10, border:'1px solid rgba(79,142,247,.22)', background:'rgba(79,142,247,.08)', boxShadow:'inset 0 1px 0 rgba(255,255,255,.8)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', position:'relative', overflow:'hidden', touchAction:'manipulation' }}>
+                <Key size={15} style={{ color: '#4F8EF7' }} />
+                {keyFlying && <motion.div initial={{ scale:0, y:0 }} animate={{ scale:1.5, y:-30, opacity:0 }} transition={{ duration:.7 }} style={{ position:'absolute', pointerEvents:'none' }}><Key size={15} style={{ color: '#4F8EF7' }} /></motion.div>}
               </button>
               <button onClick={e => { e.stopPropagation(); onDelete(entry.id) }}
                 aria-label="Delete entry"
-                style={{ width:36, height:36, borderRadius:10, border:'1px solid rgba(239,68,68,.2)', background:'rgba(239,68,68,.06)', cursor:'pointer', fontSize:14, display:'flex', alignItems:'center', justifyContent:'center', touchAction:'manipulation' }}>
-                🗑
+                style={{ width:36, height:36, borderRadius:10, border:'1px solid rgba(239,68,68,.2)', background:'rgba(239,68,68,.06)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', touchAction:'manipulation' }}>
+                <Trash2 size={14} style={{ color: '#ef4444' }} />
               </button>
             </div>
           </div>
@@ -513,8 +516,9 @@ function VaultCard({ entry, onDelete, onCopy }) {
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <div style={{ fontSize:11.5, color:'#4F8EF7', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px' }}>Password</div>
               <button onClick={handleCheckPwned} disabled={checkingPwned}
-                style={{ background:'none', border:'none', fontSize:11.5, fontWeight:700, color: pwnedCount > 0 ? '#ef4444' : pwnedCount === 0 ? '#22c55e' : '#7C6FF7', cursor:'pointer' }}>
-                {checkingPwned ? 'Checking…' : pwnedCount > 0 ? `⚠️ Leaked ${pwnedCount.toLocaleString()} times!` : pwnedCount === 0 ? '✓ Safe (0 breaches)' : '🛡️ Audit Breach'}
+                style={{ background:'none', border:'none', fontSize:11.5, fontWeight:700, color: pwnedCount > 0 ? '#ef4444' : pwnedCount === 0 ? '#22c55e' : '#7C6FF7', cursor:'pointer', display:'inline-flex', alignItems:'center', gap:4 }}>
+                {checkingPwned ? <RefreshCw size={11} className="spin" /> : pwnedCount > 0 ? <AlertTriangle size={12} /> : pwnedCount === 0 ? <Check size={12} /> : <Shield size={12} />}
+                {checkingPwned ? 'Checking…' : pwnedCount > 0 ? `Leaked ${pwnedCount.toLocaleString()} times!` : pwnedCount === 0 ? 'Safe (0 breaches)' : 'Audit Breach'}
               </button>
             </div>
             <div style={{ fontFamily:'monospace', fontSize:15, fontWeight:700, color:'#0d0d1a', wordBreak:'break-all' }}>{entry.password}</div>
@@ -675,7 +679,7 @@ export default function PasswordVault() {
 
           const collectedCount = Object.keys(updatedMap).length
           if (collectedCount < totalParts) {
-            setQrStatusMsg(`📥 Received Part ${partIdx} of ${totalParts}. Please scan the remaining ${totalParts - collectedCount} QR part(s).`)
+            setQrStatusMsg(`Received Part ${partIdx} of ${totalParts}. Please scan the remaining ${totalParts - collectedCount} QR part(s).`)
             setQrImportText('')
             return
           }
@@ -686,7 +690,7 @@ export default function PasswordVault() {
           }
           const fullHash = (await sha256(full)).slice(0, 8)
           if (fullHash !== hash) {
-            setQrStatusMsg('⚠️ Integrity check failed. Reassembled data hash does not match.')
+            setQrStatusMsg('Integrity check failed. Reassembled data hash does not match.')
             return
           }
           targetPayload = full
@@ -695,7 +699,7 @@ export default function PasswordVault() {
 
       const decrypted = await aesDecrypt(targetPayload, masterPwd)
       if (!decrypted) {
-        setQrStatusMsg('⚠️ Decryption failed. Please ensure the same Master Password is used.')
+        setQrStatusMsg('Decryption failed. Please ensure the same Master Password is used.')
         return
       }
       const parsed = JSON.parse(decrypted)
@@ -712,14 +716,14 @@ export default function PasswordVault() {
           }
         }
         await save(merged)
-        setQrStatusMsg(`✅ Successfully imported and merged ${addedCount} new password(s)!`)
+        setQrStatusMsg(`Successfully imported and merged ${addedCount} new password(s)!`)
         setImportChunksMap({})
         setTimeout(() => { setShowQrSync(false); setQrStatusMsg('') }, 1400)
       } else {
-        setQrStatusMsg('⚠️ Unrecognized vault payload format.')
+        setQrStatusMsg('Unrecognized vault payload format.')
       }
     } catch {
-      setQrStatusMsg('⚠️ Invalid encrypted vault payload.')
+      setQrStatusMsg('Invalid encrypted vault payload.')
     }
   }
 
@@ -1024,8 +1028,8 @@ export default function PasswordVault() {
               </div>
 
               {authError && (
-                <div style={{ background:'rgba(239,68,68,.1)', border:'1px solid rgba(239,68,68,.3)', borderRadius:10, padding:'8px 12px', fontSize:12, fontWeight:600, color:'#ef4444', textAlign:'center', marginBottom:14 }}>
-                  ⚠️ {authError}
+                <div style={{ background:'rgba(239,68,68,.1)', border:'1px solid rgba(239,68,68,.3)', borderRadius:10, padding:'8px 12px', fontSize:12, fontWeight:600, color:'#ef4444', textAlign:'center', marginBottom:14, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                  <AlertTriangle size={14} /> {authError}
                 </div>
               )}
 
@@ -1153,7 +1157,7 @@ export default function PasswordVault() {
               {copyMsg && (
                 <motion.div initial={{opacity:0,y:-8}} animate={{opacity:1,y:0}} exit={{opacity:0}}
                   style={{ background:'rgba(34,197,94,.1)', border:'1px solid rgba(34,197,94,.3)', borderRadius:10, padding:'8px 14px', fontSize:13, fontWeight:600, color:'#22c55e', textAlign:'center', marginBottom:14 }}>
-                  ✓ {copyMsg}
+                  <span style={{ display:'inline-flex', alignItems:'center', gap:5 }}><Check size={13} /> {copyMsg}</span>
                 </motion.div>
               )}
 
@@ -1164,7 +1168,7 @@ export default function PasswordVault() {
                     <Unlock size={17} color="#4F8EF7" /> {entries.length} password{entries.length !== 1 ? 's' : ''}
                   </div>
                   {syncStatus === 'syncing' && <span style={{ fontSize: 12, color: '#4F8EF7', fontWeight: 600, display:'inline-flex', alignItems:'center', gap:4 }}><RefreshCw size={12} className="spin" /> Syncing…</span>}
-                  {syncStatus === 'synced' && <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>✓ Cloud synced</span>}
+                  {syncStatus === 'synced' && <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, display:'inline-flex', alignItems:'center', gap:4 }}><Check size={12} /> Cloud synced</span>}
                   {syncStatus === 'failed' && <span style={{ fontSize: 12, color: '#ef4444', fontWeight: 600, display:'inline-flex', alignItems:'center', gap:4 }}><AlertCircle size={12} /> Cloud sync error (local copy saved)</span>}
                 </div>
                 <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
@@ -1400,8 +1404,8 @@ export default function PasswordVault() {
                                 className="btn btn-outline btn-sm"
                                 disabled={qrChunkIndex <= 0}
                                 onClick={() => setQrChunkIndex(i => Math.max(0, i - 1))}
-                                style={{ padding:'4px 10px', fontSize:12 }}>
-                                ← Prev
+                                style={{ padding:'4px 10px', fontSize:12, display:'inline-flex', alignItems:'center', gap:4 }}>
+                                <ChevronLeft size={13} /> Prev
                               </button>
                               <span style={{ fontSize:12, fontWeight:700, color:'#4F8EF7' }}>
                                 Part {qrChunkIndex + 1} of {qrChunks.length}
@@ -1410,8 +1414,8 @@ export default function PasswordVault() {
                                 className="btn btn-outline btn-sm"
                                 disabled={qrChunkIndex >= qrChunks.length - 1}
                                 onClick={() => setQrChunkIndex(i => Math.min(qrChunks.length - 1, i + 1))}
-                                style={{ padding:'4px 10px', fontSize:12 }}>
-                                Next →
+                                style={{ padding:'4px 10px', fontSize:12, display:'inline-flex', alignItems:'center', gap:4 }}>
+                                Next <ChevronRight size={13} />
                               </button>
                             </div>
                           )}
@@ -1488,8 +1492,9 @@ export default function PasswordVault() {
                       </div>
 
                       {qrStatusMsg && (
-                        <div style={{ marginTop:12, padding:'8px 12px', borderRadius:8, fontSize:12, fontWeight:700, background:'rgba(79,142,247,.08)', color:'#4F8EF7' }}>
-                          {qrStatusMsg}
+                        <div style={{ marginTop:12, padding:'8px 12px', borderRadius:8, fontSize:12, fontWeight:700, background:'rgba(79,142,247,.08)', color:'#4F8EF7', display:'flex', alignItems:'center', gap:6 }}>
+                          <Info size={14} style={{ flexShrink: 0 }} />
+                          <span>{qrStatusMsg}</span>
                         </div>
                       )}
                     </motion.div>

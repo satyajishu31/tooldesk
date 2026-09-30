@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Sparkles, Camera, Image, Globe, ShoppingBag, Smartphone, Monitor, Download, Trash2, Sliders, CheckCircle2, Minimize2, Zap, Info, Target, Bookmark, X, Check } from 'lucide-react'
 import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { TOOLS } from '../../constants'
 import { saveFileWithFallback } from '../../utils/fileSaver'
@@ -18,9 +19,9 @@ function fmt(n) {
 }
 
 const OUTPUT_FMTS = [
-  { mime:'image/webp', label:'WebP', ext:'webp', lossy:true,  icon:'✨', note:'Best for web · modern & tiny',  tip:'25–35% smaller than JPEG' },
-  { mime:'image/jpeg', label:'JPEG', ext:'jpg',  lossy:true,  icon:'📷', note:'Universal · best for photos',    tip:'Supported everywhere' },
-  { mime:'image/png',  label:'PNG',  ext:'png',  lossy:false, icon:'🖼️', note:'Lossless · transparency support', tip:'No quality loss' },
+  { mime:'image/webp', label:'WebP', ext:'webp', lossy:true,  icon: Sparkles, note:'Best for web · modern & tiny',  tip:'25–35% smaller than JPEG' },
+  { mime:'image/jpeg', label:'JPEG', ext:'jpg',  lossy:true,  icon: Camera,   note:'Universal · best for photos',    tip:'Supported everywhere' },
+  { mime:'image/png',  label:'PNG',  ext:'png',  lossy:false, icon: Image,    note:'Lossless · transparency support', tip:'No quality loss' },
 ]
 
 function StatBadge({ label, value, color, sub }) {
@@ -232,8 +233,12 @@ export default function ImageCompressor() {
               background: dragging ? 'rgba(79,142,247,.04)' : '#fafbff' }}>
             <input type="file" accept="image/*" style={{display:'none'}}
               onChange={e=>loadFile(e.target.files[0])}/>
-            <motion.div animate={{y:[0,-8,0]}} transition={{duration:2.8,repeat:Infinity,ease:'easeInOut'}}
-              style={{fontSize:52,marginBottom:14}}>🗜️</motion.div>
+            <motion.div animate={{y:[0,-6,0]}} transition={{duration:2.8,repeat:Infinity,ease:'easeInOut'}}
+              style={{display:'flex',justifyContent:'center',marginBottom:14}}>
+              <div style={{width:64,height:64,borderRadius:18,background:'rgba(79,142,247,.1)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <Minimize2 size={34} color="#4F8EF7" />
+              </div>
+            </motion.div>
             <div style={{fontFamily:'Syne,sans-serif',fontSize:20,fontWeight:800,
               color:'#0d0d1a',marginBottom:8}}>
               Drop an image to compress
@@ -242,7 +247,7 @@ export default function ImageCompressor() {
               PNG · JPEG · WebP · GIF · BMP
             </div>
             <div style={{display:'inline-flex',gap:6,flexWrap:'wrap',justifyContent:'center'}}>
-              {['✨ Auto Quality Tuning','🎚 Scale Down','📊 Side-by-Side Preview','💾 Snapshot History'].map(f=>(
+              {['Auto Quality Tuning','Scale Down','Side-by-Side Preview','Snapshot History'].map(f=>(
                 <span key={f} style={{fontSize:11,padding:'4px 12px',borderRadius:999,
                   background:'rgba(79,142,247,.07)',color:'#4F8EF7',
                   border:'1px solid rgba(79,142,247,.15)',fontWeight:600}}>{f}</span>
@@ -269,7 +274,10 @@ export default function ImageCompressor() {
               {presets?.length > 0 && (
                 <div style={{marginBottom:18}}>
                   <label style={{fontSize:11,fontWeight:700,color:'#888',textTransform:'uppercase',
-                    letterSpacing:'.6px',display:'block',marginBottom:8}}>⚡ Quick Presets</label>
+                    letterSpacing:'.6px',display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
+                    <Zap size={13} color="#f59e0b" />
+                    <span>Quick Presets</span>
+                  </label>
                   <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
                     {presets.map(p=>(
                       <motion.button key={p.id} type="button" whileTap={{scale:.96}}
@@ -295,19 +303,24 @@ export default function ImageCompressor() {
                 <label style={{fontSize:11,fontWeight:700,color:'#888',textTransform:'uppercase',
                   letterSpacing:'.6px',display:'block',marginBottom:9}}>Output Format</label>
                 <div className="tool-grid-3 tool-format-grid" style={{gap:8}}>
-                  {OUTPUT_FMTS.map(f=>(
-                    <motion.div key={f.mime} whileHover={{y:-2}} whileTap={{scale:.97}}
-                      onClick={()=>setOutFmt(f.mime)}
-                      className="tool-option-card"
-                      style={{padding:'12px 10px',borderRadius:13,textAlign:'center',cursor:'pointer',
-                        border:`1.5px solid ${outFmt===f.mime?'#4F8EF7':'rgba(0,0,0,.08)'}`,
-                        background:outFmt===f.mime?'rgba(79,142,247,.09)':'var(--tool-glass-l2-bg)',
-                        transition:'all .18s'}}>
-                      <div style={{fontSize:22,marginBottom:4}}>{f.icon}</div>
-                      <div style={{fontWeight:700,color:outFmt===f.mime?'#4F8EF7':'#1e293b',fontSize:14}}>{f.label}</div>
-                      <div style={{fontSize:11.5,color:'#64748b',marginTop:3}}>{f.tip}</div>
-                    </motion.div>
-                  ))}
+                  {OUTPUT_FMTS.map(f=>{
+                    const FmtIcon = f.icon
+                    return (
+                      <motion.div key={f.mime} whileHover={{y:-2}} whileTap={{scale:.97}}
+                        onClick={()=>setOutFmt(f.mime)}
+                        className="tool-option-card"
+                        style={{padding:'12px 10px',borderRadius:13,textAlign:'center',cursor:'pointer',
+                          border:`1.5px solid ${outFmt===f.mime?'#4F8EF7':'rgba(0,0,0,.08)'}`,
+                          background:outFmt===f.mime?'rgba(79,142,247,.09)':'var(--tool-glass-l2-bg)',
+                          transition:'all .18s'}}>
+                        <div style={{display:'flex',justifyContent:'center',marginBottom:6}}>
+                          <FmtIcon size={22} color={outFmt===f.mime?'#4F8EF7':'#64748b'} />
+                        </div>
+                        <div style={{fontWeight:700,color:outFmt===f.mime?'#4F8EF7':'#1e293b',fontSize:14}}>{f.label}</div>
+                        <div style={{fontSize:11.5,color:'#64748b',marginTop:3}}>{f.tip}</div>
+                      </motion.div>
+                    )
+                  })}
                 </div>
               </div>
 
@@ -361,7 +374,7 @@ export default function ImageCompressor() {
               }}>
                 <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 14 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 20 }}>⚡</span>
+                    <Zap size={18} color="#f59e0b" />
                     <div>
                       <h4 style={{ fontFamily: 'Syne, sans-serif', fontSize: 15, fontWeight: 800, margin: 0, color: '#111' }}>
                         Core Web / Delivery Optimization Presets
@@ -379,11 +392,12 @@ export default function ImageCompressor() {
                 {/* Preset Selector */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: 8, marginBottom: 14 }}>
                   {[
-                    { id: 'hero', label: '🌐 Website Hero', maxW: 1920, q: 82, fmt: 'image/webp', desc: 'Above-the-fold desktop LCP hero' },
-                    { id: 'product', label: '🛍️ Product Image', maxW: 1000, q: 85, fmt: 'image/webp', desc: 'E-commerce cards & catalog zoom' },
-                    { id: 'thumb', label: '📱 Mobile Thumbnail', maxW: 400, q: 75, fmt: 'image/webp', desc: 'Ultra-lightweight responsive feed' },
-                    { id: 'retina', label: '🖥️ Retina Display', maxW: Math.min(origW || 2400, 2400), q: 78, fmt: 'image/webp', desc: '2x HiDPI sharpness with lower artifacting' }
+                    { id: 'hero', label: 'Website Hero', icon: Globe, maxW: 1920, q: 82, fmt: 'image/webp', desc: 'Above-the-fold desktop LCP hero' },
+                    { id: 'product', label: 'Product Image', icon: ShoppingBag, maxW: 1000, q: 85, fmt: 'image/webp', desc: 'E-commerce cards & catalog zoom' },
+                    { id: 'thumb', label: 'Mobile Thumbnail', icon: Smartphone, maxW: 400, q: 75, fmt: 'image/webp', desc: 'Ultra-lightweight responsive feed' },
+                    { id: 'retina', label: 'Retina Display', icon: Monitor, maxW: Math.min(origW || 2400, 2400), q: 78, fmt: 'image/webp', desc: '2x HiDPI sharpness with lower artifacting' }
                   ].map(p => {
+                    const PIcon = p.icon
                     const calcScale = origW > p.maxW ? Math.max(10, Math.round((p.maxW / origW) * 100)) : 100
                     const targetW = Math.round((origW || 1) * calcScale / 100)
                     const targetH = Math.round((origH || 1) * calcScale / 100)
@@ -405,7 +419,10 @@ export default function ImageCompressor() {
                         }}
                       >
                         <div>
-                          <div style={{ fontWeight: 800, fontSize: 13, color: '#111', marginBottom: 2 }}>{p.label}</div>
+                          <div style={{ fontWeight: 800, fontSize: 13, color: '#111', marginBottom: 2, display:'flex', alignItems:'center', gap:6 }}>
+                            <PIcon size={14} color="#4F8EF7" />
+                            <span>{p.label}</span>
+                          </div>
                           <div style={{ fontSize: 10.5, color: '#888', marginBottom: 8, lineHeight: 1.3 }}>{p.desc}</div>
                           
                           <div style={{ fontSize: 11, display: 'flex', flexDirection: 'column', gap: 3, marginBottom: 10 }}>
@@ -481,8 +498,11 @@ export default function ImageCompressor() {
                   </div>
                 </div>
 
-                <div style={{ marginTop: 10, fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>
-                  💡 <strong style={{ color:'#334155' }}>Delivery Estimate Disclosure:</strong> Estimated characteristics reflect calculated target pixel density and WebP compression efficiency. Actual page speed (LCP) also depends on your CDN, HTTP/3 delivery, and responsive <code>srcset</code> attributes.
+                <div style={{ marginTop: 10, fontSize: 12, color: '#64748b', lineHeight: 1.5, display:'flex', alignItems:'flex-start', gap:6 }}>
+                  <Info size={14} color="#3b82f6" style={{flexShrink:0, marginTop:2}} />
+                  <div>
+                    <strong style={{ color:'#334155' }}>Delivery Estimate Disclosure:</strong> Estimated characteristics reflect calculated target pixel density and WebP compression efficiency. Actual page speed (LCP) also depends on your CDN, HTTP/3 delivery, and responsive <code>srcset</code> attributes.
+                  </div>
                 </div>
               </div>
 
@@ -490,7 +510,10 @@ export default function ImageCompressor() {
               <div style={{background:'rgba(168,85,247,.04)',border:'1px solid rgba(168,85,247,.15)',
                 borderRadius:13,padding:'14px 16px',marginBottom:18}}>
                 <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:13,
-                  color:'#a855f7',marginBottom:10}}>🎯 Auto-Tune to Target Size</div>
+                  color:'#a855f7',marginBottom:10, display:'flex', alignItems:'center', gap:6}}>
+                  <Target size={15} color="#a855f7" />
+                  <span>Auto-Tune to Target Size</span>
+                </div>
                 <div style={{display:'flex',gap:9,alignItems:'center'}}>
                   <input type="number" value={targetKB} onChange={e=>setTargetKB(e.target.value)}
                     placeholder="Target KB (e.g. 100)"
@@ -522,15 +545,17 @@ export default function ImageCompressor() {
                   onClick={saveSnapshot}
                   style={{flex:1,padding:'14px',borderRadius:13,
                     border:'1.5px solid rgba(0,0,0,.1)',background:'#fff',
-                    color:'#555',fontWeight:700,fontSize:13,cursor:'pointer'}}>
-                  📌 Snapshot
+                    color:'#555',fontWeight:700,fontSize:13,cursor:'pointer', display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6}}>
+                  <Bookmark size={14} />
+                  <span>Snapshot</span>
                 </motion.button>
                 <motion.button whileHover={{scale:1.04}} whileTap={{scale:.96}}
                   onClick={()=>{setImg(null);setOrigSize(0);setCompSize(0);setPreview('');setHistory([])}}
                   style={{flex:1,padding:'14px',borderRadius:13,
                     border:'1.5px solid rgba(239,68,68,.2)',background:'rgba(239,68,68,.04)',
-                    color:'#ef4444',fontWeight:700,fontSize:13,cursor:'pointer'}}>
-                  ✕ New
+                    color:'#ef4444',fontWeight:700,fontSize:13,cursor:'pointer', display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6}}>
+                  <X size={14} />
+                  <span>New</span>
                 </motion.button>
               </div>
             </ToolCard>
@@ -540,15 +565,17 @@ export default function ImageCompressor() {
           <Reveal delay={.06}>
             <ToolCard style={{marginBottom:16}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
-                <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:14,color:'#0d0d1a'}}>
-                  🖼️ Preview
+                <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:14,color:'#0d0d1a', display:'flex', alignItems:'center', gap:6}}>
+                  <Image size={15} color="#4F8EF7" />
+                  <span>Preview</span>
                 </div>
                 <motion.button whileHover={{scale:1.04}} onClick={()=>setComparing(c=>!c)}
                   style={{padding:'5px 13px',borderRadius:999,fontSize:11.5,fontWeight:700,
                     border:`1.5px solid ${comparing?'#4F8EF7':'rgba(0,0,0,.1)'}`,
                     background:comparing?'rgba(79,142,247,.08)':'transparent',
-                    color:comparing?'#4F8EF7':'#888',cursor:'pointer'}}>
-                  {comparing ? 'Side-by-Side ✓' : 'Side-by-Side'}
+                    color:comparing?'#4F8EF7':'#888',cursor:'pointer', display:'inline-flex', alignItems:'center', gap:5}}>
+                  {comparing && <Check size={12} />}
+                  <span>{comparing ? 'Side-by-Side' : 'Side-by-Side'}</span>
                 </motion.button>
               </div>
               {comparing ? (
@@ -605,7 +632,10 @@ export default function ImageCompressor() {
               <Reveal delay={.08}>
                 <ToolCard style={{marginBottom:16}}>
                   <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:14,
-                    color:'#0d0d1a',marginBottom:12}}>📌 Snapshots</div>
+                    color:'#0d0d1a',marginBottom:12, display:'flex', alignItems:'center', gap:6}}>
+                    <Bookmark size={15} color="#4F8EF7" />
+                    <span>Snapshots</span>
+                  </div>
                   <div style={{display:'flex',flexDirection:'column',gap:8}}>
                     {history.map((h,i)=>{
                       const hFmt = OUTPUT_FMTS.find(f=>f.mime===h.fmt)

@@ -6,6 +6,7 @@ import { TOOLS } from '../../constants'
 import { safeFetchJSON } from '../../utils/safeFetch'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import { addToHistory } from '../../utils/history'
+import { Phone, Mail, User, Calendar, Globe, BadgeCheck, Check, Copy, FlaskConical, Download } from 'lucide-react'
 /* ─── Import the full data pack ─── */
 import { D, FLAGS } from './generatorData.js'
 
@@ -250,22 +251,24 @@ function NameCard({ person, onCopy, index }) {
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 14, flexShrink: 0, transition: 'all .22s',
             }}>
-            {copiedField === 'name' ? '✓' : '📋'}
+            {copiedField === 'name' ? <Check size={14} color="#fff" /> : <Copy size={14} />}
           </motion.button>
         </div>
 
         {/* Fields */}
         <div style={{ padding: '14px 18px 4px' }}>
           {[
-            { label: 'Phone',    value: person.phone,    icon: '📞', field: 'phone' },
-            { label: 'Email',    value: person.email,    icon: '✉️',  field: 'email' },
-            { label: 'Username', value: person.username, icon: '👤', field: 'user'  },
-          ].map(row => (
+            { label: 'Phone',    value: person.phone,    icon: Phone, field: 'phone' },
+            { label: 'Email',    value: person.email,    icon: Mail,  field: 'email' },
+            { label: 'Username', value: person.username, icon: User,  field: 'user'  },
+          ].map(row => {
+            const IconC = row.icon
+            return (
             <div key={row.field} style={{
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '8px 0', borderBottom: '1px solid rgba(0,0,0,.05)',
             }}>
-              <span style={{ fontSize: 14, flexShrink: 0 }}>{row.icon}</span>
+              <span style={{ color: person.accent, flexShrink: 0, display: 'flex', alignItems: 'center' }}><IconC size={14} /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 9.5, fontWeight: 700, color: '#ccc', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 1 }}>{row.label}</div>
                 <div style={{ fontSize: 12.5, color: '#444', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.value}</div>
@@ -280,10 +283,10 @@ function NameCard({ person, onCopy, index }) {
                   cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'all .18s', flexShrink: 0,
                 }}>
-                {copiedField === row.field ? '✓' : '⎘'}
+                {copiedField === row.field ? <Check size={12} color="#fff" /> : <Copy size={12} />}
               </motion.button>
             </div>
-          ))}
+          )})}
 
           {/* Expanded fields */}
           <AnimatePresence>
@@ -294,15 +297,17 @@ function NameCard({ person, onCopy, index }) {
                 exit={{ opacity: 0, height: 0 }}
                 style={{ overflow: 'hidden' }}>
                 {[
-                  { label: 'Date of Birth', value: person.dob,      icon: '🎂', field: 'dob'  },
-                  { label: 'Country Code',  value: person.cc,       icon: '🌍', field: 'cc'   },
-                  { label: 'Full Name',     value: person.full,     icon: '🪪', field: 'full' },
-                ].map(row => (
+                  { label: 'Date of Birth', value: person.dob,      icon: Calendar, field: 'dob'  },
+                  { label: 'Country Code',  value: person.cc,       icon: Globe, field: 'cc'   },
+                  { label: 'Full Name',     value: person.full,     icon: BadgeCheck, field: 'full' },
+                ].map(row => {
+                  const IconC = row.icon
+                  return (
                   <div key={row.field} style={{
                     display: 'flex', alignItems: 'center', gap: 10,
                     padding: '8px 0', borderBottom: '1px solid rgba(0,0,0,.05)',
                   }}>
-                    <span style={{ fontSize: 14, flexShrink: 0 }}>{row.icon}</span>
+                    <span style={{ color: person.accent, flexShrink: 0, display: 'flex', alignItems: 'center' }}><IconC size={14} /></span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 9.5, fontWeight: 700, color: '#ccc', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 1 }}>{row.label}</div>
                       <div style={{ fontSize: 12.5, color: '#444', fontWeight: 500 }}>{row.value}</div>
@@ -310,10 +315,10 @@ function NameCard({ person, onCopy, index }) {
                     <motion.button whileHover={{ scale: 1.12 }} whileTap={{ scale: .9 }}
                       onClick={() => copyField(row.value, row.field)}
                       style={{ width: 28, height: 28, borderRadius: 7, border: 'none', background: copiedField === row.field ? person.accent : `${person.accent}12`, color: copiedField === row.field ? '#fff' : person.accent, cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .18s', flexShrink: 0 }}>
-                      {copiedField === row.field ? '✓' : '⎘'}
+                      {copiedField === row.field ? <Check size={12} color="#fff" /> : <Copy size={12} />}
                     </motion.button>
                   </div>
-                ))}
+                )})}
               </motion.div>
             )}
           </AnimatePresence>
@@ -487,8 +492,8 @@ export default function RandomNameGenerator() {
                     const blob = new Blob([header.join(',') + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' })
                     saveFileWithFallback(blob, `synthetic_names_fixture_${Date.now()}.csv`)
                   }}
-                  style={{ padding: '6px 14px', borderRadius: 999, border: '1.5px solid rgba(0,0,0,.1)', background: '#fff', color: '#334155', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>
-                  📥 Export CSV
+                  style={{ padding: '6px 14px', borderRadius: 999, border: '1.5px solid rgba(0,0,0,.1)', background: '#fff', color: '#334155', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Download size={13} /> Export CSV
                 </motion.button>
 
                 <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: .96 }}
@@ -497,8 +502,8 @@ export default function RandomNameGenerator() {
                     const blob = new Blob([JSON.stringify(clean, null, 2)], { type: 'application/json;charset=utf-8;' })
                     saveFileWithFallback(blob, `synthetic_names_fixture_${Date.now()}.json`)
                   }}
-                  style={{ padding: '6px 14px', borderRadius: 999, border: '1.5px solid rgba(0,0,0,.1)', background: '#fff', color: '#334155', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>
-                  📦 Export JSON
+                  style={{ padding: '6px 14px', borderRadius: 999, border: '1.5px solid rgba(0,0,0,.1)', background: '#fff', color: '#334155', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Download size={13} /> Export JSON
                 </motion.button>
               </div>
             </div>
@@ -516,7 +521,7 @@ export default function RandomNameGenerator() {
               alignItems: 'center',
               gap: 8
             }}>
-              <span>🧪</span>
+              <FlaskConical size={14} color="#3b82f6" style={{ flexShrink: 0 }} />
               <span><strong>QA Test Fixtures:</strong> Generated identities are synthesized mock data for development and testing. They do not represent real people.</span>
             </div>
 

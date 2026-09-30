@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { ScanSearch, Upload, Copy, Check, X } from 'lucide-react'
 import { Reveal } from '../../components/ToolShell'
 import { useCopy } from '../../hooks'
 import { parseBinaryImageMetadata } from '../../utils/imageMetadata'
@@ -184,10 +185,10 @@ Generated via ToolDesk Image DPI Analyzer`
             <div style={{
               width: 76, height: 76, borderRadius: 20, margin: '0 auto 18px',
               background: 'rgba(38,198,218,.08)', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', fontSize: 36, color: '#26C6DA',
+              justifyContent: 'center', color: '#26C6DA',
               border: '1.5px dashed rgba(38,198,218,.3)'
             }}>
-              🔍
+              <ScanSearch size={36} color="#26C6DA" />
             </div>
             <h3 style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 20, color: '#0d0d1a', marginBottom: 6 }}>
               Image DPI & Print Resolution Analyzer
@@ -196,7 +197,8 @@ Generated via ToolDesk Image DPI Analyzer`
               Inspect genuine binary metadata (PNG pHYs, JPEG JFIF / EXIF) to detect authentic embedded DPI without guessing or fabricating values.
             </p>
             <label className="btn btn-primary btn-lg" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <span>📁 Select Image to Analyze</span>
+              <Upload size={16} />
+              <span>Select Image to Analyze</span>
               <input type="file" accept="image/*" onChange={handleFileInput} style={{ display: 'none' }} />
             </label>
             {errorMsg && (
@@ -207,8 +209,8 @@ Generated via ToolDesk Image DPI Analyzer`
           <Reveal>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
               <div>
-                <h3 style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 18, color: '#0d0d1a', margin: 0 }}>
-                  🔍 Resolution & DPI Analysis
+                <h3 style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 18, color: '#0d0d1a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <ScanSearch size={18} color="#26C6DA" /> Resolution & DPI Analysis
                 </h3>
                 <p style={{ fontSize: 12, color: '#888', margin: '4px 0 0' }}>
                   {meta.filename} · {formatBytes(meta.fileSize)}
@@ -216,13 +218,16 @@ Generated via ToolDesk Image DPI Analyzer`
               </div>
 
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button type="button" className="btn btn-secondary btn-sm" onClick={copyReport}>
-                  {copied ? '✓ Report Copied' : '📋 Copy Report'}
+                <button type="button" className="btn btn-secondary btn-sm" onClick={copyReport} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  {copied ? <Check size={13} /> : <Copy size={13} />}
+                  <span>{copied ? 'Report Copied' : 'Copy Report'}</span>
                 </button>
-                <button type="button" className="btn btn-secondary btn-sm" onClick={handleClear}>
-                  ✕ Clear
+                <button type="button" className="btn btn-secondary btn-sm" onClick={handleClear} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <X size={13} />
+                  <span>Clear</span>
                 </button>
-                <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer', margin: 0 }}>
+                <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer', margin: 0, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Upload size={13} />
                   <span>Analyze Another</span>
                   <input type="file" accept="image/*" onChange={handleFileInput} style={{ display: 'none' }} />
                 </label>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { Sparkles, Copy, Check, Share2, Download, Heart } from 'lucide-react'
 import ToolShell, { ToolCard } from '../../components/ToolShell'
 import { useCopy } from '../../hooks'
 import { TOOLS, QUOTES } from '../../constants'
@@ -127,11 +128,11 @@ export default function QuoteGenerator() {
               onClick={()=>toggleFave(idx)}
               aria-label={isFave ? 'Remove quote from favorites' : 'Save quote to favorites'}
               title={isFave ? 'Remove from favorites' : 'Save to favorites'}
-              style={{ background:'none', border:'none', cursor:'pointer', fontSize:22,
-                transition:'transform .2s', lineHeight:1 }}
-              onMouseEnter={e=>e.currentTarget.style.transform='scale(1.3)'}
+              style={{ background:'none', border:'none', cursor:'pointer',
+                transition:'transform .2s', lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center', padding:4 }}
+              onMouseEnter={e=>e.currentTarget.style.transform='scale(1.2)'}
               onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
-              {isFave ? '❤️' : '🤍'}
+              <Heart size={20} fill={isFave ? '#ef4444' : 'none'} color={isFave ? '#ef4444' : '#aaa'} />
             </button>
           </div>
 
@@ -153,12 +154,18 @@ export default function QuoteGenerator() {
         </div>
 
         <div className="tool-actions-row" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(min(100%, 120px), 1fr))', gap:8, marginBottom:14, width:'100%', boxSizing:'border-box' }}>
-          <button className="btn btn-primary" onClick={rand}>✨ Random</button>
-          <button className={`btn ${copied?'btn-success':'btn-outline'}`} onClick={()=>copy(shareText)}>
-            {copied?'✓':'📋 Copy'}
+          <button className="btn btn-primary" onClick={rand} style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+            <Sparkles size={14} /> Random
           </button>
-          <button className="btn btn-outline" onClick={share}>📤 Share</button>
-          <button className="btn btn-outline" onClick={()=>{
+          <button className={`btn ${copied?'btn-success':'btn-outline'}`} onClick={()=>copy(shareText)} style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+            {copied ? <Check size={14} /> : <Copy size={14} />}
+            <span>{copied ? 'Copied' : 'Copy'}</span>
+          </button>
+          <button className="btn btn-outline" onClick={share} style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+            <Share2 size={14} />
+            <span>Share</span>
+          </button>
+          <button className="btn btn-outline" style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6 }} onClick={()=>{
             const canvas=document.createElement('canvas')
             canvas.width=800; canvas.height=420
             const ctx=canvas.getContext('2d')
@@ -194,7 +201,10 @@ export default function QuoteGenerator() {
             saveFileWithFallback(canvas.toDataURL('image/png'), 'quote.png', 'image/png')
             canvas.width = 1
             canvas.height = 1
-          }}>🖼️ Save as Image</button>
+          }}>
+            <Download size={14} />
+            <span>Save as Image</span>
+          </button>
         </div>
 
         {/* Controls row */}
@@ -242,8 +252,16 @@ export default function QuoteGenerator() {
           <div style={{ display:'flex', gap:6 }}>
             {['all','faves'].map(t=>(
               <button key={t} onClick={()=>setTab(t)}
-                className={`btn btn-sm ${tab===t?'btn-blue':'btn-outline'}`}>
-                {t==='faves'?`❤️ ${faves.length}`:`All`}
+                className={`btn btn-sm ${tab===t?'btn-blue':'btn-outline'}`}
+                style={{ display:'inline-flex', alignItems:'center', gap:5 }}>
+                {t==='faves' ? (
+                  <>
+                    <Heart size={12} fill="#ef4444" color="#ef4444" />
+                    <span>{faves.length}</span>
+                  </>
+                ) : (
+                  'All'
+                )}
               </button>
             ))}
           </div>
@@ -253,7 +271,7 @@ export default function QuoteGenerator() {
         <div style={{ display:'flex', flexDirection:'column', gap:7, maxHeight:300, overflowY:'auto', paddingRight:2 }}>
           {filtered.length === 0 ? (
             <div style={{ textAlign:'center', padding:'32px 0', color:'#bbb', fontSize:13 }}>
-              {tab==='faves'?'No saved quotes yet — click 🤍 to save one!':'No quotes match your search.'}
+              {tab==='faves' ? 'No saved quotes yet — click the heart icon on any quote to save it!' : 'No quotes match your search.'}
             </div>
           ) : filtered.map(q => (
             <div key={q.i} onClick={() => setIdx(q.i)}
@@ -270,8 +288,8 @@ export default function QuoteGenerator() {
                 <div style={{ fontSize:10.5, color:'#aaa', fontWeight:600 }}>— {q.author}</div>
               </div>
               <button onClick={e=>{e.stopPropagation();toggleFave(q.i)}}
-                style={{ background:'none', border:'none', cursor:'pointer', fontSize:14, flexShrink:0 }}>
-                {faves.includes(q.i)?'❤️':'🤍'}
+                style={{ background:'none', border:'none', cursor:'pointer', flexShrink:0, padding:2, display:'flex', alignItems:'center' }}>
+                <Heart size={14} fill={faves.includes(q.i)?'#ef4444':'none'} color={faves.includes(q.i)?'#ef4444':'#bbb'} />
               </button>
             </div>
           ))}

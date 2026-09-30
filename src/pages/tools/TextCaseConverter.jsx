@@ -7,6 +7,7 @@ import { RewritePanel } from '../../components/AIPanel'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import { safeFetchJSON } from '../../utils/safeFetch'
 import { addToHistory } from '../../utils/history'
+import { Code2, ChevronUp, ChevronDown, Sparkles, AlertTriangle, Zap, FileCode, Copy, Check, Loader2, Lightbulb } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'textcase')
 
@@ -315,7 +316,7 @@ export default function TextCaseConverter() {
         }}>
           <div>
             <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 16, color: '#0d0d1a', display: 'flex', alignItems: 'center', gap: 7 }}>
-              <span>🤖</span> AI Code Identifier & TypeScript Studio
+              <Code2 size={16} color="#4F8EF7" /> AI Code Identifier & TypeScript Studio
             </div>
             <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 2 }}>
               Translate plain-English concepts into production-grade variable names, function signatures, and TypeScript interfaces.
@@ -325,9 +326,9 @@ export default function TextCaseConverter() {
             type="button"
             onClick={() => setAiCodeOpen(o => !o)}
             className="btn btn-sm btn-outline"
-            style={{ fontSize: 12, padding: '6px 14px', borderRadius: 8, fontWeight: 600 }}
+            style={{ fontSize: 12, padding: '6px 14px', borderRadius: 8, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 5 }}
           >
-            {aiCodeOpen ? 'Hide Studio ▲' : '✨ Open AI Studio ▼'}
+            {aiCodeOpen ? <><ChevronUp size={13} /> Hide Studio</> : <><Sparkles size={13} /> Open AI Studio</>}
           </button>
         </div>
 
@@ -351,12 +352,12 @@ export default function TextCaseConverter() {
               >
                 {aiCodeLoading ? (
                   <>
-                    <span className="spinner-border spinner-border-sm" />
+                    <Loader2 size={14} className="spin" />
                     <span>Analyzing...</span>
                   </>
                 ) : (
                   <>
-                    <span>✨</span>
+                    <Sparkles size={14} />
                     <span>Generate Code Names</span>
                   </>
                 )}
@@ -384,8 +385,9 @@ export default function TextCaseConverter() {
             </div>
 
             {aiCodeError && (
-              <div style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, color: '#ef4444', fontSize: 12, marginBottom: 14 }}>
-                ⚠️ {aiCodeError}
+              <div style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, color: '#ef4444', fontSize: 12, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <AlertTriangle size={14} color="#ef4444" style={{ flexShrink: 0 }} />
+                <span>{aiCodeError}</span>
               </div>
             )}
 
@@ -420,8 +422,8 @@ export default function TextCaseConverter() {
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 10, fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>{idItem.label}</span>
-                        <span style={{ fontSize: 10.5, fontWeight: 700, color: copiedKey === idItem.label ? '#22c55e' : '#4F8EF7' }}>
-                          {copiedKey === idItem.label ? '✓ Copied' : 'Copy'}
+                        <span style={{ fontSize: 10.5, fontWeight: 700, color: copiedKey === idItem.label ? '#22c55e' : '#4F8EF7', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          {copiedKey === idItem.label ? <><Check size={11} /> Copied</> : 'Copy'}
                         </span>
                       </div>
                       <code style={{ fontSize: 13, color: '#0d0d1a', fontFamily: 'monospace', fontWeight: 600 }}>
@@ -435,13 +437,15 @@ export default function TextCaseConverter() {
                 {aiIdentifiers.functionSignature && (
                   <div style={{ padding: '12px 14px', background: '#0d0d1a', borderRadius: 10, color: '#e2e8f0', position: 'relative' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>⚡ Idiomatic Function Signature</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <Zap size={12} color="#f59e0b" /> Idiomatic Function Signature
+                      </span>
                       <button
                         type="button"
                         onClick={() => copyCodeValue('sig', aiIdentifiers.functionSignature)}
-                        style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', fontSize: 11, padding: '2px 8px', borderRadius: 4, cursor: 'pointer' }}
+                        style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', fontSize: 11, padding: '2px 8px', borderRadius: 4, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                       >
-                        {copiedKey === 'sig' ? '✓ Copied' : '📋 Copy'}
+                        {copiedKey === 'sig' ? <><Check size={11} /> Copied</> : <><Copy size={11} /> Copy</>}
                       </button>
                     </div>
                     <code style={{ fontFamily: 'monospace', fontSize: 12.5, color: '#38bdf8' }}>
@@ -454,13 +458,15 @@ export default function TextCaseConverter() {
                 {aiIdentifiers.tsInterface && (
                   <div style={{ padding: '12px 14px', background: '#0d0d1a', borderRadius: 10, color: '#e2e8f0', position: 'relative' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>🔷 TypeScript Interface Definition</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <FileCode size={12} color="#38bdf8" /> TypeScript Interface Definition
+                      </span>
                       <button
                         type="button"
                         onClick={() => copyCodeValue('ts', aiIdentifiers.tsInterface)}
-                        style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', fontSize: 11, padding: '2px 8px', borderRadius: 4, cursor: 'pointer' }}
+                        style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', fontSize: 11, padding: '2px 8px', borderRadius: 4, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                       >
-                        {copiedKey === 'ts' ? '✓ Copied' : '📋 Copy'}
+                        {copiedKey === 'ts' ? <><Check size={11} /> Copied</> : <><Copy size={11} /> Copy</>}
                       </button>
                     </div>
                     <pre style={{ margin: 0, fontFamily: 'monospace', fontSize: 12, color: '#a7f3d0', whiteSpace: 'pre-wrap' }}>
@@ -471,8 +477,9 @@ export default function TextCaseConverter() {
 
                 {/* Explanation */}
                 {aiIdentifiers.explanation && (
-                  <div style={{ fontSize: 11.5, color: '#64748b', fontStyle: 'italic' }}>
-                    💡 {aiIdentifiers.explanation}
+                  <div style={{ fontSize: 11.5, color: '#64748b', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <Lightbulb size={12} color="#f59e0b" style={{ flexShrink: 0 }} />
+                    <span>{aiIdentifiers.explanation}</span>
                   </div>
                 )}
               </motion.div>

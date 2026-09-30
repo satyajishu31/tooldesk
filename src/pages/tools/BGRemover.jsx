@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { X, Check, Paintbrush, Download, Upload } from 'lucide-react'
 import ToolShell, { ToolCard } from '../../components/ToolShell'
 import { TOOLS } from '../../constants'
 import { safeFetchJSON, safeTimeoutSignal } from '../../utils/safeFetch'
@@ -393,8 +394,12 @@ function TouchUpCanvas({ resultUrl, originalImg, brushMode, brushSize, onSave, o
       </div>
 
       <div style={{ display:'flex', gap:8, justifyContent:'flex-end', marginTop:6, flexWrap:'wrap' }}>
-        <button onClick={onCancel} className="btn btn-outline btn-sm">✕ Discard</button>
-        <button onClick={save} className="btn btn-blue btn-sm">💾 Apply Changes</button>
+        <button onClick={onCancel} className="btn btn-outline btn-sm" style={{ display:'inline-flex', alignItems:'center', gap:5 }}>
+          <X size={13} /> Discard
+        </button>
+        <button onClick={save} className="btn btn-blue btn-sm" style={{ display:'inline-flex', alignItems:'center', gap:5 }}>
+          <Check size={13} /> Apply Changes
+        </button>
       </div>
     </div>
   )
@@ -1286,7 +1291,9 @@ export default function BGRemover() {
                   <span>Drag to compare</span>
                   <div style={{ display: 'flex', gap: 12 }}>
                     <button onClick={()=>setCompMode(false)} style={{background:'none',border:'none',color:'#4F8EF7',fontSize:12,fontWeight:600,cursor:'pointer'}}>Grid view ▣</button>
-                    <button onClick={() => setIsTouchUp(true)} style={{ background: 'none', border: 'none', color: '#9C6FDE', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>🖌️ Touch Up</button>
+                    <button onClick={() => setIsTouchUp(true)} style={{ background: 'none', border: 'none', color: '#9C6FDE', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      <Paintbrush size={13} /> Touch Up
+                    </button>
                   </div>
                 </div>
                 <div ref={compareRef}
@@ -1317,7 +1324,7 @@ export default function BGRemover() {
                   <span>Before / After Grid</span>
                   <div style={{ display: 'flex', gap: 12 }}>
                     {result && <button onClick={()=>setCompMode(true)} style={{background:'none',border:'none',color:'#4F8EF7',fontSize:12,fontWeight:600,cursor:'pointer'}}>Compare view ↔</button>}
-                    {result && <button onClick={() => setIsTouchUp(true)} style={{ background: 'none', border: 'none', color: '#9C6FDE', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>🖌️ Touch Up</button>}
+                    {result && <button onClick={() => setIsTouchUp(true)} style={{ background: 'none', border: 'none', color: '#9C6FDE', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Paintbrush size={13} /> Touch Up</button>}
                   </div>
                 </div>
                 <div className="tool-grid-2-compact">
@@ -1538,12 +1545,16 @@ export default function BGRemover() {
               </button>
               {result && (
                 <motion.button initial={{opacity:0,y:4}} animate={{opacity:1,y:0}}
-                  className="btn btn-blue" style={{minWidth:0}} onClick={download}>
-                  ⬇ Download PNG
+                  className="btn btn-blue" style={{minWidth:0, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6}} onClick={download}>
+                  <Download size={14} />
+                  <span>Download PNG</span>
                 </motion.button>
               )}
               <label style={{display:'block',cursor:'pointer',minWidth:0}}>
-                <div className="btn btn-outline" style={{textAlign:'center',width:'100%'}}>📁 New Image</div>
+                <div className="btn btn-outline" style={{textAlign:'center',width:'100%', display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6}}>
+                  <Upload size={14} />
+                  <span>New Image</span>
+                </div>
                 <input type="file" accept="image/*" style={{display:'none'}} onChange={e=>loadFile(e.target.files[0])}/>
               </label>
             </div>

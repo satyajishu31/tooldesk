@@ -9,6 +9,7 @@ import SafeImage from '../../components/SafeImage'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import { SEOSuggestPanel, DeepWebPanel } from '../../components/AIPanel'
 import { addToHistory, getToolHistory } from '../../utils/history'
+import { CheckCircle2, XCircle, AlertTriangle, Cpu, BarChart3, FileCode2, Palette, Image as ImageIcon, Download, Archive, FileJson, Sparkles, Loader2, FileCode, Check, Copy } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'websiteanalyzer')
 
@@ -60,7 +61,11 @@ function CheckRow({ name, pass, weight }) {
   return (
     <div style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 0',
       borderBottom:'1px solid rgba(0,0,0,.05)' }}>
-      <span style={{ fontSize:14, flexShrink:0 }}>{pass ? '✅' : '❌'}</span>
+      {pass ? (
+        <CheckCircle2 size={16} color="#16a34a" style={{ flexShrink:0 }} />
+      ) : (
+        <XCircle size={16} color="#ef4444" style={{ flexShrink:0 }} />
+      )}
       <span style={{ flex:1, fontSize:13.5, color: pass?'#1e293b':'#64748b' }}>{name}</span>
       <span style={{ fontSize:11.5, fontWeight:700, color:'#64748b', background:'#f1f5f9',
         padding:'2px 8px', borderRadius:999 }}>{weight}pt</span>
@@ -865,14 +870,26 @@ ${d.dnsInfo?`<div class="section"><h2>🌐 Server</h2><div class="grid">
                   ))}
                 </ToolCard>
                 <ToolCard>
-                  <div style={{ fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:14, color:'#0d0d1a', marginBottom:12 }}>📋 Response Headers</div>
+                  <div style={{ fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:14, color:'#0d0d1a', marginBottom:12, display:'flex', alignItems:'center', gap:6 }}>
+                    <FileCode size={15} color="#4F8EF7" /> Response Headers
+                  </div>
                   {Object.entries(d.secHeaders||{}).filter(([,v])=>v&&v!==false).map(([k,v])=>(
                     <div key={k} style={{ display:'flex', gap:10, padding:'8px 0',
                       borderBottom:'1px solid rgba(0,0,0,.05)', fontSize:12 }}>
                       <span style={{ minWidth:170, fontWeight:600, color:'#444',
                         fontFamily:'monospace', fontSize:11 }}>{k}</span>
                       <span style={{ color:'#777', wordBreak:'break-all' }}>
-                        {typeof v==='boolean'?(v?'✅ Present':'❌ Missing'):String(v).slice(0,80)}
+                        {typeof v==='boolean' ? (
+                          v ? (
+                            <span style={{ color:'#16a34a', display:'inline-flex', alignItems:'center', gap:4 }}>
+                              <CheckCircle2 size={13} /> Present
+                            </span>
+                          ) : (
+                            <span style={{ color:'#ef4444', display:'inline-flex', alignItems:'center', gap:4 }}>
+                              <XCircle size={13} /> Missing
+                            </span>
+                          )
+                        ) : String(v).slice(0,80)}
                       </span>
                     </div>
                   ))}
@@ -884,7 +901,9 @@ ${d.dnsInfo?`<div class="section"><h2>🌐 Server</h2><div class="grid">
             {tab==='Tech' && (
               <motion.div key="tech" initial={{ opacity:0, y:6 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0 }}>
                 <ToolCard style={{ marginBottom:14 }}>
-                  <div style={{ fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:14, color:'#0d0d1a', marginBottom:14 }}>⚙️ Technology Stack</div>
+                  <div style={{ fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:14, color:'#0d0d1a', marginBottom:14, display:'flex', alignItems:'center', gap:6 }}>
+                    <Cpu size={16} color="#4F8EF7" /> Technology Stack
+                  </div>
                   {d.techStack?.length > 0 ? (
                     <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
                       {d.techStack.map((t,i)=>(
@@ -902,16 +921,21 @@ ${d.dnsInfo?`<div class="section"><h2>🌐 Server</h2><div class="grid">
                   )}
                 </ToolCard>
                 <ToolCard>
-                  <div style={{ fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:14, color:'#0d0d1a', marginBottom:12 }}>📊 Page Resources</div>
+                  <div style={{ fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:14, color:'#0d0d1a', marginBottom:12, display:'flex', alignItems:'center', gap:6 }}>
+                    <BarChart3 size={16} color="#4F8EF7" /> Page Resources
+                  </div>
                   <div className="tool-grid-3" style={{ gap:10 }}>
-                    {[{l:'Scripts',v:d.scripts,c:'#f97316',icon:'📜'},{l:'Stylesheets',v:d.stylesheets,c:'#4F8EF7',icon:'🎨'},{l:'Images',v:d.images?.total,c:'#22c55e',icon:'🖼️'}].map(s=>(
-                      <div key={s.l} style={{ textAlign:'center', padding:'14px 8px',
-                        background:'#fafbff', borderRadius:12, border:'1px solid rgba(0,0,0,.06)' }}>
-                        <div style={{ fontSize:24, marginBottom:6 }}>{s.icon}</div>
-                        <div style={{ fontFamily:'Syne,sans-serif', fontSize:24, fontWeight:800, color:s.c }}>{s.v??'—'}</div>
-                        <div style={{ fontSize:11, color:'#bbb', fontWeight:700, textTransform:'uppercase', marginTop:4 }}>{s.l}</div>
-                      </div>
-                    ))}
+                    {[{l:'Scripts',v:d.scripts,c:'#f97316',icon:FileCode2},{l:'Stylesheets',v:d.stylesheets,c:'#4F8EF7',icon:Palette},{l:'Images',v:d.images?.total,c:'#22c55e',icon:ImageIcon}].map(s=>{
+                      const IconComp = s.icon
+                      return (
+                        <div key={s.l} style={{ textAlign:'center', padding:'14px 8px',
+                          background:'#fafbff', borderRadius:12, border:'1px solid rgba(0,0,0,.06)' }}>
+                          <div style={{ display:'flex', justifyContent:'center', marginBottom:6 }}><IconComp size={24} color={s.c} /></div>
+                          <div style={{ fontFamily:'Syne,sans-serif', fontSize:24, fontWeight:800, color:s.c }}>{s.v??'—'}</div>
+                          <div style={{ fontSize:11, color:'#bbb', fontWeight:700, textTransform:'uppercase', marginTop:4 }}>{s.l}</div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </ToolCard>
               </motion.div>
@@ -921,7 +945,9 @@ ${d.dnsInfo?`<div class="section"><h2>🌐 Server</h2><div class="grid">
             {tab==='Images' && (
               <motion.div key="imgs" initial={{ opacity:0, y:6 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0 }}>
                 <ToolCard>
-                  <div style={{ fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:14, color:'#0d0d1a', marginBottom:14 }}>🖼️ Images ({d.images?.total||0})</div>
+                  <div style={{ fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:14, color:'#0d0d1a', marginBottom:14, display:'flex', alignItems:'center', gap:6 }}>
+                    <ImageIcon size={16} color="#4F8EF7" /> Images ({d.images?.total||0})
+                  </div>
                   <div style={{ display:'flex', gap:10, marginBottom:16 }}>
                     <div style={{ flex:1, textAlign:'center', padding:'12px', background:'#fafbff',
                       borderRadius:12, border:'1px solid rgba(0,0,0,.06)' }}>
@@ -957,15 +983,19 @@ ${d.dnsInfo?`<div class="section"><h2>🌐 Server</h2><div class="grid">
             {tab==='Export' && (
               <motion.div key="exp" initial={{ opacity:0, y:6 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0 }}>
                 <ToolCard>
-                  <div style={{ fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:14, color:'#0d0d1a', marginBottom:16 }}>📦 Export Report</div>
+                  <div style={{ fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:14, color:'#0d0d1a', marginBottom:16, display:'flex', alignItems:'center', gap:6 }}>
+                    <Download size={16} color="#4F8EF7" /> Export Report
+                  </div>
                   <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                     {[
-                      { icon:'📦', title:'Full ZIP Archive', desc:'HTML report · JSON data · CSV checks · images (up to 10) · robots.txt · summary', action:exportZip, label:zipping?'⏳ Zipping…':'Download ZIP', primary:true },
-                      { icon:'📄', title:'Copy JSON', desc:'Full raw analysis data as JSON string', action:()=>copy(JSON.stringify(d,null,2)), label:copied?'✓ Copied':'Copy JSON', primary:false },
-                    ].map((item,i)=>(
+                      { icon:Archive, title:'Full ZIP Archive', desc:'HTML report · JSON data · CSV checks · images (up to 10) · robots.txt · summary', action:exportZip, label:zipping?'Zipping…':'Download ZIP', isZipping:zipping, primary:true },
+                      { icon:FileJson, title:'Copy JSON', desc:'Full raw analysis data as JSON string', action:()=>copy(JSON.stringify(d,null,2)), label:copied?'Copied':'Copy JSON', isCopied:copied, primary:false },
+                    ].map((item,i)=>{
+                      const IconC = item.icon
+                      return (
                       <div key={i} style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 16px',
                         background:'#fafbff', borderRadius:14, border:'1px solid rgba(0,0,0,.07)' }}>
-                        <div style={{ fontSize:28, flexShrink:0 }}>{item.icon}</div>
+                        <div style={{ flexShrink:0 }}><IconC size={26} color={item.primary?'#7c3aed':'#4F8EF7'} /></div>
                         <div style={{ flex:1 }}>
                           <div style={{ fontWeight:700, fontSize:14, color:'#0d0d1a', marginBottom:3 }}>{item.title}</div>
                           <div style={{ fontSize:12, color:'#888' }}>{item.desc}</div>
@@ -975,17 +1005,18 @@ ${d.dnsInfo?`<div class="section"><h2>🌐 Server</h2><div class="grid">
                           style={{ padding:'9px 16px', borderRadius:10, border:'none', flexShrink:0,
                             background:item.primary?'linear-gradient(135deg,#4F8EF7,#7c3aed)':'#f0f4ff',
                             color:item.primary?'#fff':'#4F8EF7',
-                            fontWeight:700, fontSize:12.5, cursor:'pointer', whiteSpace:'nowrap' }}>
-                          {item.label}
+                            fontWeight:700, fontSize:12.5, cursor:'pointer', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:6 }}>
+                          {item.isZipping ? <Loader2 size={13} className="spin" /> : item.isCopied ? <Check size={13} /> : item.primary ? <Download size={13} /> : <Copy size={13} />}
+                          <span>{item.label}</span>
                         </motion.button>
                       </div>
-                    ))}
+                    )})}
                   </div>
                   <div style={{ marginTop:14, padding:'12px 14px', background:'rgba(79,142,247,.05)',
                     border:'1px solid rgba(79,142,247,.15)', borderRadius:11, fontSize:12, color:'#666', lineHeight:1.7 }}>
-                    📦 ZIP contains: <strong>HTML report</strong>, <strong>JSON data</strong>,
-                    <strong> SEO+Security CSV</strong>, <strong>tech stack</strong>,
-                    <strong> image files</strong>, <strong>robots.txt</strong>, and a <strong>text summary</strong>.
+                    <strong>ZIP contains:</strong> HTML report, JSON data,
+                    SEO & Security CSV, tech stack,
+                    image files, robots.txt, and a text summary.
                   </div>
                 </ToolCard>
 
@@ -993,8 +1024,8 @@ ${d.dnsInfo?`<div class="section"><h2>🌐 Server</h2><div class="grid">
                 <ToolCard style={{ marginTop: 14 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
                     <div>
-                      <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 14, color: '#0d0d1a' }}>
-                        🤖 AI Website Clone & Build Prompt
+                      <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 14, color: '#0d0d1a', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Sparkles size={16} color="#7c3aed" /> AI Website Clone & Build Prompt
                       </div>
                       <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
                         Generate a complete specification prompt for Cursor, Claude, Bolt.new, or Lovable to rebuild this website.
@@ -1007,17 +1038,19 @@ ${d.dnsInfo?`<div class="section"><h2>🌐 Server</h2><div class="grid">
                         background: 'linear-gradient(135deg,#7c3aed,#4F8EF7)',
                         color: '#fff', fontWeight: 700, fontSize: 12.5,
                         cursor: promptLoading ? 'not-allowed' : 'pointer',
-                        boxShadow: '0 4px 14px rgba(124,58,237,.25)'
+                        boxShadow: '0 4px 14px rgba(124,58,237,.25)',
+                        display: 'flex', alignItems: 'center', gap: 6
                       }}>
-                      {promptLoading ? '🧠 Engineering Prompt…' : '⚡ Generate Prompt'}
+                      {promptLoading ? <><Loader2 size={14} className="spin" /> Engineering Prompt…</> : <><Sparkles size={14} /> Generate Prompt</>}
                     </motion.button>
                   </div>
 
                   {promptError && (
                     <div style={{ padding: '8px 12px', background: 'rgba(239,68,68,.06)',
                       border: '1px solid rgba(239,68,68,.18)', borderRadius: 9,
-                      color: '#b91c1c', fontSize: 12, marginBottom: 12 }}>
-                      ⚠️ {promptError}
+                      color: '#b91c1c', fontSize: 12, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <AlertTriangle size={14} color="#b91c1c" style={{ flexShrink: 0 }} />
+                      <span>{promptError}</span>
                     </div>
                   )}
 
@@ -1025,8 +1058,8 @@ ${d.dnsInfo?`<div class="section"><h2>🌐 Server</h2><div class="grid">
                     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
                       style={{ marginTop: 12 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '.5px' }}>
-                          📋 Ready-to-Paste Build Prompt
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '.5px', display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <FileCode size={13} /> Ready-to-Paste Build Prompt
                         </span>
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: .95 }}
                           onClick={() => copy(aiPrompt)}
@@ -1034,9 +1067,10 @@ ${d.dnsInfo?`<div class="section"><h2>🌐 Server</h2><div class="grid">
                             padding: '4px 12px', borderRadius: 999, fontSize: 11, fontWeight: 700,
                             cursor: 'pointer', border: '1px solid rgba(124,58,237,.25)',
                             background: copied ? 'rgba(34,197,94,.1)' : 'rgba(124,58,237,.08)',
-                            color: copied ? '#22c55e' : '#7c3aed'
+                            color: copied ? '#22c55e' : '#7c3aed',
+                            display: 'flex', alignItems: 'center', gap: 4
                           }}>
-                          {copied ? '✓ Copied' : '📋 Copy Prompt'}
+                          {copied ? <><Check size={11} /> Copied</> : <><Copy size={11} /> Copy Prompt</>}
                         </motion.button>
                       </div>
                       <div style={{

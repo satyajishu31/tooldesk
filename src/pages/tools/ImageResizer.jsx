@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { AlertTriangle, X, UploadCloud, Loader2, Image, Upload } from 'lucide-react'
 import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { TOOLS } from '../../constants'
 import { saveFileWithFallback } from '../../utils/fileSaver'
@@ -445,8 +446,13 @@ export default function ImageResizer() {
         {errMsg && (
           <motion.div initial={{opacity:0,y:-6}} animate={{opacity:1,y:0}} exit={{opacity:0,height:0}}
             style={{background:'rgba(239,68,68,.06)',border:'1.5px solid rgba(239,68,68,.18)',borderRadius:13,padding:'12px 16px',marginBottom:16,fontSize:13,color:'#b91c1c',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-            ⚠️ {errMsg}
-            <button onClick={()=>setErrMsg('')} style={{background:'none',border:'none',color:'#b91c1c',cursor:'pointer',fontSize:14,fontWeight:700}}>✕</button>
+            <span style={{display:'flex',alignItems:'center',gap:8}}>
+              <AlertTriangle size={15} style={{flexShrink:0}} />
+              <span>{errMsg}</span>
+            </span>
+            <button onClick={()=>setErrMsg('')} style={{background:'none',border:'none',color:'#b91c1c',cursor:'pointer',padding:4,display:'flex',alignItems:'center'}}>
+              <X size={14} />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -460,13 +466,22 @@ export default function ImageResizer() {
             style={{display:'block',border:'2px dashed rgba(0,0,0,.1)',borderRadius:18,padding:'52px 24px',textAlign:'center',cursor:'pointer',transition:'background .2s'}}>
             <input ref={fileRef} type="file" accept="image/*" style={{display:'none'}} onChange={e=>loadFile(e.target.files[0])}/>
             <motion.div animate={{y:drag?-8:0}}>
-              <div style={{fontSize:54,marginBottom:14,filter:'drop-shadow(0 8px 20px rgba(79,142,247,.25))'}}>{drag?'📂':status==='loading'?'⏳':'🖼️'}</div>
+              <div style={{display:'flex',justifyContent:'center',marginBottom:14}}>
+                {drag ? (
+                  <UploadCloud size={54} color="#4F8EF7" />
+                ) : status === 'loading' ? (
+                  <Loader2 size={54} className="spin" color="#4F8EF7" />
+                ) : (
+                  <Image size={54} color="#4F8EF7" />
+                )}
+              </div>
               <div style={{fontFamily:'Syne,sans-serif',fontSize:18,fontWeight:800,color:'#0d0d1a',marginBottom:8}}>
                 {drag?'Drop image to resize':status==='loading'?'Loading image…':'Drag & drop your image'}
               </div>
               <div style={{fontSize:13,color:'#aaa',marginBottom:22}}>PNG · JPEG · WebP · GIF · BMP · AVIF · SVG</div>
               <div style={{display:'inline-flex',alignItems:'center',gap:8,background:'linear-gradient(135deg,#0d0d1a,#1a1040)',color:'#fff',padding:'13px 30px',borderRadius:999,fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:14,boxShadow:'0 6px 22px rgba(13,13,26,.25)'}}>
-                📁 Choose Image
+                <Upload size={15} />
+                <span>Choose Image</span>
               </div>
             </motion.div>
           </motion.label>
@@ -478,17 +493,19 @@ export default function ImageResizer() {
             {/* File info bar */}
             <div style={{display:'flex',alignItems:'center',gap:13,padding:'12px 14px',background:'#f8f9ff',borderRadius:14,border:'1px solid rgba(79,142,247,.1)',marginBottom:20}}>
               <div style={{width:44,height:44,borderRadius:12,overflow:'hidden',flexShrink:0,border:'1px solid rgba(0,0,0,.08)',background:'#f0f0f0',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                {prevSrc ? <img decoding="async" loading="eager" src={prevSrc} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/> : <span style={{fontSize:22}}>🖼️</span>}
+                {prevSrc ? <img decoding="async" loading="eager" src={prevSrc} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/> : <Image size={20} color="#888" />}
               </div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:13,fontWeight:700,color:'#0d0d1a',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{origName}</div>
                 <div style={{fontSize:11.5,color:'#aaa',marginTop:3,display:'flex',gap:10,flexWrap:'wrap'}}>
-                  <span>📐 {origW}×{origH}px</span>
-                  <span>📦 {fmtSize(origSize)}</span>
-                  <span>🎨 {origFmt.split('/')[1]?.toUpperCase()||'IMG'}</span>
+                  <span>{origW}×{origH}px</span>
+                  <span>{fmtSize(origSize)}</span>
+                  <span>{origFmt.split('/')[1]?.toUpperCase()||'IMG'}</span>
                 </div>
               </div>
-              <button onClick={reset} style={{padding:'7px 14px',borderRadius:999,border:'1.5px solid rgba(0,0,0,.1)',background:'#fff',fontSize:12,fontWeight:600,color:'#666',cursor:'pointer',flexShrink:0}}>✕</button>
+              <button onClick={reset} style={{padding:'7px 12px',borderRadius:999,border:'1.5px solid rgba(0,0,0,.1)',background:'#fff',fontSize:12,fontWeight:600,color:'#666',cursor:'pointer',flexShrink:0,display:'inline-flex',alignItems:'center',justifyContent:'center'}}>
+                <X size={13} />
+              </button>
             </div>
 
             {/* Before / After thumbnails */}

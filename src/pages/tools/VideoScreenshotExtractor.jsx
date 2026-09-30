@@ -4,7 +4,7 @@ import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { TOOLS } from '../../constants'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import { addToHistory } from '../../utils/history'
-import { Download } from 'lucide-react'
+import { Download, Video, X, Film, Upload, Clock, Sliders, AlertTriangle } from 'lucide-react'
 import ToolChainingBar from '../../components/ToolChainingBar'
 
 const tool = TOOLS.find(t => t.id === 'videoscreenshot')
@@ -235,7 +235,7 @@ export default function VideoScreenshotExtractor(){
     if(!f.type.startsWith('video/')){
       const ext = f.name.split('.').pop().toLowerCase()
       if(!['mp4','mov','avi','mkv','webm','m4v'].includes(ext)){
-        setError('❌ Unsupported format. Please upload MP4, MOV, AVI, MKV, WEBM or M4V.')
+        setError('Unsupported format. Please upload MP4, MOV, AVI, MKV, WEBM or M4V.')
         return
       }
     }
@@ -251,7 +251,7 @@ export default function VideoScreenshotExtractor(){
     v.onloadedmetadata = () => {
       const w = v.videoWidth, h = v.videoHeight
       if (!w || !h) {
-        setError('❌ This file contains no video track or 0px dimensions (audio-only file).')
+        setError('This file contains no video track or 0px dimensions (audio-only file).')
         return
       }
       setInfo({
@@ -262,7 +262,7 @@ export default function VideoScreenshotExtractor(){
       setEndT(String(Math.floor(v.duration)))
       if(videoRef.current){ videoRef.current.src=url; videoRef.current.load() }
     }
-    v.onerror = () => setError('❌ Could not read video. The file may be corrupted or unsupported.')
+    v.onerror = () => setError('Could not read video. The file may be corrupted or unsupported.')
   },[])
 
   const getInterval = () => {
@@ -308,7 +308,7 @@ export default function VideoScreenshotExtractor(){
     const end   = rangeAll ? videoInfo.duration : Math.min(videoInfo.duration, parseFloat(endT)||videoInfo.duration)
 
     if(start >= end){
-      setError('❌ Start time must be less than end time.')
+      setError('Start time must be less than end time.')
       setProc(false); return
     }
 
@@ -421,7 +421,7 @@ export default function VideoScreenshotExtractor(){
       // ── FIXED INTERVAL EXTRACTION MODE ──
       const count = Math.floor((end - start) / interval) + 1
       if (count > 300) {
-        setError(`⚠️ This will extract ~${count} frames (max 300 frames allowed). Use a longer interval or shorter time range to prevent browser memory exhaustion.`)
+        setError(`This will extract ~${count} frames (max 300 frames allowed). Use a longer interval or shorter time range to prevent browser memory exhaustion.`)
         setProc(false); return
       }
 
@@ -497,7 +497,7 @@ export default function VideoScreenshotExtractor(){
         }
         if (!window.gifshot) throw new Error('Failed to load GIF compiler library.')
       } catch (err) {
-        setError('❌ Failed to load GIF compiler library: ' + err.message)
+        setError('Failed to load GIF compiler library: ' + err.message)
         setCompilingGif(false)
         return
       }
@@ -550,11 +550,11 @@ export default function VideoScreenshotExtractor(){
           setCompiledGif(obj.image)
           setGifProgress(100)
         } else {
-          setError('❌ GIF Compilation failed: ' + obj.errorMsg)
+          setError('GIF Compilation failed: ' + obj.errorMsg)
         }
       })
     } catch (e) {
-      setError('❌ Error during animation compilation: ' + e.message)
+      setError('Error during animation compilation: ' + e.message)
       setCompilingGif(false)
     }
   }
@@ -619,13 +619,15 @@ export default function VideoScreenshotExtractor(){
             onDragLeave={()=>setIsDrag(false)}
             onDrop={e=>{e.preventDefault();setIsDrag(false);e.dataTransfer.files[0]&&loadVideo(e.dataTransfer.files[0])}}
             style={{padding:'44px 24px'}}>
-            <span className="upzone-icon">🎬</span>
+            <div style={{ display:'flex', justifyContent:'center', marginBottom:12 }}>
+              <Film size={42} color="#4F8EF7" />
+            </div>
             <div className="upzone-t" style={{fontWeight:600,fontSize:15}}>Drop a video file here</div>
             <div className="upzone-s">MP4 · MOV · AVI · MKV · WEBM · M4V</div>
             <div style={{marginTop:16}}>
               <motion.button whileHover={{scale:1.04}} whileTap={{scale:.96}}
-                className="btn btn-primary" style={{ pointerEvents:'none' }}>
-                📁 Choose Video
+                className="btn btn-primary" style={{ pointerEvents:'none', display:'inline-flex', alignItems:'center', gap:6 }}>
+                <Upload size={14} /> Choose Video
               </motion.button>
             </div>
           </div>
@@ -638,8 +640,9 @@ export default function VideoScreenshotExtractor(){
       <AnimatePresence>
         {error && (
           <motion.div initial={{opacity:0,y:-8}} animate={{opacity:1,y:0}} exit={{opacity:0}}
-            className="info-bar amber" style={{marginBottom:18}}>
-            {error}
+            className="info-bar amber" style={{marginBottom:18, display:'flex', alignItems:'center', gap:8}}>
+            <AlertTriangle size={15} color="#d97706" style={{ flexShrink: 0 }} />
+            <div>{error}</div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -650,13 +653,16 @@ export default function VideoScreenshotExtractor(){
           <ToolCard style={{marginBottom:22}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16,flexWrap:'wrap',gap:10}}>
               <div>
-                <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:16,color:'#0d0d1a',marginBottom:3}}>
-                  📹 {videoInfo.name}
+                <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:16,color:'#0d0d1a',marginBottom:3, display:'flex', alignItems:'center', gap:7}}>
+                  <Video size={16} color="#4F8EF7" />
+                  <span>{videoInfo.name}</span>
                 </div>
                 <div style={{fontSize:13,color:'#64748b'}}>Video loaded — configure extraction below</div>
               </div>
               <motion.button whileHover={{scale:1.04}} whileTap={{scale:.94}}
-                onClick={reset} className="btn btn-outline btn-sm">✕ Remove</motion.button>
+                onClick={reset} className="btn btn-outline btn-sm" style={{display:'inline-flex', alignItems:'center', gap:5}}>
+                <X size={13} /> Remove
+              </motion.button>
             </div>
 
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(120px,1fr))',gap:10}}>
@@ -699,7 +705,9 @@ export default function VideoScreenshotExtractor(){
                     cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 2
                   }}
                 >
-                  <span style={{ fontWeight: 800 }}>⏱️ Fixed Time Interval</span>
+                  <span style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Clock size={14} /> Fixed Time Interval
+                  </span>
                   <span style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>Extract frames periodically (every N seconds)</span>
                 </button>
 
@@ -714,7 +722,9 @@ export default function VideoScreenshotExtractor(){
                     cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 2
                   }}
                 >
-                  <span style={{ fontWeight: 800 }}>🎬 Auto Keyframe / Scene Change</span>
+                  <span style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Film size={14} /> Auto Keyframe / Scene Change
+                  </span>
                   <span style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>Only capture camera cuts & slide transitions</span>
                 </button>
               </div>
@@ -746,8 +756,8 @@ export default function VideoScreenshotExtractor(){
               /* Scene Change Sensitivity Controls */
               <div className="fgrp" style={{ padding: 14, borderRadius: 12, background: 'rgba(156,111,222,0.04)', border: '1px solid rgba(156,111,222,0.15)', marginBottom: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <label className="lbl" style={{ margin: 0, color: '#7c3aed' }}>
-                    🔍 Scene Transition Sensitivity
+                  <label className="lbl" style={{ margin: 0, color: '#7c3aed', display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <Sliders size={13} /> Scene Transition Sensitivity
                   </label>
                   <span style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase' }}>
                     {sceneSensitivity} Sensitivity

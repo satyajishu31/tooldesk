@@ -5,7 +5,7 @@ import { useCopy } from '../../hooks'
 import { TOOLS } from '../../constants'
 import { SmartReplacePanel } from '../../components/AIPanel'
 import { useToolHistory } from '../../hooks/useToolHistory'
-import { Clock, Trash2, Copy, Check } from 'lucide-react'
+import { Clock, Trash2, Copy, Check, X, Search, RefreshCw, RotateCcw, CheckCircle2 } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'wordreplace')
 
@@ -109,8 +109,8 @@ export default function WordReplacer() {
               {text && <span style={{ fontSize: 11, color: '#bbb' }}>{text.trim().split(/\s+/).filter(Boolean).length} words</span>}
               {text && (
                 <motion.button whileHover={{ scale: 1.06 }} whileTap={{ scale: .93 }} onClick={() => { setText(''); reset() }}
-                  style={{ padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: 'pointer', border: '1.5px solid rgba(239,68,68,.25)', background: 'rgba(239,68,68,.05)', color: '#ef4444' }}>
-                  ✕ Clear
+                  style={{ padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: 'pointer', border: '1.5px solid rgba(239,68,68,.25)', background: 'rgba(239,68,68,.05)', color: '#ef4444', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <X size={12} /> Clear
                 </motion.button>
               )}
             </div>
@@ -135,8 +135,9 @@ export default function WordReplacer() {
             <AnimatePresence>
               {find && !replaced && text && (
                 <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                  style={{ marginTop: 5, fontSize: 11.5, fontWeight: 600, color: count > 0 ? '#f97316' : '#ccc' }}>
-                  {count > 0 ? `🔍 ${count} match${count !== 1 ? 'es' : ''}` : 'No matches'}
+                  style={{ marginTop: 5, fontSize: 11.5, fontWeight: 600, color: count > 0 ? '#f97316' : '#ccc', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Search size={12} />
+                  <span>{count > 0 ? `${count} match${count !== 1 ? 'es' : ''}` : 'No matches'}</span>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -169,13 +170,13 @@ export default function WordReplacer() {
             style={{ padding: '13px', borderRadius: 12, border: 'none', cursor: count > 0 ? 'pointer' : 'not-allowed', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: 15, color: '#fff', transition: 'all .25s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               background: replaced ? 'linear-gradient(135deg,#22c55e,#16a34a)' : count > 0 ? 'linear-gradient(135deg,#4F8EF7,#9C6FDE)' : '#e5e7ef',
               boxShadow: count > 0 ? '0 6px 20px rgba(79,142,247,.3)' : 'none' }}>
-            <span>{replaced ? '✅' : '🔄'}</span>
-            {replaced ? `Replaced ${count} occurrence${count !== 1 ? 's' : ''}` : `Replace ${count > 0 ? count : 'all'}`}
+            {replaced ? <Check size={16} /> : <RefreshCw size={15} />}
+            <span>{replaced ? `Replaced ${count} occurrence${count !== 1 ? 's' : ''}` : `Replace ${count > 0 ? count : 'all'}`}</span>
           </motion.button>
           {(find || replaced) && (
             <motion.button onClick={reset} whileHover={{ scale: 1.05 }} whileTap={{ scale: .93 }}
-              style={{ padding: '13px 16px', borderRadius: 12, border: '1.5px solid rgba(0,0,0,.1)', background: '#fff', color: '#777', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: 14 }}>
-              ↺
+              style={{ padding: '13px 16px', borderRadius: 12, border: '1.5px solid rgba(0,0,0,.1)', background: '#fff', color: '#777', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+              <RotateCcw size={15} />
             </motion.button>
           )}
         </div>
@@ -184,8 +185,9 @@ export default function WordReplacer() {
         {text && find && (
           <div style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', color: replaced ? '#22c55e' : '#f97316' }}>
-                {replaced ? '✅ Result Preview' : `🔍 Live Preview — ${count} match${count !== 1 ? 'es' : ''}`}
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.6px', color: replaced ? '#22c55e' : '#f97316', display: 'flex', alignItems: 'center', gap: 6 }}>
+                {replaced ? <CheckCircle2 size={13} /> : <Search size={13} />}
+                <span>{replaced ? 'Result Preview' : `Live Preview — ${count} match${count !== 1 ? 'es' : ''}`}</span>
               </div>
               {replaced && (
                 <motion.button whileHover={{ scale: 1.04 }} onClick={applyResult}

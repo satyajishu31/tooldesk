@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
+import { Crop, Upload, Download, RotateCcw } from 'lucide-react'
 import { Reveal } from '../../components/ToolShell'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 
@@ -415,10 +416,10 @@ export default function ManualCropStudio({ embeddedImg = null, onEmbeddedExport 
             <div style={{
               width: 76, height: 76, borderRadius: 20, margin: '0 auto 18px',
               background: 'rgba(79,142,247,.08)', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', fontSize: 36, color: '#4F8EF7',
+              justifyContent: 'center', color: '#4F8EF7',
               border: '1.5px dashed rgba(79,142,247,.3)'
             }}>
-              ✂️
+              <Crop size={36} color="#4F8EF7" />
             </div>
             <h3 style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 20, color: '#0d0d1a', marginBottom: 6 }}>
               Upload Image to Crop
@@ -427,7 +428,8 @@ export default function ManualCropStudio({ embeddedImg = null, onEmbeddedExport 
               True manual crop with interactive 8-handle box, freeform precision, standard ratios, and lossless full-resolution export.
             </p>
             <label className="btn btn-primary btn-lg" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <span>📁 Select Image</span>
+              <Upload size={16} />
+              <span>Select Image</span>
               <input type="file" accept="image/*" onChange={handleFileInput} style={{ display: 'none' }} />
             </label>
             {errorMsg && (
@@ -439,8 +441,8 @@ export default function ManualCropStudio({ embeddedImg = null, onEmbeddedExport 
             {/* Top Toolbar */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
               <div>
-                <h3 style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 18, color: '#0d0d1a', margin: 0 }}>
-                  ✂️ Manual Crop Studio
+                <h3 style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 18, color: '#0d0d1a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Crop size={18} color="#4F8EF7" /> Manual Crop Studio
                 </h3>
                 <p style={{ fontSize: 12, color: '#888', margin: '4px 0 0' }}>
                   Original: <strong>{naturalW} × {naturalH} px</strong> · Selection: <strong style={{ color: '#4F8EF7' }}>{crop.w} × {crop.h} px</strong>
@@ -448,13 +450,14 @@ export default function ManualCropStudio({ embeddedImg = null, onEmbeddedExport 
               </div>
 
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button type="button" className="btn btn-secondary btn-sm" onClick={handleReset}>
-                  ↺ Full Reset
+                <button type="button" className="btn btn-secondary btn-sm" onClick={handleReset} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <RotateCcw size={13} /> Full Reset
                 </button>
-                <button type="button" className="btn btn-secondary btn-sm" onClick={handleApplyCropInPlace} title="Crop and continue editing this selection">
-                  ✂️ Crop In-Place
+                <button type="button" className="btn btn-secondary btn-sm" onClick={handleApplyCropInPlace} title="Crop and continue editing this selection" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Crop size={13} /> Crop In-Place
                 </button>
-                <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer', margin: 0 }}>
+                <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer', margin: 0, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Upload size={13} />
                   <span>Change Image</span>
                   <input type="file" accept="image/*" onChange={handleFileInput} style={{ display: 'none' }} />
                 </label>
@@ -717,7 +720,8 @@ export default function ManualCropStudio({ embeddedImg = null, onEmbeddedExport 
               disabled={isProcessing || !crop.w || !crop.h}
               onClick={handleDownload}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <span>💾 Download Cropped Image ({crop.w} × {crop.h} px)</span>
+              <Download size={16} />
+              <span>Download Cropped Image ({crop.w} × {crop.h} px)</span>
             </button>
           </Reveal>
         )}

@@ -5,7 +5,7 @@ import { useCopy } from '../../hooks'
 import { safeFetchJSON } from '../../utils/safeFetch'
 import { TOOLS } from '../../constants'
 import { useToolHistory } from '../../hooks/useToolHistory'
-import { Clock, Trash2 } from 'lucide-react'
+import { Clock, Trash2, Languages, Sparkles, AlertTriangle, Check, Copy, Lightbulb, MessageSquare, Feather, Briefcase, Award } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'translator')
 
@@ -429,7 +429,7 @@ export default function TextTranslator() {
             }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 20 }}>🎭</span>
+                  <Languages size={22} color="#9C6FDE" />
                   <div>
                     <h4 style={{ fontFamily: 'Syne, sans-serif', fontSize: 15, fontWeight: 800, margin: 0, color: '#111' }}>
                       Cultural Localization & Native Tone Calibrator
@@ -448,11 +448,13 @@ export default function TextTranslator() {
               {/* Tone Selection Tags */}
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
                 {[
-                  { id: 'everyday', label: '🍃 Everyday / Natural', desc: 'Standard natural conversational speech' },
-                  { id: 'casual', label: '💬 Casual & Social', desc: 'Informal texting, peers, and friendly dialogue' },
-                  { id: 'business', label: '💼 Business Professional', desc: 'Emails, client proposals, and corporate clarity' },
-                  { id: 'formal', label: '🎩 Formal & Academic', desc: 'Official correspondence, legal and ceremonial register' }
-                ].map(t => (
+                  { id: 'everyday', label: 'Everyday / Natural', icon: Feather, desc: 'Standard natural conversational speech' },
+                  { id: 'casual', label: 'Casual & Social', icon: MessageSquare, desc: 'Informal texting, peers, and friendly dialogue' },
+                  { id: 'business', label: 'Business Professional', icon: Briefcase, desc: 'Emails, client proposals, and corporate clarity' },
+                  { id: 'formal', label: 'Formal & Academic', icon: Award, desc: 'Official correspondence, legal and ceremonial register' }
+                ].map(t => {
+                  const IconC = t.icon
+                  return (
                   <button
                     key={t.id}
                     type="button"
@@ -462,12 +464,13 @@ export default function TextTranslator() {
                       border: `1.5px solid ${toneMode === t.id ? '#9C6FDE' : 'rgba(0,0,0,0.08)'}`,
                       background: toneMode === t.id ? 'rgba(156,111,222,0.1)' : '#fafafa',
                       color: toneMode === t.id ? '#7c3aed' : '#555',
-                      cursor: 'pointer'
+                      cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6
                     }}
                   >
-                    {t.label}
+                    <IconC size={13} />
+                    <span>{t.label}</span>
                   </button>
-                ))}
+                )})}
               </div>
 
               {/* Calibrate Trigger */}
@@ -490,7 +493,7 @@ export default function TextTranslator() {
                   </>
                 ) : (
                   <>
-                    <span>✨</span>
+                    <Sparkles size={14} />
                     <span>Calibrate {tgtLangInfo.name} into {toneMode.toUpperCase()} Tone</span>
                   </>
                 )}
@@ -498,8 +501,9 @@ export default function TextTranslator() {
 
               {/* Calibration Error */}
               {calibrationError && (
-                <div style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.08)', borderRadius: 8, color: '#ef4444', fontSize: 12, marginBottom: 12 }}>
-                  ⚠️ {calibrationError}
+                <div style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.08)', borderRadius: 8, color: '#ef4444', fontSize: 12, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <AlertTriangle size={14} color="#ef4444" style={{ flexShrink: 0 }} />
+                  <span>{calibrationError}</span>
                 </div>
               )}
 
@@ -517,33 +521,40 @@ export default function TextTranslator() {
                         style={{
                           fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 6,
                           border: '1px solid rgba(0,0,0,0.1)', background: copiedCalibrated ? '#22c55e' : '#fafafa',
-                          color: copiedCalibrated ? '#fff' : '#444', cursor: 'pointer'
+                          color: copiedCalibrated ? '#fff' : '#444', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4
                         }}
                       >
-                        {copiedCalibrated ? '✓ Copied' : '📋 Copy'}
+                        {copiedCalibrated ? <><Check size={11} /> Copied</> : <><Copy size={11} /> Copy</>}
                       </button>
                     </div>
                     <div style={{ fontSize: 14, color: '#111', lineHeight: 1.6, fontWeight: 500 }}>
                       {calibrationData.calibratedText}
                     </div>
                     {calibrationData.toneNuance && (
-                      <div style={{ marginTop: 8, fontSize: 11.5, color: '#666', borderTop: '1px dashed rgba(0,0,0,0.08)', paddingTop: 6 }}>
-                        💡 <strong>Register Nuance:</strong> {calibrationData.toneNuance}
+                      <div style={{ marginTop: 8, fontSize: 11.5, color: '#666', borderTop: '1px dashed rgba(0,0,0,0.08)', paddingTop: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <Lightbulb size={13} color="#f59e0b" style={{ flexShrink: 0 }} />
+                        <span><strong>Register Nuance:</strong> {calibrationData.toneNuance}</span>
                       </div>
                     )}
                   </div>
 
                   {calibrationData.idiomaticAlternative && (
-                    <div style={{ background: '#fafbff', borderRadius: 10, padding: '10px 14px', border: '1px solid rgba(79,142,247,0.2)', fontSize: 12 }}>
-                      <span style={{ fontWeight: 700, color: '#2563eb' }}>🗣️ Idiomatic Native Alternative: </span>
-                      <span style={{ color: '#222' }}>{calibrationData.idiomaticAlternative}</span>
+                    <div style={{ background: '#fafbff', borderRadius: 10, padding: '10px 14px', border: '1px solid rgba(79,142,247,0.2)', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <MessageSquare size={13} color="#2563eb" style={{ flexShrink: 0 }} />
+                      <div>
+                        <span style={{ fontWeight: 700, color: '#2563eb' }}>Idiomatic Native Alternative: </span>
+                        <span style={{ color: '#222' }}>{calibrationData.idiomaticAlternative}</span>
+                      </div>
                     </div>
                   )}
 
                   {calibrationData.falseFriendWarning && (
-                    <div style={{ background: 'rgba(245,158,11,0.06)', borderRadius: 10, padding: '10px 14px', border: '1px solid rgba(245,158,11,0.25)', fontSize: 12 }}>
-                      <span style={{ fontWeight: 700, color: '#d97706' }}>⚠️ False-Friend / Nuance Caution: </span>
-                      <span style={{ color: '#444' }}>{calibrationData.falseFriendWarning}</span>
+                    <div style={{ background: 'rgba(245,158,11,0.06)', borderRadius: 10, padding: '10px 14px', border: '1px solid rgba(245,158,11,0.25)', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <AlertTriangle size={13} color="#d97706" style={{ flexShrink: 0 }} />
+                      <div>
+                        <span style={{ fontWeight: 700, color: '#d97706' }}>False-Friend / Nuance Caution: </span>
+                        <span style={{ color: '#444' }}>{calibrationData.falseFriendWarning}</span>
+                      </div>
                     </div>
                   )}
                 </motion.div>

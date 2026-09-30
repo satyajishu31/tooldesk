@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import JsBarcode from 'jsbarcode'
 import { BrowserMultiFormatReader } from '@zxing/browser'
+import { Barcode, ScanLine, Camera, UploadCloud, RefreshCw, Copy, Check, ExternalLink, Download, AlertTriangle, Palette, CheckCircle2, Play } from 'lucide-react'
 import { ToolCard, Reveal } from '../../components/ToolShell'
 import { useCopy } from '../../hooks'
 import { saveFileWithFallback } from '../../utils/fileSaver'
@@ -396,18 +397,18 @@ export default function BarcodeTool({ isEmbedded = false }) {
           <button
             type="button"
             className={`btn btn-sm ${activeTab === 'generate' ? 'btn-primary' : 'btn-outline'}`}
-            style={{ flex: 1, padding: '10px 14px', fontSize: 13, fontWeight: 700 }}
+            style={{ flex: 1, padding: '10px 14px', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
             onClick={() => setActiveTab('generate')}
           >
-            📊 Barcode Generator
+            <Barcode size={15} /> Barcode Generator
           </button>
           <button
             type="button"
             className={`btn btn-sm ${activeTab === 'scan' ? 'btn-primary' : 'btn-outline'}`}
-            style={{ flex: 1, padding: '10px 14px', fontSize: 13, fontWeight: 700 }}
+            style={{ flex: 1, padding: '10px 14px', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
             onClick={() => setActiveTab('scan')}
           >
-            📷 Barcode Scanner
+            <ScanLine size={15} /> Barcode Scanner
           </button>
         </div>
 
@@ -452,15 +453,15 @@ export default function BarcodeTool({ isEmbedded = false }) {
               </div>
 
               {genError && (
-                <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.08)', border: '1.5px solid rgba(239,68,68,.25)', borderRadius: 10, color: '#ef4444', fontSize: 12, marginBottom: 16 }}>
-                  ⚠️ {genError}
+                <div style={{ padding: '10px 12px', background: 'rgba(239,68,68,.08)', border: '1.5px solid rgba(239,68,68,.25)', borderRadius: 10, color: '#ef4444', fontSize: 12, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <AlertTriangle size={15} style={{ flexShrink: 0 }} /> {genError}
                 </div>
               )}
 
               {/* Customization Options */}
               <div style={{ background: 'rgba(139,92,246,.04)', border: '1px solid rgba(139,92,246,.15)', borderRadius: 14, padding: '16px 18px', marginTop: 16 }}>
-                <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 13, color: '#1a1a2e', marginBottom: 14 }}>
-                  🎨 Dimensions & Appearance
+                <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 13, color: '#1a1a2e', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <Palette size={15} color="#8b5cf6" /> Dimensions & Appearance
                 </div>
 
                 <div className="tool-grid-2-compact" style={{ marginBottom: 12 }}>
@@ -546,18 +547,18 @@ export default function BarcodeTool({ isEmbedded = false }) {
                   <button
                     type="button"
                     className="btn btn-primary"
-                    style={{ flex: 1, padding: '12px', fontSize: 13, fontWeight: 700 }}
+                    style={{ flex: 1, padding: '12px', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
                     onClick={downloadPng}
                   >
-                    ⬇ Download PNG
+                    <Download size={14} /> Download PNG
                   </button>
                   <button
                     type="button"
                     className="btn btn-outline"
-                    style={{ flex: 1, padding: '12px', fontSize: 13, fontWeight: 700 }}
+                    style={{ flex: 1, padding: '12px', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
                     onClick={downloadSvg}
                   >
-                    📐 Download SVG
+                    <Download size={14} /> Download SVG
                   </button>
                 </div>
               )}
@@ -574,24 +575,24 @@ export default function BarcodeTool({ isEmbedded = false }) {
               <button
                 type="button"
                 className={`btn btn-sm ${scanMode === 'camera' ? 'btn-primary' : 'btn-outline'}`}
-                style={{ padding: '7px 14px', fontSize: 12.5 }}
+                style={{ padding: '7px 14px', fontSize: 12.5, display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 onClick={() => setScanMode('camera')}
               >
-                📷 Live Camera
+                <Camera size={14} /> Live Camera
               </button>
               <button
                 type="button"
                 className={`btn btn-sm ${scanMode === 'upload' ? 'btn-primary' : 'btn-outline'}`}
-                style={{ padding: '7px 14px', fontSize: 12.5 }}
+                style={{ padding: '7px 14px', fontSize: 12.5, display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 onClick={() => setScanMode('upload')}
               >
-                🖼️ Upload / Paste Image
+                <UploadCloud size={14} /> Upload / Paste Image
               </button>
             </div>
 
             {scanError && (
-              <div style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(239,68,68,.08)', border: '1.5px solid rgba(239,68,68,.25)', color: '#ef4444', fontSize: 13, marginBottom: 16 }}>
-                ⚠️ {scanError}
+              <div style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(239,68,68,.08)', border: '1.5px solid rgba(239,68,68,.25)', color: '#ef4444', fontSize: 13, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <AlertTriangle size={15} style={{ flexShrink: 0 }} /> {scanError}
               </div>
             )}
 
@@ -634,25 +635,25 @@ export default function BarcodeTool({ isEmbedded = false }) {
                   <button
                     type="button"
                     className="btn btn-outline"
-                    style={{ padding: '8px 16px', fontSize: 12.5 }}
+                    style={{ padding: '8px 16px', fontSize: 12.5, display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     onClick={() => {
                       const next = facingMode === 'environment' ? 'user' : 'environment'
                       setFacingMode(next)
                     }}
                   >
-                    🔄 Switch Camera ({facingMode === 'environment' ? 'Rear' : 'Front'})
+                    <RefreshCw size={13} /> Switch Camera ({facingMode === 'environment' ? 'Rear' : 'Front'})
                   </button>
                   {scannedBarcode && (
                     <button
                       type="button"
                       className="btn btn-primary"
-                      style={{ padding: '8px 16px', fontSize: 12.5 }}
+                      style={{ padding: '8px 16px', fontSize: 12.5, display: 'inline-flex', alignItems: 'center', gap: 6 }}
                       onClick={() => {
                         setScannedBarcode(null)
                         startScanner(facingMode)
                       }}
                     >
-                      ▶ Scan Next Barcode
+                      <Play size={13} /> Scan Next Barcode
                     </button>
                   )}
                 </div>
@@ -670,7 +671,9 @@ export default function BarcodeTool({ isEmbedded = false }) {
                   if (e.dataTransfer.files?.[0]) decodeImageFile(e.dataTransfer.files[0])
                 }}
               >
-                <div style={{ fontSize: 36, marginBottom: 8 }}>📊</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                  <Barcode size={38} color="#8b5cf6" />
+                </div>
                 <div style={{ fontWeight: 600, fontSize: 14.5, color: '#1a1a2e' }}>
                   Drop Barcode image, click to browse, or paste (Ctrl+V)
                 </div>
@@ -709,7 +712,7 @@ export default function BarcodeTool({ isEmbedded = false }) {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 20 }}>✅</span>
+                      <CheckCircle2 size={18} color="#22c55e" />
                       <strong style={{ fontFamily: 'Syne,sans-serif', fontSize: 15, color: '#1a1a2e' }}>
                         Decoded Barcode
                       </strong>
@@ -726,18 +729,19 @@ export default function BarcodeTool({ isEmbedded = false }) {
                       type="button"
                       className="btn btn-primary"
                       onClick={() => copy(scannedBarcode.text)}
-                      style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700 }}
+                      style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     >
-                      {copied ? '✓ Copied Value' : '📋 Copy Value'}
+                      {copied ? <Check size={14} /> : <Copy size={14} />}
+                      {copied ? 'Copied Value' : 'Copy Value'}
                     </button>
                     <a
                       href={`https://www.google.com/search?q=${encodeURIComponent(scannedBarcode.text)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn-outline"
-                      style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}
+                      style={{ padding: '8px 16px', fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     >
-                      🔍 Search Product on Google ↗
+                      Search Product on Google <ExternalLink size={13} />
                     </a>
                   </div>
                 </motion.div>

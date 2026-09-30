@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import jsQR from 'jsqr'
 import { ToolCard, Reveal } from '../../components/ToolShell'
 import { useCopy } from '../../hooks'
+import { UploadCloud, CheckCircle2, AlertTriangle, Search, Loader2 } from 'lucide-react'
 
 export default function QRScanner({ isEmbedded = false }) {
   const [activeTab, setActiveTab] = useState('camera') // 'camera' or 'upload'
@@ -405,7 +406,7 @@ export default function QRScanner({ isEmbedded = false }) {
               gap: 10,
             }}
           >
-            <span style={{ fontSize: 18 }}>⚠️</span>
+            <AlertTriangle size={18} color="#ef4444" style={{ flexShrink: 0 }} />
             <div style={{ flex: 1 }}>{cameraError}</div>
           </div>
         )}
@@ -527,7 +528,9 @@ export default function QRScanner({ isEmbedded = false }) {
                 if (e.dataTransfer.files?.[0]) processImageFile(e.dataTransfer.files[0])
               }}
             >
-              <div style={{ fontSize: 36, marginBottom: 8 }}>🖼️</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                <UploadCloud size={40} color="#4F8EF7" />
+              </div>
               <div style={{ fontWeight: 600, fontSize: 14.5, color: '#1a1a2e' }}>
                 Drop QR image, click to browse, or paste (Ctrl+V / ⌘V)
               </div>
@@ -559,8 +562,9 @@ export default function QRScanner({ isEmbedded = false }) {
             )}
 
             {scanningImage && (
-              <div style={{ padding: 12, textAlign: 'center', color: '#666', fontSize: 13 }}>
-                ⏳ Scanning image for QR code patterns...
+              <div style={{ padding: 12, textAlign: 'center', color: '#666', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Loader2 size={14} className="spin" />
+                <span>Scanning image for QR code patterns...</span>
               </div>
             )}
           </div>
@@ -583,7 +587,7 @@ export default function QRScanner({ isEmbedded = false }) {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 20 }}>✅</span>
+                  <CheckCircle2 size={20} color="#16a34a" />
                   <span style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#1a1a2e' }}>
                     Decoded {parsedType(scannedResult.data).toUpperCase()}
                   </span>
@@ -634,9 +638,9 @@ export default function QRScanner({ isEmbedded = false }) {
                       marginBottom: 8,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 4
+                      gap: 5
                     }}>
-                      <span>🔎</span> Payload Inspector Details
+                      <Search size={13} color="#4f8ef7" /> Payload Inspector Details
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8 }}>
                       {details.map((d, i) => (

@@ -7,6 +7,7 @@ import { safeFetchJSON, safeTimeoutSignal } from '../../utils/safeFetch'
 import { resolveApiUrl, getApiHeaders } from '../../utils/apiConfig'
 import { useCopy } from '../../hooks'
 import { addToHistory, getToolHistory } from '../../utils/history'
+import { Sparkles, Download, ExternalLink, Search, Loader2, AlertTriangle, Check, ImageOff, Flame, Palette, Anchor, Rocket } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'thumbnail')
 
@@ -253,7 +254,7 @@ function ThumbCard({ thumb, platform, id }) {
                 background:'#f0f1f8', zIndex:1 }}>
                 {status === 'error'
                   ? <div style={{ textAlign:'center', color:'#bbb' }}>
-                      <div style={{ fontSize:28 }}>🚫</div>
+                      <ImageOff size={28} color="#94a3b8" />
                       <div style={{ fontSize:11, marginTop:6 }}>Not available</div>
                     </div>
                   : <div style={{ width:28, height:28, borderRadius:'50%',
@@ -290,8 +291,8 @@ function ThumbCard({ thumb, platform, id }) {
               style={{ flex:1, padding:'8px 14px', borderRadius:10,
                 border:`1.5px solid ${platform.color}40`,
                 background:`${platform.color}10`, color:platform.color,
-                fontSize:12, fontWeight:700, cursor:'pointer' }}>
-              🔗 Open Page
+                fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+              <ExternalLink size={13} /> Open Page
             </button>
           ) : (
             <>
@@ -303,11 +304,12 @@ function ThumbCard({ thumb, platform, id }) {
                     : platform.color,
                   color: status==='error' ? '#bbb' : '#fff',
                   fontSize:12, fontWeight:700, cursor: status==='error' ? 'default':'pointer',
+                  display:'flex', alignItems:'center', justifyContent:'center', gap:6,
                   transition:'all .22s cubic-bezier(.22,1,.36,1)' }}>
-                {dlState==='loading' ? '⏳ Saving…'
-                  : dlState==='done'  ? '✓ Saved!'
+                {dlState==='loading' ? <><Loader2 size={13} className="spin" /> Saving…</>
+                  : dlState==='done'  ? <><Check size={13} /> Saved!</>
                   : status==='error'  ? 'Unavailable'
-                  : '⬇ Download'}
+                  : <><Download size={13} /> Download</>}
               </button>
               <button
                 type="button"
@@ -316,8 +318,8 @@ function ThumbCard({ thumb, platform, id }) {
                 aria-label="Open full resolution thumbnail in new tab"
                 style={{ padding:'8px 12px', borderRadius:10,
                   border:'1.5px solid rgba(0,0,0,.1)',
-                  background:'#fafafa', fontSize:14, cursor:'pointer' }}>
-                🔗
+                  background:'#fafafa', fontSize:14, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <ExternalLink size={14} color="#64748b" />
               </button>
             </>
           )}
@@ -497,14 +499,14 @@ export default function SocialMediaThumbnail() {
                   : loading ? '#ddd' : platform.color,
                 color: !inputUrl.trim() ? '#bbb' : '#fff',
                 fontFamily:'DM Sans,sans-serif', fontWeight:700,
-                fontSize:13.5, whiteSpace:'nowrap',
+                fontSize:13.5, whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:6,
                 transition:'all .22s cubic-bezier(.22,1,.36,1)', flexShrink:0 }}>
-              {loading ? '⏳' : '🔍 Fetch'}
+              {loading ? <Loader2 size={15} className="spin" /> : <><Search size={15} /> Fetch</>}
             </motion.button>
           </div>
           {platform.hint && (
             <div style={{ marginTop:7, fontSize:12, color:'#bbb' }}>
-              💡 {platform.hint}
+              {platform.hint}
             </div>
           )}
         </div>
@@ -515,8 +517,9 @@ export default function SocialMediaThumbnail() {
             <motion.div initial={{opacity:0,y:4}} animate={{opacity:1,y:0}} exit={{opacity:0}}
               style={{ background:'#FFF0F0', border:'1.5px solid #FFCDD2',
                 borderRadius:12, padding:'12px 16px', marginBottom:16,
-                fontSize:12.5, color:'#C62828', fontWeight:500, lineHeight:1.6 }}>
-              ❌ {error}
+                fontSize:12.5, color:'#C62828', fontWeight:500, lineHeight:1.6, display:'flex', alignItems:'center', gap:8 }}>
+              <AlertTriangle size={15} color="#C62828" style={{ flexShrink:0 }} />
+              <div>{error}</div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -623,7 +626,7 @@ export default function SocialMediaThumbnail() {
         }}>
           <div>
             <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 16, color: '#0d0d1a', display: 'flex', alignItems: 'center', gap: 7 }}>
-              <span>🤖</span> AI Viral Title, Hook & Thumbnail CTR Studio
+              <Sparkles size={16} color="#4F8EF7" /> AI Viral Title, Hook & Thumbnail CTR Studio
             </div>
             <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 3 }}>
               Generate high-CTR viral titles, 5-second curiosity hooks, and visual thumbnail compositions.
@@ -649,12 +652,12 @@ export default function SocialMediaThumbnail() {
           >
             {aiLoading ? (
               <>
-                <span className="spinner-border spinner-border-sm" />
+                <Loader2 size={14} className="spin" />
                 <span>Strategizing...</span>
               </>
             ) : (
               <>
-                <span>✨</span>
+                <Sparkles size={14} />
                 <span>Generate Viral Concepts</span>
               </>
             )}
@@ -662,8 +665,9 @@ export default function SocialMediaThumbnail() {
         </div>
 
         {aiError && (
-          <div style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.1)', border: '1.5px solid rgba(239,68,68,0.3)', borderRadius: 10, color: '#ef4444', fontSize: 12, marginBottom: 14 }}>
-            ⚠️ {aiError}
+          <div style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.1)', border: '1.5px solid rgba(239,68,68,0.3)', borderRadius: 10, color: '#ef4444', fontSize: 12, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <AlertTriangle size={14} color="#ef4444" style={{ flexShrink: 0 }} />
+            <span>{aiError}</span>
           </div>
         )}
 
@@ -677,7 +681,7 @@ export default function SocialMediaThumbnail() {
             {Array.isArray(aiIdeas.viralTitles) && aiIdeas.viralTitles.length > 0 && (
               <div>
                 <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 13, color: '#0d0d1a', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span>🔥</span> High-CTR Titles (Click to copy)
+                  <Flame size={15} color="#f97316" /> High-CTR Titles (Click to copy)
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                   {aiIdeas.viralTitles.map((t, idx) => (
@@ -700,8 +704,8 @@ export default function SocialMediaThumbnail() {
                         <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{t.title}</div>
                         {t.ctrReason && <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>💡 {t.ctrReason}</div>}
                       </div>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: copiedKey === `title-${idx}` ? '#22c55e' : '#4F8EF7' }}>
-                        {copiedKey === `title-${idx}` ? '✓ Copied' : 'Copy'}
+                      <span style={{ fontSize: 11, fontWeight: 700, color: copiedKey === `title-${idx}` ? '#22c55e' : '#4F8EF7', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        {copiedKey === `title-${idx}` ? <><Check size={12} /> Copied</> : 'Copy'}
                       </span>
                     </div>
                   ))}
@@ -713,7 +717,7 @@ export default function SocialMediaThumbnail() {
             {Array.isArray(aiIdeas.thumbnailConcepts) && aiIdeas.thumbnailConcepts.length > 0 && (
               <div>
                 <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 13, color: '#0d0d1a', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span>🎨</span> Visual Thumbnail Compositions & Contrast
+                  <Palette size={15} color="#8b5cf6" /> Visual Thumbnail Compositions & Contrast
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 10 }}>
                   {aiIdeas.thumbnailConcepts.map((tc, idx) => (
@@ -739,7 +743,7 @@ export default function SocialMediaThumbnail() {
                         )}
                         {tc.contrast && (
                           <span style={{ padding: '2px 8px', borderRadius: 6, background: '#ede9fe', color: '#6b21a8', fontWeight: 600 }}>
-                            🎨 {tc.contrast}
+                            {tc.contrast}
                           </span>
                         )}
                       </div>
@@ -753,7 +757,7 @@ export default function SocialMediaThumbnail() {
             {Array.isArray(aiIdeas.curiosityHooks) && aiIdeas.curiosityHooks.length > 0 && (
               <div>
                 <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 13, color: '#0d0d1a', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span>🪝</span> Opening 5-Second Curiosity Hooks
+                  <Anchor size={15} color="#3b82f6" /> Opening 5-Second Curiosity Hooks
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {aiIdeas.curiosityHooks.map((h, idx) => (
@@ -774,8 +778,8 @@ export default function SocialMediaThumbnail() {
                       }}
                     >
                       <span>&quot;{h}&quot;</span>
-                      <span style={{ fontSize: 10.5, fontWeight: 700, color: copiedKey === `hook-${idx}` ? '#22c55e' : '#4F8EF7', marginLeft: 8, flexShrink: 0 }}>
-                        {copiedKey === `hook-${idx}` ? '✓ Copied' : 'Copy'}
+                      <span style={{ fontSize: 10.5, fontWeight: 700, color: copiedKey === `hook-${idx}` ? '#22c55e' : '#4F8EF7', marginLeft: 8, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        {copiedKey === `hook-${idx}` ? <><Check size={11} /> Copied</> : 'Copy'}
                       </span>
                     </div>
                   ))}
@@ -791,7 +795,9 @@ export default function SocialMediaThumbnail() {
             background: '#fafbff',
             border: '1.5px dashed rgba(79,142,247,0.2)'
           }}>
-            <div style={{ fontSize: 26, marginBottom: 6 }}>🚀</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+              <Rocket size={28} color="#4F8EF7" />
+            </div>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#0d0d1a' }}>Instant Viral Title & Thumbnail Strategy</div>
             <div style={{ fontSize: 11.5, color: '#64748b', maxWidth: 440, margin: '4px auto 12px' }}>
               Paste any topic or video link above to generate psychology-backed titles, curiosity-driven opening hooks, and high-CTR thumbnail layouts.
@@ -801,9 +807,10 @@ export default function SocialMediaThumbnail() {
               onClick={handleGenerateThumbnailIdeas}
               disabled={aiLoading}
               className="btn btn-sm btn-primary"
-              style={{ fontSize: 12, padding: '7px 16px', borderRadius: 999 }}
+              style={{ fontSize: 12, padding: '7px 16px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: 6 }}
             >
-              ✨ Generate Concepts Now
+              <Sparkles size={13} />
+              <span>Generate Concepts Now</span>
             </button>
           </div>
         )}

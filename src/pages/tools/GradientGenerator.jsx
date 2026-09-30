@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Copy, Check, Sparkles, Dices, Download, AlertTriangle, Layers, Square, LayoutTemplate, ArrowRight, Bot } from 'lucide-react'
 import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { useCopy } from '../../hooks'
 import { TOOLS } from '../../constants'
@@ -117,7 +118,7 @@ function AIGradientPanel({ onApply }) {
             boxShadow:desc.trim()&&!loading?'0 4px 14px rgba(124,58,237,.28)':'none'}}
           onMouseEnter={e=>{ if(desc.trim()&&!loading){ e.currentTarget.style.filter='brightness(1.08)' } }}
           onMouseLeave={e=>{ e.currentTarget.style.filter='none' }}>
-          {loading?'…':'✨ Generate'}
+          {loading ? '…' : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Sparkles size={13} /> Generate</span>}
         </button>
       </div>
 
@@ -260,11 +261,13 @@ box-shadow: 0 8px ${shadow}px 0 rgba(0, 0, 0, 0.2);`
         {cssCode}
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
-        <button className="btn btn-primary btn-sm" onClick={() => copyCss(cssCode)}>
-          {copiedCss ? '✓ Copied CSS' : '📋 Copy Glass CSS'}
+        <button className="btn btn-primary btn-sm" onClick={() => copyCss(cssCode)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          {copiedCss ? <Check size={13} /> : <Copy size={13} />}
+          <span>{copiedCss ? 'Copied CSS' : 'Copy Glass CSS'}</span>
         </button>
-        <button className="btn btn-outline btn-sm" onClick={() => copyTw(twCode)}>
-          {copiedTw ? '✓ Copied Tailwind' : '📋 Copy Tailwind'}
+        <button className="btn btn-outline btn-sm" onClick={() => copyTw(twCode)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          {copiedTw ? <Check size={13} /> : <Copy size={13} />}
+          <span>{copiedTw ? 'Copied Tailwind' : 'Copy Tailwind'}</span>
         </button>
       </div>
     </div>
@@ -383,7 +386,9 @@ function MeshGradientStudio({ initialStops }) {
     <div style={{ marginTop: 22, paddingTop: 20, borderTop: '1px solid rgba(0,0,0,0.08)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 20 }}>🌀</span>
+          <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(79,142,247,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Layers size={16} color="#4F8EF7" />
+          </div>
           <div>
             <h4 style={{ fontFamily: 'Syne, sans-serif', fontSize: 15, fontWeight: 800, margin: 0, color: '#111' }}>
               AI Mesh Gradient Studio & Live Surface Previews
@@ -400,10 +405,12 @@ function MeshGradientStudio({ initialStops }) {
           style={{
             padding: '6px 14px', borderRadius: 8, border: '1.5px solid rgba(79,142,247,0.3)',
             background: copiedMesh ? 'rgba(34,197,94,0.1)' : 'rgba(79,142,247,0.08)',
-            color: copiedMesh ? '#16a34a' : '#4F8EF7', fontSize: 12, fontWeight: 700, cursor: 'pointer'
+            color: copiedMesh ? '#16a34a' : '#4F8EF7', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+            display: 'inline-flex', alignItems: 'center', gap: 6
           }}
         >
-          {copiedMesh ? '✓ Copied Mesh CSS!' : '📋 Copy Mesh CSS'}
+          {copiedMesh ? <Check size={13} /> : <Copy size={13} />}
+          <span>{copiedMesh ? 'Copied Mesh CSS!' : 'Copy Mesh CSS'}</span>
         </button>
       </div>
 
@@ -426,10 +433,12 @@ function MeshGradientStudio({ initialStops }) {
           style={{
             padding: '10px 18px', borderRadius: 10, border: 'none',
             background: 'linear-gradient(135deg, #7c3aed, #4F8EF7)', color: '#fff',
-            fontWeight: 700, fontSize: 13, cursor: loading ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap'
+            fontWeight: 700, fontSize: 13, cursor: loading ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap',
+            display: 'inline-flex', alignItems: 'center', gap: 6
           }}
         >
-          {loading ? 'Synthesizing...' : '✨ Generate Mesh'}
+          <Sparkles size={13} />
+          <span>{loading ? 'Synthesizing...' : 'Generate Mesh'}</span>
         </button>
       </div>
 
@@ -455,24 +464,28 @@ function MeshGradientStudio({ initialStops }) {
       {/* Component Surface Toggle */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
         {[
-          { id: 'card', label: '🎴 Card Surface' },
-          { id: 'button', label: '🔘 Button Surface' },
-          { id: 'hero', label: '🌟 Hero Banner Surface' }
-        ].map(s => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => setPreviewSurface(s.id)}
-            style={{
-              padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700,
-              border: 'none', cursor: 'pointer',
-              background: previewSurface === s.id ? '#1e1040' : 'rgba(0,0,0,0.05)',
-              color: previewSurface === s.id ? '#fff' : '#666'
-            }}
-          >
-            {s.label}
-          </button>
-        ))}
+          { id: 'card', label: 'Card Surface', icon: Square },
+          { id: 'button', label: 'Button Surface', icon: Layers },
+          { id: 'hero', label: 'Hero Banner Surface', icon: LayoutTemplate }
+        ].map(s => {
+          const SIcon = s.icon
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setPreviewSurface(s.id)}
+              style={{
+                padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
+                background: previewSurface === s.id ? '#1e1040' : 'rgba(0,0,0,0.05)',
+                color: previewSurface === s.id ? '#fff' : '#666'
+              }}
+            >
+              <SIcon size={13} />
+              <span>{s.label}</span>
+            </button>
+          )
+        })}
       </div>
 
       {/* Live Component Preview */}
@@ -521,7 +534,7 @@ function MeshGradientStudio({ initialStops }) {
                 boxShadow: '0 8px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)'
               }}
             >
-              {copiedMesh ? '✓ Copied Button CSS!' : '🚀 Launch ToolDesk Studio →'}
+              {copiedMesh ? 'Copied Button CSS!' : 'Launch ToolDesk Studio →'}
             </motion.button>
           </div>
         )}
@@ -534,7 +547,7 @@ function MeshGradientStudio({ initialStops }) {
               borderRadius: 20, background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(8px)',
               fontSize: 11, fontWeight: 700, marginBottom: 14, border: '1px solid rgba(255,255,255,0.2)'
             }}>
-              <span>✨</span> Next-Gen Visual Architecture
+              <Sparkles size={13} color="#facc15" /> Next-Gen Visual Architecture
             </div>
             <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: 800, margin: '0 0 10px 0', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
               Transform Static Screens into Fluid Art
@@ -688,7 +701,7 @@ export default function GradientGenerator() {
     {id:'css',     label:'CSS'},
     {id:'tailwind',label:'Tailwind'},
     {id:'svg',     label:'SVG'},
-    {id:'glass',   label:'🔮 Glassmorphism'},
+    {id:'glass',   label:'Glassmorphism'},
   ]
 
   return (
@@ -761,7 +774,9 @@ export default function GradientGenerator() {
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
             <label className="lbl" style={{margin:0}}>Color Stops ({stops.length}/8)</label>
             <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-              <button onClick={randomise} className="btn btn-outline btn-sm" style={{fontSize:11}}>🎲 Random</button>
+              <button onClick={randomise} className="btn btn-outline btn-sm" style={{fontSize:11, display:'inline-flex', alignItems:'center', gap:5}}>
+                <Dices size={13} /> Random
+              </button>
               {stops.length < 8 && <button onClick={addStop} className="btn btn-outline btn-sm" style={{fontSize:11}}>+ Add Stop</button>}
               <button onClick={() => setShowRgb(x => !x)} className="btn btn-outline btn-sm" style={{fontSize:11}}>
                 {showRgb ? 'HEX' : 'RGB'}
@@ -851,14 +866,17 @@ export default function GradientGenerator() {
                 <div><span style={{color:'#cba6f7'}}>background-image</span><span style={{color:'#fff'}}>: </span><span style={{color:'#a6e3a1'}}>{css}</span><span style={{color:'#fff'}}>;</span></div>
               </div>
               <div className="tool-btn-row" style={{ display:'flex', gap:8, marginTop:10, flexWrap:'wrap', width:'100%' }}>
-                <button className={`btn ${cssCopied?'btn-success':'btn-primary'} btn-sm`} onClick={() => copyCss(fullCss)}>
-                  {cssCopied ? '✓ Copied!' : '📋 Copy Full CSS'}
+                <button className={`btn ${cssCopied?'btn-success':'btn-primary'} btn-sm`} onClick={() => copyCss(fullCss)} style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+                  {cssCopied ? <Check size={13} /> : <Copy size={13} />}
+                  <span>{cssCopied ? 'Copied!' : 'Copy Full CSS'}</span>
                 </button>
-                <button className={`btn btn-outline btn-sm`} onClick={() => copy(css)}>
-                  {copied ? '✓' : 'Copy Value Only'}
+                <button className={`btn btn-outline btn-sm`} onClick={() => copy(css)} style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+                  {copied ? <Check size={13} /> : <Copy size={13} />}
+                  <span>{copied ? 'Copied' : 'Copy Value Only'}</span>
                 </button>
-                <button className="btn btn-outline btn-sm" onClick={downloadPng}>
-                  ⬇ Download PNG (1200×630)
+                <button className="btn btn-outline btn-sm" onClick={downloadPng} style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+                  <Download size={13} />
+                  <span>Download PNG (1200×630)</span>
                 </button>
               </div>
             </div>
@@ -873,19 +891,24 @@ export default function GradientGenerator() {
               </div>
               <div style={{ display:'flex', gap:8, marginTop:10, flexWrap:'wrap' }}>
                 <button className={`btn ${tailCopied?'btn-success':'btn-primary'} btn-sm`}
-                  onClick={() => copyTail(tailwind)}>
-                  {tailCopied ? '✓ Copied!' : '📋 Copy Tailwind Class'}
+                  onClick={() => copyTail(tailwind)} style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+                  {tailCopied ? <Check size={13} /> : <Copy size={13} />}
+                  <span>{tailCopied ? 'Copied!' : 'Copy Tailwind Class'}</span>
                 </button>
                 {type !== 'linear' && (
                   <button className={`btn btn-outline btn-sm`}
-                    onClick={() => copyCss(fullCss)}>
-                    {cssCopied ? '✓ Copied CSS!' : '📋 Copy CSS Instead'}
+                    onClick={() => copyCss(fullCss)} style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+                    {cssCopied ? <Check size={13} /> : <Copy size={13} />}
+                    <span>{cssCopied ? 'Copied CSS!' : 'Copy CSS Instead'}</span>
                   </button>
                 )}
               </div>
               {type !== 'linear' && (
                 <div className="info-bar amber" style={{marginTop:10, display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:8}}>
-                  <span>⚠️ Tailwind uses arbitrary value syntax for radial/conic gradients — or use the standard CSS output.</span>
+                  <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+                    <AlertTriangle size={14} color="#f59e0b" style={{ flexShrink: 0 }} />
+                    Tailwind uses arbitrary value syntax for radial/conic gradients — or use the standard CSS output.
+                  </span>
                   <button onClick={() => setTab('css')}
                     style={{ background:'rgba(245,158,11,.18)', border:'1px solid rgba(245,158,11,.35)', color:'#b85000', borderRadius:8, padding:'5px 12px', fontSize:11.5, fontWeight:700, cursor:'pointer' }}>
                     Switch to CSS Output →
@@ -902,9 +925,10 @@ export default function GradientGenerator() {
                 border:'1px solid rgba(0,0,0,.12)', wordBreak:'break-all', whiteSpace:'pre-wrap' }}>
                 {svgCode}
               </div>
-              <button className={`btn ${svgCopied?'btn-success':'btn-primary'} btn-sm`} style={{marginTop:10}}
+              <button className={`btn ${svgCopied?'btn-success':'btn-primary'} btn-sm`} style={{marginTop:10, display:'inline-flex', alignItems:'center', gap:6}}
                 onClick={() => copySvg(svgCode)}>
-                {svgCopied ? '✓ Copied!' : '📋 Copy SVG'}
+                {svgCopied ? <Check size={13} /> : <Copy size={13} />}
+                <span>{svgCopied ? 'Copied!' : 'Copy SVG'}</span>
               </button>
             </div>
           )}
@@ -925,7 +949,9 @@ export default function GradientGenerator() {
       <Reveal delay={.06}>
         <ToolCard style={{marginTop:0}}>
           <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16}}>
-            <div style={{fontSize:22}}>🤖</div>
+            <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(124,58,237,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Bot size={19} color="#7c3aed" />
+            </div>
             <div>
               <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:15,color:'#0d0d1a'}}>
                 AI Gradient Generator

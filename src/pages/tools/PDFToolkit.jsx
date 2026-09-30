@@ -60,7 +60,8 @@ import {
   Palette, ScanText, Files, Scissors, FileCheck, ArrowUpDown, Trash2,
   RotateCw, Crop, Archive, Diff, Binary, EyeOff, PenTool, FormInput,
   LayoutTemplate, FileCheck2, Lock, Unlock, KeyRound, Minimize2, Sparkles,
-  Tag, Droplets, Info, Check, Copy, Clock, AlertTriangle, Eye
+  Tag, Droplets, Info, Check, Copy, Clock, AlertTriangle, Eye,
+  CheckCircle2, Loader2, X, ArrowUp, ArrowDown
 } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'pdf')
@@ -436,7 +437,7 @@ const FileThumbnailItem = memo(function FileThumbnailItem({
             flexShrink: 0,
           }}
         >
-          {isPdf ? '📕' : isImage ? '🖼️' : '📄'}
+          {isPdf ? <FileText size={20} /> : isImage ? <Image size={20} /> : <FileCode size={20} />}
         </div>
       )}
 
@@ -477,12 +478,14 @@ const FileThumbnailItem = memo(function FileThumbnailItem({
                 color: '#555',
                 fontSize: 11,
                 padding: '4px 6px',
+                display: 'inline-flex',
+                alignItems: 'center',
                 lineHeight: 1,
               }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(79,142,247,.15)'}
               onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,.04)'}
             >
-              ▲
+              <ArrowUp size={11} />
             </button>
           )}
           {index < total - 1 && (
@@ -498,12 +501,14 @@ const FileThumbnailItem = memo(function FileThumbnailItem({
                 color: '#555',
                 fontSize: 11,
                 padding: '4px 6px',
+                display: 'inline-flex',
+                alignItems: 'center',
                 lineHeight: 1,
               }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(79,142,247,.15)'}
               onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,.04)'}
             >
-              ▼
+              <ArrowDown size={11} />
             </button>
           )}
           <button
@@ -515,14 +520,16 @@ const FileThumbnailItem = memo(function FileThumbnailItem({
               border: 'none',
               cursor: 'pointer',
               color: '#999',
-              fontSize: 16,
+              fontSize: 14,
               padding: '2px 6px',
               marginLeft: 4,
+              display: 'inline-flex',
+              alignItems: 'center',
             }}
             onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
             onMouseLeave={e => e.currentTarget.style.color = '#999'}
           >
-            ✕
+            <X size={14} />
           </button>
         </div>
       )}
@@ -1634,7 +1641,7 @@ export default function PDFToolkit() {
       <ToolCard>
         {/* Privacy badge */}
         <div className="info-bar blue" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-          <span style={{ fontSize: 18 }}>🔒</span>
+          <ShieldCheck size={20} style={{ color: '#4F8EF7', flexShrink: 0 }} />
           <div>
             <strong>100% Client-Side Processing</strong>. Documents never leave your browser. Zero cloud uploads, zero data retention.
           </div>
@@ -3403,13 +3410,16 @@ export default function PDFToolkit() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span>⚙️</span>
+              <Loader2 size={16} className="spin" style={{ color: '#4F8EF7' }} />
               <span>{progressMsg || 'Processing document…'}</span>
             </div>
             <button
               type="button"
               onClick={cancelActiveOperation}
               style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
                 padding: '4px 10px',
                 borderRadius: 8,
                 background: 'rgba(239,68,68,.1)',
@@ -3420,7 +3430,7 @@ export default function PDFToolkit() {
                 cursor: 'pointer',
               }}
             >
-              ✕ Cancel
+              <X size={12} /> Cancel
             </button>
           </div>
         )}
@@ -3455,7 +3465,16 @@ export default function PDFToolkit() {
                 fontWeight: 500,
               }}
             >
-              {statusMsg.text}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {statusMsg.type === 'error' ? (
+                  <AlertTriangle size={15} style={{ color: '#ef4444', flexShrink: 0 }} />
+                ) : statusMsg.type === 'success' ? (
+                  <CheckCircle2 size={15} style={{ color: '#22c55e', flexShrink: 0 }} />
+                ) : (
+                  <Info size={15} style={{ color: '#4F8EF7', flexShrink: 0 }} />
+                )}
+                <span>{statusMsg.text.replace(/^[✅❌⚠️ℹ️\s]+/, '')}</span>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

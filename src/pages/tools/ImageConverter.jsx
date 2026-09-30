@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Sparkles, Camera, Image, Settings, Download, Trash2, RefreshCw, CheckCircle2, Loader2, ArrowRight } from 'lucide-react'
 import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { TOOLS } from '../../constants'
 import { saveFileWithFallback } from '../../utils/fileSaver'
@@ -10,9 +11,9 @@ import ToolChainingBar from '../../components/ToolChainingBar'
 const tool = TOOLS.find(t => t.id === 'imgconvert')
 
 const FORMATS = [
-  { mime:'image/webp', ext:'webp', label:'WebP', icon:'✨', desc:'Modern format — best compression + transparency. Ideal for all web use.',      pros:['Superior compression','Transparency','All modern browsers'] },
-  { mime:'image/jpeg', ext:'jpg',  label:'JPEG', icon:'📷', desc:'Universal lossy format — smallest files, best for photos and sharing.',          pros:['Smallest file','Universal support','Best for photos'] },
-  { mime:'image/png',  ext:'png',  label:'PNG',  icon:'🖼️', desc:'Lossless quality — perfect for logos, graphics, screenshots with transparency.',  pros:['Lossless quality','Transparency','Sharp edges'] },
+  { mime:'image/webp', ext:'webp', label:'WebP', icon: Sparkles, desc:'Modern format — best compression + transparency. Ideal for all web use.',      pros:['Superior compression','Transparency','All modern browsers'] },
+  { mime:'image/jpeg', ext:'jpg',  label:'JPEG', icon: Camera,   desc:'Universal lossy format — smallest files, best for photos and sharing.',          pros:['Smallest file','Universal support','Best for photos'] },
+  { mime:'image/png',  ext:'png',  label:'PNG',  icon: Image,    desc:'Lossless quality — perfect for logos, graphics, screenshots with transparency.',  pros:['Lossless quality','Transparency','Sharp edges'] },
 ]
 
 function fmtBytes(n) {
@@ -256,22 +257,29 @@ export default function ImageConverter() {
       <Reveal>
         <ToolCard style={{marginBottom:16}}>
           <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:14,
-            color:'#0d0d1a',marginBottom:14}}>⚙️ Conversion Settings</div>
+            color:'#0d0d1a',marginBottom:14, display:'flex', alignItems:'center', gap:7}}>
+            <Settings size={15} color="#4F8EF7" /> Conversion Settings
+          </div>
 
           <div className="tool-grid-3" style={{gap:8,marginBottom:16}}>
-            {FORMATS.map(f=>(
-              <motion.div key={f.mime} whileHover={{y:-2}} whileTap={{scale:.97}}
-                onClick={()=>handleFormatChange(f.mime)}
-                style={{padding:'13px 10px',borderRadius:13,textAlign:'center',cursor:'pointer',
-                  border:`1.5px solid ${batchFmt===f.mime?'#4F8EF7':'rgba(0,0,0,.08)'}`,
-                  background:batchFmt===f.mime?'rgba(79,142,247,.07)':'#fafafa',
-                  transition:'all .18s'}}>
-                <div style={{fontSize:22,marginBottom:4}}>{f.icon}</div>
-                <div style={{fontWeight:700,color:batchFmt===f.mime?'#4F8EF7':'#333',
-                  fontSize:13,marginBottom:3}}>{f.label}</div>
-                <div style={{fontSize:9.5,color:'#bbb',lineHeight:1.4}}>{f.pros[0]}</div>
-              </motion.div>
-            ))}
+            {FORMATS.map(f=>{
+              const FmtIcon = f.icon
+              return (
+                <motion.div key={f.mime} whileHover={{y:-2}} whileTap={{scale:.97}}
+                  onClick={()=>handleFormatChange(f.mime)}
+                  style={{padding:'13px 10px',borderRadius:13,textAlign:'center',cursor:'pointer',
+                    border:`1.5px solid ${batchFmt===f.mime?'#4F8EF7':'rgba(0,0,0,.08)'}`,
+                    background:batchFmt===f.mime?'rgba(79,142,247,.07)':'#fafafa',
+                    transition:'all .18s'}}>
+                  <div style={{display:'flex',justifyContent:'center',marginBottom:6}}>
+                    <FmtIcon size={22} color={batchFmt===f.mime?'#4F8EF7':'#64748b'} />
+                  </div>
+                  <div style={{fontWeight:700,color:batchFmt===f.mime?'#4F8EF7':'#333',
+                    fontSize:13,marginBottom:3}}>{f.label}</div>
+                  <div style={{fontSize:9.5,color:'#bbb',lineHeight:1.4}}>{f.pros[0]}</div>
+                </motion.div>
+              )
+            })}
           </div>
 
           {batchFmt !== 'image/png' && (
@@ -306,7 +314,9 @@ export default function ImageConverter() {
             background:dragging?'rgba(79,142,247,.04)':'#fafbff',transition:'background .2s'}}>
           <input type="file" accept="image/*" multiple style={{display:'none'}}
             onChange={e=>loadFiles(e.target.files)}/>
-          <div style={{fontSize:36,marginBottom:10}}>{converting?'⏳':'🔄'}</div>
+          <div style={{display:'flex',justifyContent:'center',marginBottom:10}}>
+            {converting ? <Loader2 size={36} className="spin" color="#4F8EF7" /> : <RefreshCw size={34} color="#4F8EF7" />}
+          </div>
           <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:16,color:'#0d0d1a',marginBottom:6}}>
             {converting ? 'Converting…' : 'Drop images here (up to 20 at once)'}
           </div>
@@ -324,8 +334,9 @@ export default function ImageConverter() {
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',
                 marginBottom:14,flexWrap:'wrap',gap:10}}>
                 <div>
-                  <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:14,color:'#0d0d1a'}}>
-                    ✅ {files.length} Image{files.length!==1?'s':''} Converted
+                  <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:14,color:'#0d0d1a', display:'flex', alignItems:'center', gap:7}}>
+                    <CheckCircle2 size={16} color="#22c55e" />
+                    <span>{files.length} Image{files.length!==1?'s':''} Converted</span>
                   </div>
                   <div style={{fontSize:12,color:'#22c55e',fontWeight:600,marginTop:2}}>
                     Total saved: {fmtBytes(totalSaved)}
@@ -336,23 +347,26 @@ export default function ImageConverter() {
                     onClick={reconvertAll}
                     style={{padding:'8px 16px',borderRadius:10,border:'1.5px solid rgba(79,142,247,.3)',
                       background:'rgba(79,142,247,.07)',color:'#4F8EF7',
-                      fontSize:12,fontWeight:700,cursor:'pointer'}}>
-                    🔄 Reconvert All
+                      fontSize:12,fontWeight:700,cursor:'pointer', display:'inline-flex', alignItems:'center', gap:6}}>
+                    <RefreshCw size={13} />
+                    <span>Reconvert All</span>
                   </motion.button>
                   <motion.button whileHover={{scale:1.04}} whileTap={{scale:.96}}
                     onClick={downloadAll}
                     style={{padding:'8px 16px',borderRadius:10,border:'none',
                       background:'linear-gradient(135deg,#4F8EF7,#7c3aed)',
-                      color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer'}}>
-                    ⬇ Download All
+                      color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer', display:'inline-flex', alignItems:'center', gap:6}}>
+                    <Download size={13} />
+                    <span>Download All</span>
                   </motion.button>
                   <motion.button whileHover={{scale:1.04}} whileTap={{scale:.96}}
                     onClick={()=>setFiles([])}
                     style={{padding:'8px 14px',borderRadius:10,
                       border:'1.5px solid rgba(239,68,68,.2)',
                       background:'rgba(239,68,68,.04)',
-                      color:'#ef4444',fontSize:12,fontWeight:700,cursor:'pointer'}}>
-                    ✕ Clear
+                      color:'#ef4444',fontSize:12,fontWeight:700,cursor:'pointer', display:'inline-flex', alignItems:'center', gap:6}}>
+                    <Trash2 size={13} />
+                    <span>Clear</span>
                   </motion.button>
                 </div>
               </div>
@@ -390,8 +404,8 @@ export default function ImageConverter() {
                         onClick={()=>downloadOne(item)}
                         style={{padding:'7px 14px',borderRadius:9,border:'none',
                           background:'linear-gradient(135deg,#4F8EF7,#7c3aed)',
-                          color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',flexShrink:0}}>
-                        ⬇
+                          color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',flexShrink:0, display:'inline-flex', alignItems:'center', justifyContent:'center'}}>
+                        <Download size={13} />
                       </motion.button>
                     </motion.div>
                   )

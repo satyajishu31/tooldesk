@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { ScanText, Upload, RefreshCw, X, Copy, Check, Download, AlertTriangle, FileText, CheckCheck } from 'lucide-react'
 import { Reveal } from '../../components/ToolShell'
 import { useCopy } from '../../hooks'
 import { saveFileWithFallback } from '../../utils/fileSaver'
@@ -158,10 +159,10 @@ export default function OCRImageText({ isEmbedded = false }) {
             <div style={{
               width: 76, height: 76, borderRadius: 20, margin: '0 auto 18px',
               background: 'rgba(156,111,222,.08)', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', fontSize: 36, color: '#9C6FDE',
+              justifyContent: 'center', color: '#9C6FDE',
               border: '1.5px dashed rgba(156,111,222,.3)'
             }}>
-              👁️
+              <ScanText size={36} color="#9C6FDE" />
             </div>
             <h3 style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 'clamp(18px,3vw,21px)', color: '#0d0d1a', marginBottom: 6 }}>
               Optical Character Recognition (OCR)
@@ -170,7 +171,8 @@ export default function OCRImageText({ isEmbedded = false }) {
               Extract text from photos, screenshots, and scans 100% locally in your browser. Preserves line breaks, indentation, and paragraphs.
             </p>
             <label className="btn btn-primary btn-lg" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <span>📁 Select Image to Read</span>
+              <Upload size={16} />
+              <span>Select Image to Read</span>
               <input type="file" accept="image/*" onChange={(e) => handleImageFile(e.target.files?.[0])} style={{ display: 'none' }} />
             </label>
             {errorMsg && (
@@ -181,8 +183,8 @@ export default function OCRImageText({ isEmbedded = false }) {
           <Reveal>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
               <div>
-                <h3 style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 19, color: '#0d0d1a', margin: 0 }}>
-                  👁️ Extracted Text Result
+                <h3 style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 19, color: '#0d0d1a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <ScanText size={20} color="#9C6FDE" /> Extracted Text Result
                 </h3>
                 <p style={{ fontSize: 12.5, color: '#888', margin: '4px 0 0' }}>
                   {imageMeta ? `${imageMeta.width} × ${imageMeta.height} px · ` : ''}
@@ -194,17 +196,20 @@ export default function OCRImageText({ isEmbedded = false }) {
                 <button
                   type="button"
                   className="btn btn-secondary btn-sm"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                   disabled={isProcessing}
                   onClick={() => runOCR(file)}>
-                  🔄 Re-scan
+                  <RefreshCw size={13} className={isProcessing ? 'spin' : ''} /> Re-scan
                 </button>
                 <button
                   type="button"
                   className="btn btn-secondary btn-sm"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                   onClick={handleClear}>
-                  ✕ Clear
+                  <X size={13} /> Clear
                 </button>
-                <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer', margin: 0 }}>
+                <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer', margin: 0, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Upload size={13} />
                   <span>Upload Another</span>
                   <input type="file" accept="image/*" onChange={(e) => handleImageFile(e.target.files?.[0])} style={{ display: 'none' }} />
                 </label>
@@ -261,7 +266,7 @@ export default function OCRImageText({ isEmbedded = false }) {
                     alignItems: 'center', justifyContent: 'center', background: '#fff5f5',
                     borderRadius: 14, border: '1px solid rgba(239,68,68,.2)', padding: 24, textAlign: 'center'
                   }}>
-                    <span style={{ fontSize: 32, marginBottom: 12 }}>⚠️</span>
+                    <AlertTriangle size={32} color="#f59e0b" style={{ marginBottom: 12 }} />
                     <h4 style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, color: '#b91c1c', marginBottom: 6 }}>
                       Text Recognition Notice
                     </h4>
@@ -295,20 +300,25 @@ export default function OCRImageText({ isEmbedded = false }) {
                       <button
                         type="button"
                         className="btn btn-primary btn-sm"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                         onClick={handleCopy}>
-                        {copied ? '✓ Copied!' : '📋 Copy Text'}
+                        {copied ? <Check size={13} /> : <Copy size={13} />}
+                        {copied ? 'Copied!' : 'Copy Text'}
                       </button>
                       <button
                         type="button"
                         className="btn btn-secondary btn-sm"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                         onClick={handleSelectAll}>
+                        <CheckCheck size={13} />
                         Select All
                       </button>
                       <button
                         type="button"
                         className="btn btn-secondary btn-sm"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                         onClick={handleDownloadTxt}>
-                        💾 Download .txt
+                        <Download size={13} /> Download .txt
                       </button>
                     </div>
                   </div>

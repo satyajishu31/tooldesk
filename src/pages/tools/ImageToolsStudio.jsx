@@ -8,6 +8,13 @@ import { saveFileWithFallback } from '../../utils/fileSaver'
 import { PDFDocument } from 'pdf-lib'
 import JSZip from 'jszip'
 import ToolChainingBar from '../../components/ToolChainingBar'
+import { 
+  X, Crop, EyeOff, ScanText, ScanSearch, Maximize2, Minimize2, 
+  RefreshCw, RotateCw, Sliders, Palette, FileText, Zap, Frame, 
+  Square, Code2, Droplets, ShieldCheck, Waves, Camera, Film, 
+  Box, Sparkles, Moon, Star, UploadCloud, ImageIcon, CheckCircle2, 
+  AlertTriangle, Check, Copy, Download, Archive, Loader2, ArrowUp, ArrowDown, Lock
+} from 'lucide-react'
 import ChainedInputBanner from '../../components/ChainedInputBanner'
 
 const ManualCropStudio = lazy(() => import('./ManualCropStudio'))
@@ -36,14 +43,14 @@ function buildCSS(tl, tr, br, bl) {
    BORDER PRESETS
 ───────────────────────────────────────────── */
 const BORDER_PRESETS = [
-  { name:'Polaroid', color:'#fffdf5', bw:18, top:18, right:18, bottom:50, left:18, shadow:10, shadowColor:'rgba(0,0,0,.25)', shadowBlur:20, emoji:'📸' },
-  { name:'Neon',     color:'#00fff0', bw:4,  top:4,  right:4,  bottom:4,  left:4,  shadow:0,  shadowColor:'transparent',      shadowBlur:0,  emoji:'🌈' },
-  { name:'Vintage',  color:'#d4a060', bw:12, top:12, right:12, bottom:12, left:12, shadow:6,  shadowColor:'rgba(0,0,0,.2)',    shadowBlur:12, emoji:'🎞️' },
-  { name:'Minimal',  color:'#e5e5e5', bw:2,  top:2,  right:2,  bottom:2,  left:2,  shadow:0,  shadowColor:'transparent',      shadowBlur:0,  emoji:'◻️' },
-  { name:'Bold',     color:'#0d0d1a', bw:10, top:10, right:10, bottom:10, left:10, shadow:0,  shadowColor:'transparent',      shadowBlur:0,  emoji:'⬛' },
-  { name:'Rainbow',  color:'#FF6B6B', bw:8,  top:8,  right:8,  bottom:8,  left:8,  shadow:8,  shadowColor:'rgba(255,107,107,.35)', shadowBlur:16, emoji:'🌊' },
-  { name:'Shadow',   color:'#ffffff', bw:16, top:16, right:16, bottom:16, left:16, shadow:20, shadowColor:'rgba(0,0,0,.35)',   shadowBlur:28, emoji:'🌑' },
-  { name:'Gold',     color:'#FFD700', bw:8,  top:8,  right:8,  bottom:8,  left:8,  shadow:6,  shadowColor:'rgba(255,215,0,.4)', shadowBlur:16, emoji:'✨' },
+  { name:'Polaroid', color:'#fffdf5', bw:18, top:18, right:18, bottom:50, left:18, shadow:10, shadowColor:'rgba(0,0,0,.25)', shadowBlur:20, icon: Camera },
+  { name:'Neon',     color:'#00fff0', bw:4,  top:4,  right:4,  bottom:4,  left:4,  shadow:0,  shadowColor:'transparent',      shadowBlur:0,  icon: Zap },
+  { name:'Vintage',  color:'#d4a060', bw:12, top:12, right:12, bottom:12, left:12, shadow:6,  shadowColor:'rgba(0,0,0,.2)',    shadowBlur:12, icon: Film },
+  { name:'Minimal',  color:'#e5e5e5', bw:2,  top:2,  right:2,  bottom:2,  left:2,  shadow:0,  shadowColor:'transparent',      shadowBlur:0,  icon: Square },
+  { name:'Bold',     color:'#0d0d1a', bw:10, top:10, right:10, bottom:10, left:10, shadow:0,  shadowColor:'transparent',      shadowBlur:0,  icon: Box },
+  { name:'Rainbow',  color:'#FF6B6B', bw:8,  top:8,  right:8,  bottom:8,  left:8,  shadow:8,  shadowColor:'rgba(255,107,107,.35)', shadowBlur:16, icon: Sparkles },
+  { name:'Shadow',   color:'#ffffff', bw:16, top:16, right:16, bottom:16, left:16, shadow:20, shadowColor:'rgba(0,0,0,.35)',   shadowBlur:28, icon: Moon },
+  { name:'Gold',     color:'#FFD700', bw:8,  top:8,  right:8,  bottom:8,  left:8,  shadow:6,  shadowColor:'rgba(255,215,0,.4)', shadowBlur:16, icon: Star },
 ]
 
 /* ─────────────────────────────────────────────
@@ -296,7 +303,9 @@ function ImageUploader({ onImage, label = 'Drop image here', accept = 'image/*' 
         background:drag?'rgba(79,142,247,.04)':'transparent',transition:'background .2s'}}>
       <input ref={fileRef} type="file" accept={accept} style={{display:'none'}}
         onChange={e=>{onImage(e.target.files[0]);e.target.value=''}}/>
-      <div style={{fontSize:40,marginBottom:10}}>{drag?'📂':'🖼️'}</div>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10, color: drag ? '#4F8EF7' : '#888' }}>
+        {drag ? <UploadCloud size={40} /> : <ImageIcon size={40} />}
+      </div>
       <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:14,color:'#0d0d1a',marginBottom:4}}>
         {drag?'Drop to upload':label}
       </div>
@@ -428,7 +437,9 @@ function ExifCleanerStudio() {
           border: '2px dashed rgba(79,142,247,.3)', borderRadius: 16, padding: '40px 20px',
           textAlign: 'center', cursor: 'pointer', background: 'rgba(79,142,247,.03)'
         }}>
-          <div style={{ fontSize: 36, marginBottom: 10 }}>🛡️</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+            <ShieldCheck size={38} style={{ color: '#4F8EF7' }} />
+          </div>
           <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a' }}>
             Upload Photo to Inspect & Clean EXIF Privacy
           </div>
@@ -446,12 +457,12 @@ function ExifCleanerStudio() {
               <div style={{ fontSize: 11.5, color: '#888', marginTop: 2 }}>{exifData?.size} · {exifData?.type}</div>
               <div style={{ marginTop: 8 }}>
                 {exifData?.hasExif ? (
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#ef4444', background: 'rgba(239,68,68,.1)', padding: '3px 8px', borderRadius: 6 }}>
-                    ⚠️ EXIF Metadata Detected (Location/Camera Info)
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#ef4444', background: 'rgba(239,68,68,.1)', padding: '3px 8px', borderRadius: 6, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                    <AlertTriangle size={13} /> EXIF Metadata Detected (Location/Camera Info)
                   </span>
                 ) : (
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#22c55e', background: 'rgba(34,197,94,.1)', padding: '3px 8px', borderRadius: 6 }}>
-                    ✅ Clean (No EXIF markers found)
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#22c55e', background: 'rgba(34,197,94,.1)', padding: '3px 8px', borderRadius: 6, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                    <CheckCircle2 size={13} /> Clean (No EXIF markers found)
                   </span>
                 )}
               </div>
@@ -459,11 +470,11 @@ function ExifCleanerStudio() {
           </div>
 
           <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn btn-primary" onClick={cleanExif}>
-              🛡️ {cleaned ? 'Cleaned & Downloaded!' : 'Clean EXIF & Download Clean Image'}
+            <button className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={cleanExif}>
+              <ShieldCheck size={15} /> {cleaned ? 'Cleaned & Downloaded!' : 'Clean EXIF & Download Clean Image'}
             </button>
-            <button className="btn btn-outline" onClick={() => { setFile(null); setPreview(''); setExifData(null); setCleaned(false) }}>
-              ✕ Choose Another
+            <button className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => { setFile(null); setPreview(''); setExifData(null); setCleaned(false) }}>
+              <X size={14} /> Choose Another
             </button>
           </div>
         </div>
@@ -509,11 +520,11 @@ function WaveBlobStudio() {
   return (
     <div style={{ marginTop: 10 }}>
       <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
-        <button className={`btn ${mode === 'wave' ? 'btn-primary' : 'btn-outline'} btn-sm`} onClick={() => setMode('wave')}>
-          🌊 Wave Divider
+        <button className={`btn ${mode === 'wave' ? 'btn-primary' : 'btn-outline'} btn-sm`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setMode('wave')}>
+          <Waves size={14} /> Wave Divider
         </button>
-        <button className={`btn ${mode === 'blob' ? 'btn-primary' : 'btn-outline'} btn-sm`} onClick={() => setMode('blob')}>
-          🫧 Organic Blob
+        <button className={`btn ${mode === 'blob' ? 'btn-primary' : 'btn-outline'} btn-sm`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setMode('blob')}>
+          <Sparkles size={14} /> Organic Blob
         </button>
       </div>
 
@@ -538,11 +549,11 @@ function WaveBlobStudio() {
       }} dangerouslySetInnerHTML={{ __html: svgCode }} />
 
       <div style={{ display: 'flex', gap: 8 }}>
-        <button className="btn btn-primary btn-sm" onClick={() => copyCode(svgCode)}>
-          {copiedCode ? '✓ Copied SVG' : '📋 Copy SVG Code'}
+        <button className="btn btn-primary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => copyCode(svgCode)}>
+          {copiedCode ? <Check size={14} /> : <Copy size={14} />} {copiedCode ? 'Copied SVG' : 'Copy SVG Code'}
         </button>
-        <button className="btn btn-outline btn-sm" onClick={downloadSvg}>
-          ⬇ Download .SVG
+        <button className="btn btn-outline btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={downloadSvg}>
+          <Download size={14} /> Download .SVG
         </button>
       </div>
     </div>
@@ -656,8 +667,8 @@ function CropStudio() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div>
-              <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a' }}>
-                ✂️ Image Crop Studio
+              <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Crop size={16} style={{ color: '#4F8EF7' }} /> Image Crop Studio
               </div>
               <div style={{ fontSize: 12, color: '#888' }}>
                 Original: {imgEl.naturalWidth} × {imgEl.naturalHeight} px · Cropped: {Math.round((cropBox.w / 100) * imgEl.naturalWidth)} × {Math.round((cropBox.h / 100) * imgEl.naturalHeight)} px
@@ -712,8 +723,8 @@ function CropStudio() {
             <canvas ref={previewCanvasRef} style={{ maxWidth: '100%', maxHeight: 360, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }} />
           </div>
 
-          <button className="btn btn-primary btn-w btn-lg" onClick={handleDownload}>
-            💾 Download Cropped Image (PNG)
+          <button className="btn btn-primary btn-w btn-lg" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }} onClick={handleDownload}>
+            <Download size={16} /> Download Cropped Image (PNG)
           </button>
         </div>
       )}
@@ -815,8 +826,8 @@ function ResizeStudio() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div>
-              <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a' }}>
-                📐 Smart Image Resizer
+              <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Maximize2 size={16} style={{ color: '#4F8EF7' }} /> Smart Image Resizer
               </div>
               <div style={{ fontSize: 12, color: '#888' }}>
                 Original: {imgEl.naturalWidth} × {imgEl.naturalHeight} px · Target: {width} × {height} px
@@ -841,7 +852,7 @@ function ResizeStudio() {
           <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#333', cursor: 'pointer' }}>
               <input type="checkbox" checked={lockRatio} onChange={e => setLockRatio(e.target.checked)} />
-              🔒 Maintain Aspect Ratio
+              <Lock size={13} style={{ color: '#4F8EF7' }} /> Maintain Aspect Ratio
             </label>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {[25, 50, 75, 100, 150, 200].map(pct => (
@@ -870,8 +881,8 @@ function ResizeStudio() {
             <canvas ref={previewCanvasRef} style={{ maxWidth: '100%', maxHeight: 320, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }} />
           </div>
 
-          <button className="btn btn-primary btn-w btn-lg" onClick={handleDownload}>
-            💾 Download Resized Image ({width} × {height} px)
+          <button className="btn btn-primary btn-w btn-lg" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }} onClick={handleDownload}>
+            <Download size={16} /> Download Resized Image ({width} × {height} px)
           </button>
         </div>
       )}
@@ -939,8 +950,8 @@ function CompressStudio() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div>
-              <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a' }}>
-                🗜️ Real Image Compressor
+              <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Minimize2 size={16} style={{ color: '#4F8EF7' }} /> Real Image Compressor
               </div>
               <div style={{ fontSize: 12, color: '#888' }}>
                 Before: {origSize} KB → After: {newSize} KB ({pctSaved}% saved)
@@ -971,7 +982,7 @@ function CompressStudio() {
             <div style={{ flex: 1, minWidth: 200, padding: 14, background: '#eff6ff', borderRadius: 12, border: '1px solid #bfdbfe', textAlign: 'center' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase' }}>Compressed Output</div>
               <div style={{ fontSize: 20, fontWeight: 800, color: '#1d4ed8', marginTop: 4 }}>{newSize} KB</div>
-              <div style={{ fontSize: 11.5, fontWeight: 700, color: '#22c55e' }}>📉 -{pctSaved}% Reduction</div>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: '#22c55e' }}>-{pctSaved}% Reduction</div>
             </div>
           </div>
 
@@ -981,8 +992,8 @@ function CompressStudio() {
             </div>
           )}
 
-          <button className="btn btn-primary btn-w btn-lg" onClick={() => compBlob && dlBlob(compBlob, (file?.name ? file.name.replace(/\.[^.]+$/, '') : 'compressed') + `_compressed.${format === 'image/webp' ? 'webp' : 'jpg'}`)}>
-            💾 Download Compressed File ({newSize} KB)
+          <button className="btn btn-primary btn-w btn-lg" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }} onClick={() => compBlob && dlBlob(compBlob, (file?.name ? file.name.replace(/\.[^.]+$/, '') : 'compressed') + `_compressed.${format === 'image/webp' ? 'webp' : 'jpg'}`)}>
+            <Download size={16} /> Download Compressed File ({newSize} KB)
           </button>
         </div>
       )}
@@ -1043,8 +1054,8 @@ function ConvertStudio() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div>
-              <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a' }}>
-                🔄 Image Format Converter
+              <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <RefreshCw size={16} style={{ color: '#4F8EF7' }} /> Image Format Converter
               </div>
               <div style={{ fontSize: 12, color: '#888' }}>
                 Current format: {file?.type} · Resolution: {imgEl.naturalWidth} × {imgEl.naturalHeight} px
@@ -1078,8 +1089,8 @@ function ConvertStudio() {
             <img src={imgUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: 320, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }} />
           </div>
 
-          <button className="btn btn-primary btn-w btn-lg" onClick={handleConvert}>
-            ⚡ Convert & Download ({format.replace('image/', '').toUpperCase()})
+          <button className="btn btn-primary btn-w btn-lg" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }} onClick={handleConvert}>
+            <Zap size={16} /> Convert & Download ({format.replace('image/', '').toUpperCase()})
           </button>
         </div>
       )}
@@ -1167,8 +1178,8 @@ function RotateFlipStudio() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div>
-              <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a' }}>
-                🔄 Rotate & Flip Studio
+              <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <RotateCw size={16} style={{ color: '#4F8EF7' }} /> Rotate & Flip Studio
               </div>
               <div style={{ fontSize: 12, color: '#888' }}>
                 Rotation: {angle}° · Flip: {flipH ? 'H' : ''}{flipV ? 'V' : ''} {!flipH && !flipV ? 'None' : ''}
@@ -1180,20 +1191,20 @@ function RotateFlipStudio() {
           </div>
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setAngle(a => (a + 90) % 360)}>
-              ↻ Rotate 90° CW
+            <button type="button" className="btn btn-secondary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} onClick={() => setAngle(a => (a + 90) % 360)}>
+              <RotateCw size={13} /> Rotate 90° CW
             </button>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setAngle(a => (a + 270) % 360)}>
-              ↺ Rotate 90° CCW
+            <button type="button" className="btn btn-secondary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} onClick={() => setAngle(a => (a + 270) % 360)}>
+              <RotateCw size={13} style={{ transform: 'scaleX(-1)' }} /> Rotate 90° CCW
             </button>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setAngle(a => (a + 180) % 360)}>
-              🔃 180° Flip
+            <button type="button" className="btn btn-secondary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }} onClick={() => setAngle(a => (a + 180) % 360)}>
+              <RefreshCw size={13} /> 180° Flip
             </button>
             <button type="button" className={`btn btn-sm ${flipH ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setFlipH(f => !f)}>
-              ↔ Flip Horizontal
+              Flip Horizontal
             </button>
             <button type="button" className={`btn btn-sm ${flipV ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setFlipV(f => !f)}>
-              ↕ Flip Vertical
+              Flip Vertical
             </button>
             <button type="button" className="btn btn-outline btn-sm" onClick={() => { setAngle(0); setFlipH(false); setFlipV(false) }}>
               Reset
@@ -1204,8 +1215,8 @@ function RotateFlipStudio() {
             <canvas ref={previewCanvasRef} style={{ maxWidth: '100%', maxHeight: 360, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }} />
           </div>
 
-          <button className="btn btn-primary btn-w btn-lg" onClick={handleDownload}>
-            💾 Download Transformed Image (PNG)
+          <button className="btn btn-primary btn-w btn-lg" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }} onClick={handleDownload}>
+            <Download size={16} /> Download Transformed Image (PNG)
           </button>
         </div>
       )}
@@ -1294,8 +1305,8 @@ function AdjustFilterStudio() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div>
-              <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a' }}>
-                🎨 Adjustments & Filter Studio
+              <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Sliders size={16} style={{ color: '#4F8EF7' }} /> Adjustments & Filter Studio
               </div>
               <div style={{ fontSize: 12, color: '#888' }}>
                 Resolution: {imgEl.naturalWidth} × {imgEl.naturalHeight} px
@@ -1334,8 +1345,8 @@ function AdjustFilterStudio() {
             <canvas ref={previewCanvasRef} style={{ maxWidth: '100%', maxHeight: 360, borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }} />
           </div>
 
-          <button className="btn btn-primary btn-w btn-lg" onClick={handleDownload}>
-            💾 Download Adjusted Image (PNG)
+          <button className="btn btn-primary btn-w btn-lg" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }} onClick={handleDownload}>
+            <Download size={16} /> Download Adjusted Image (PNG)
           </button>
         </div>
       )}
@@ -1412,8 +1423,8 @@ function PaletteStudio() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div>
-              <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a' }}>
-                🎯 Dominant Color Palette Extractor
+              <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Palette size={16} style={{ color: '#4F8EF7' }} /> Dominant Color Palette Extractor
               </div>
               <div style={{ fontSize: 12, color: '#888' }}>
                 Extracted top dominant color clusters directly from image pixels
@@ -1430,8 +1441,8 @@ function PaletteStudio() {
               <div style={{ fontWeight: 700, fontSize: 14, color: '#0d0d1a' }}>{file?.name}</div>
               <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>Click any color card to copy its HEX value</div>
               {copiedColor && (
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#22c55e', marginTop: 4 }}>
-                  ✓ Copied {copiedColor} to clipboard!
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#22c55e', marginTop: 4, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <Check size={13} /> Copied {copiedColor} to clipboard!
                 </div>
               )}
             </div>
@@ -1596,8 +1607,8 @@ function ImageToPdfStudio() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
-          <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a' }}>
-            📄 Image to PDF Converter
+          <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <FileText size={16} style={{ color: '#4F8EF7' }} /> Image to PDF Converter
           </div>
           <div style={{ fontSize: 12, color: '#888' }}>
             Combine single or multiple photos into a crisp, vector-scaled PDF document
@@ -1606,8 +1617,8 @@ function ImageToPdfStudio() {
       </div>
 
       <div className="fgrp">
-        <label className="btn btn-outline btn-w" style={{ cursor: 'pointer', textAlign: 'center', padding: '16px' }}>
-          📁 Select / Add Images
+        <label className="btn btn-outline btn-w" style={{ cursor: 'pointer', textAlign: 'center', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <UploadCloud size={16} /> Select / Add Images
           <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => handleFiles(e.target.files)} />
         </label>
       </div>
@@ -1651,14 +1662,14 @@ function ImageToPdfStudio() {
                   <span style={{ fontSize: 12.5, fontWeight: 600, color: '#333', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {idx + 1}. {item.name}
                   </span>
-                  <button type="button" className="btn btn-secondary btn-sm" style={{ padding: '2px 6px' }} onClick={() => moveItem(idx, -1)} disabled={idx === 0}>
-                    ↑
+                  <button type="button" className="btn btn-secondary btn-sm" style={{ padding: '4px 6px', display: 'inline-flex', alignItems: 'center' }} onClick={() => moveItem(idx, -1)} disabled={idx === 0}>
+                    <ArrowUp size={13} />
                   </button>
-                  <button type="button" className="btn btn-secondary btn-sm" style={{ padding: '2px 6px' }} onClick={() => moveItem(idx, 1)} disabled={idx === images.length - 1}>
-                    ↓
+                  <button type="button" className="btn btn-secondary btn-sm" style={{ padding: '4px 6px', display: 'inline-flex', alignItems: 'center' }} onClick={() => moveItem(idx, 1)} disabled={idx === images.length - 1}>
+                    <ArrowDown size={13} />
                   </button>
-                  <button type="button" className="btn btn-outline btn-sm" style={{ padding: '2px 6px', color: '#ef4444' }} onClick={() => removeItem(item.id)}>
-                    ✕
+                  <button type="button" className="btn btn-outline btn-sm" style={{ padding: '4px 6px', color: '#ef4444', display: 'inline-flex', alignItems: 'center' }} onClick={() => removeItem(item.id)}>
+                    <X size={13} />
                   </button>
                 </div>
               ))}
@@ -1666,13 +1677,14 @@ function ImageToPdfStudio() {
           </div>
 
           {errorMsg && (
-            <div style={{ color: '#ef4444', fontSize: 12, fontWeight: 600, marginBottom: 10 }}>
-              ⚠️ {errorMsg}
+            <div style={{ color: '#ef4444', fontSize: 12, fontWeight: 600, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <AlertTriangle size={14} /> {errorMsg}
             </div>
           )}
 
-          <button className="btn btn-primary btn-w btn-lg" onClick={generatePdf} disabled={generating}>
-            {generating ? '⏳ Building PDF Document…' : `📄 Export ${images.length} Image(s) as PDF`}
+          <button className="btn btn-primary btn-w btn-lg" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }} onClick={generatePdf} disabled={generating}>
+            {generating ? <Loader2 size={16} className="spin" /> : <FileText size={16} />}
+            {generating ? 'Building PDF Document…' : `Export ${images.length} Image(s) as PDF`}
           </button>
         </div>
       )}
@@ -1788,8 +1800,8 @@ function BatchStudio() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
-          <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a' }}>
-            ⚡ Batch Processing Studio
+          <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Zap size={16} style={{ color: '#4F8EF7' }} /> Batch Processing Studio
           </div>
           <div style={{ fontSize: 12, color: '#888' }}>
             Process multiple images in bulk (Convert, Resize, Compress) with ZIP archive export
@@ -1798,8 +1810,8 @@ function BatchStudio() {
       </div>
 
       <div className="fgrp">
-        <label className="btn btn-outline btn-w" style={{ cursor: 'pointer', textAlign: 'center', padding: '16px' }}>
-          📁 Upload Files for Batch Queue (Max 10)
+        <label className="btn btn-outline btn-w" style={{ cursor: 'pointer', textAlign: 'center', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <UploadCloud size={16} /> Upload Files for Batch Queue (Max 10)
           <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => handleFiles(e.target.files)} />
         </label>
       </div>
@@ -1850,8 +1862,8 @@ function BatchStudio() {
                       {item.status}
                     </span>
                     {item.outBlob && (
-                      <button type="button" className="btn btn-secondary btn-sm" style={{ padding: '2px 8px', fontSize: 11 }} onClick={() => dlBlob(item.outBlob, item.outName)}>
-                        💾 Save
+                      <button type="button" className="btn btn-secondary btn-sm" style={{ padding: '4px 8px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => dlBlob(item.outBlob, item.outName)}>
+                        <Download size={12} /> Save
                       </button>
                     )}
                   </div>
@@ -1872,12 +1884,13 @@ function BatchStudio() {
           )}
 
           <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn btn-primary btn-lg" style={{ flex: 2 }} onClick={runBatch} disabled={processing}>
-              {processing ? '⏳ Processing Batch…' : '⚡ Start Batch Processing'}
+            <button className="btn btn-primary btn-lg" style={{ flex: 2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }} onClick={runBatch} disabled={processing}>
+              {processing ? <Loader2 size={16} className="spin" /> : <Zap size={16} />}
+              {processing ? 'Processing Batch…' : 'Start Batch Processing'}
             </button>
             {queue.some(q => q.status === 'SUCCESS') && (
-              <button className="btn btn-secondary btn-lg" style={{ flex: 1 }} onClick={downloadAllZip}>
-                📦 Download All (ZIP)
+              <button className="btn btn-secondary btn-lg" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }} onClick={downloadAllZip}>
+                <Archive size={16} /> Download All (ZIP)
               </button>
             )}
           </div>
@@ -1888,24 +1901,24 @@ function BatchStudio() {
 }
 
 const TABS = [
-  { id:'crop',       label:'✂️ Crop Image',            desc:'True manual crop with 8 handles & exact pixel coordinates' },
-  { id:'redact',     label:'🙈 Image Redactor',        desc:'Permanent blur, pixelate & blackout privacy redaction' },
-  { id:'ocr',        label:'👁️ Image to Text (OCR)',   desc:'Extract authentic text from images & documents with Tesseract' },
-  { id:'dpi',        label:'🔍 Image DPI & Resolution',desc:'Authentic DPI metadata & print size calculator' },
-  { id:'resize',     label:'📐 Resize',         desc:'Resample width & height with presets' },
-  { id:'compress',   label:'🗜️ Compress',       desc:'Reduce file size with live before/after' },
-  { id:'convert',    label:'🔄 Converter',      desc:'Convert between PNG, JPG, WebP' },
-  { id:'rotate',     label:'🔄 Rotate & Flip',  desc:'Rotate 90°/180° and mirror image' },
-  { id:'adjust',     label:'🎨 Adjust & Filter', desc:'Brightness, contrast, saturation, tones' },
-  { id:'palette',    label:'🎯 Color Palette',  desc:'Extract dominant HEX/RGB palettes' },
-  { id:'img2pdf',    label:'📄 Image to PDF',   desc:'Convert single or multi-images to PDF' },
-  { id:'batch',      label:'⚡ Batch Studio',   desc:'Batch convert, resize & ZIP download' },
-  { id:'border',     label:'🖼️ Border',         desc:'Add stylish borders & shadows' },
-  { id:'corner',     label:'⬜ Round Corners',   desc:'Apply border-radius to images' },
-  { id:'cornerCSS',  label:'📐 CSS Generator',  desc:'Generate border-radius CSS code' },
-  { id:'watermark',  label:'💧 Watermarking',   desc:'Apply text & logo overlays in bulk' },
-  { id:'exif',       label:'🛡️ EXIF Privacy',    desc:'Inspect & strip location/camera metadata' },
-  { id:'wave',       label:'🌊 Wave & Blob',     desc:'Generate organic SVG waves & blobs' },
+  { id:'crop',       icon: Crop,        label:'Crop Image',            desc:'True manual crop with 8 handles & exact pixel coordinates' },
+  { id:'redact',     icon: EyeOff,      label:'Image Redactor',        desc:'Permanent blur, pixelate & blackout privacy redaction' },
+  { id:'ocr',        icon: ScanText,    label:'Image to Text (OCR)',   desc:'Extract authentic text from images & documents with Tesseract' },
+  { id:'dpi',        icon: ScanSearch,  label:'Image DPI & Resolution',desc:'Authentic DPI metadata & print size calculator' },
+  { id:'resize',     icon: Maximize2,   label:'Resize',         desc:'Resample width & height with presets' },
+  { id:'compress',   icon: Minimize2,   label:'Compress',       desc:'Reduce file size with live before/after' },
+  { id:'convert',    icon: RefreshCw,   label:'Converter',      desc:'Convert between PNG, JPG, WebP' },
+  { id:'rotate',     icon: RotateCw,    label:'Rotate & Flip',  desc:'Rotate 90°/180° and mirror image' },
+  { id:'adjust',     icon: Sliders,     label:'Adjust & Filter', desc:'Brightness, contrast, saturation, tones' },
+  { id:'palette',    icon: Palette,     label:'Color Palette',  desc:'Extract dominant HEX/RGB palettes' },
+  { id:'img2pdf',    icon: FileText,    label:'Image to PDF',   desc:'Convert single or multi-images to PDF' },
+  { id:'batch',      icon: Zap,         label:'Batch Studio',   desc:'Batch convert, resize & ZIP download' },
+  { id:'border',     icon: Frame,       label:'Border',         desc:'Add stylish borders & shadows' },
+  { id:'corner',     icon: Square,      label:'Round Corners',   desc:'Apply border-radius to images' },
+  { id:'cornerCSS',  icon: Code2,       label:'CSS Generator',  desc:'Generate border-radius CSS code' },
+  { id:'watermark',  icon: Droplets,    label:'Watermarking',   desc:'Apply text & logo overlays in bulk' },
+  { id:'exif',       icon: ShieldCheck, label:'EXIF Privacy',    desc:'Inspect & strip location/camera metadata' },
+  { id:'wave',       icon: Waves,       label:'Wave & Blob',     desc:'Generate organic SVG waves & blobs' },
 ]
 
 /* ─────────────────────────────────────────────
@@ -2204,7 +2217,9 @@ export default function ImageToolsStudio() {
                 background:activeTab===t.id?'rgba(79,142,247,.08)':'#fafafa',
                 boxShadow:activeTab===t.id?'0 0 0 3px rgba(79,142,247,.12)':'none'}}>
               <span style={{fontSize:14,fontWeight:700,
+                display:'inline-flex',alignItems:'center',gap:7,
                 color:activeTab===t.id?'#4F8EF7':'#0d0d1a',fontFamily:'Syne,sans-serif'}}>
+                {t.icon && <t.icon size={15} style={{color:activeTab===t.id?'#4F8EF7':'#666',flexShrink:0}} />}
                 {t.label}
               </span>
               <span style={{fontSize:11,color:'#aaa',marginTop:2}}>{t.desc}</span>
@@ -2240,11 +2255,12 @@ export default function ImageToolsStudio() {
                       <motion.button key={p.name} whileHover={{y:-3,scale:1.04}} whileTap={{scale:.93}}
                         onClick={()=>applyBorderPreset(p)}
                         style={{padding:'7px 13px',borderRadius:999,fontSize:12,fontWeight:700,
-                          cursor:'pointer',transition:'all .18s',
+                          cursor:'pointer',transition:'all .18s',display:'inline-flex',alignItems:'center',gap:5,
                           border:`1.5px solid ${bPreset===p.name?'#4F8EF7':'rgba(0,0,0,.1)'}`,
                           background:bPreset===p.name?'rgba(79,142,247,.09)':'#fafafa',
                           color:bPreset===p.name?'#4F8EF7':'#555'}}>
-                        {p.emoji} {p.name}
+                        {p.icon && <p.icon size={13} style={{flexShrink:0}} />}
+                        {p.name}
                       </motion.button>
                     ))}
                   </div>
@@ -2704,7 +2720,9 @@ export default function ImageToolsStudio() {
                         <span style={{fontSize:12.5,fontWeight:600,color:'#333',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',maxWidth:'70%'}}>{f.name}</span>
                         <div style={{display:'flex',gap:10,alignItems:'center'}}>
                           <span style={{fontSize:11,color:'#aaa'}}>{(f.size/1024).toFixed(0)} KB</span>
-                          <button onClick={()=>setWmFiles(prev=>prev.filter((_,i)=>i!==idx))} style={{border:'none',background:'none',color:'#bbb',cursor:'pointer',fontSize:13}} onMouseEnter={e=>e.currentTarget.style.color='#ef4444'} onMouseLeave={e=>e.currentTarget.style.color='#bbb'}>✕</button>
+                          <button onClick={()=>setWmFiles(prev=>prev.filter((_,i)=>i!==idx))} style={{border:'none',background:'none',color:'#bbb',cursor:'pointer',padding:2,display:'flex',alignItems:'center'}} onMouseEnter={e=>e.currentTarget.style.color='#ef4444'} onMouseLeave={e=>e.currentTarget.style.color='#bbb'}>
+                            <X size={13} />
+                          </button>
                         </div>
                       </div>
                     ))}

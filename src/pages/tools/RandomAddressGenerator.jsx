@@ -6,6 +6,7 @@ import { TOOLS } from '../../constants'
 import { D, FLAGS } from './generatorData.js'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import { addToHistory } from '../../utils/history'
+import { Home, Building2, Mail, Phone, Globe, MapPin as MapPinIcon, FileText, Check, Copy, ExternalLink, FlaskConical } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'randaddress')
 
@@ -320,7 +321,7 @@ function AddressCard({ addr, index }) {
         cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center',
         justifyContent: 'center', transition: 'all .18s', flexShrink: 0,
       }}>
-      {copiedField === field ? '✓' : '⎘'}
+      {copiedField === field ? <Check size={12} color="#fff" /> : <Copy size={12} />}
     </motion.button>
   )
 
@@ -392,50 +393,54 @@ function AddressCard({ addr, index }) {
               transition: 'all .22s', flexShrink: 0,
               whiteSpace: 'nowrap',
             }}>
-            {copiedField === 'full' ? '✓ Copied' : '📋 Copy'}
+            {copiedField === 'full' ? <><Check size={11} /> Copied</> : <><Copy size={11} /> Copy</>}
           </motion.button>
         </div>
 
         {/* Detail rows */}
         <div style={{ padding: '12px 18px 4px' }}>
           {[
-            { label: 'Street',  value: addr.line1,  icon: '🏠', field: 'street' },
-            { label: 'City',    value: addr.city,   icon: '🏙', field: 'city'   },
-            { label: 'ZIP',     value: addr.zip,    icon: '📮', field: 'zip'    },
-            { label: 'Phone',   value: addr.phone,  icon: '📞', field: 'phone'  },
-          ].map(row => (
+            { label: 'Street',  value: addr.line1,  icon: Home, field: 'street' },
+            { label: 'City',    value: addr.city,   icon: Building2, field: 'city'   },
+            { label: 'ZIP',     value: addr.zip,    icon: Mail, field: 'zip'    },
+            { label: 'Phone',   value: addr.phone,  icon: Phone, field: 'phone'  },
+          ].map(row => {
+            const IconC = row.icon
+            return (
             <div key={row.field} style={{
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '7px 0', borderBottom: '1px solid rgba(0,0,0,.05)',
             }}>
-              <span style={{ fontSize: 14, flexShrink: 0 }}>{row.icon}</span>
+              <span style={{ color: addr.accent, flexShrink: 0, display: 'flex', alignItems: 'center' }}><IconC size={14} /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 9.5, fontWeight: 700, color: '#ccc', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 1 }}>{row.label}</div>
                 <div style={{ fontSize: 12.5, color: '#444', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.value}</div>
               </div>
               <CopyBtn value={row.value} field={row.field}/>
             </div>
-          ))}
+          )})}
 
           {/* Expanded fields */}
           <AnimatePresence>
             {expanded && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ overflow: 'hidden' }}>
                 {[
-                  { label: 'Country', value: addr.country,              icon: '🌍', field: 'country' },
-                  { label: 'Latitude', value: addr.lat,                 icon: '🗺', field: 'lat'     },
-                  { label: 'Longitude', value: addr.lng,                icon: '🗺', field: 'lng'     },
-                  { label: 'Full Address', value: addr.full,            icon: '📄', field: 'fullexp' },
-                ].map(row => (
+                  { label: 'Country', value: addr.country,              icon: Globe, field: 'country' },
+                  { label: 'Latitude', value: addr.lat,                 icon: MapPinIcon, field: 'lat'     },
+                  { label: 'Longitude', value: addr.lng,                icon: MapPinIcon, field: 'lng'     },
+                  { label: 'Full Address', value: addr.full,            icon: FileText, field: 'fullexp' },
+                ].map(row => {
+                  const IconC = row.icon
+                  return (
                   <div key={row.field} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid rgba(0,0,0,.05)' }}>
-                    <span style={{ fontSize: 14, flexShrink: 0 }}>{row.icon}</span>
+                    <span style={{ color: addr.accent, flexShrink: 0, display: 'flex', alignItems: 'center' }}><IconC size={14} /></span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 9.5, fontWeight: 700, color: '#ccc', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 1 }}>{row.label}</div>
                       <div style={{ fontSize: 12, color: '#444', fontWeight: 500, wordBreak: 'break-word', whiteSpace: row.field === 'fullexp' ? 'pre' : 'nowrap', overflow: row.field === 'fullexp' ? 'visible' : 'hidden', textOverflow: 'ellipsis' }}>{row.value}</div>
                     </div>
                     <CopyBtn value={row.value} field={row.field}/>
                   </div>
-                ))}
+                )})}
                 {/* Google Maps link & Basic JSON */}
                 <div style={{ padding: '10px 0', display: 'flex', gap: 8 }}>
                   <a href={`https://maps.google.com/?q=${encodeURIComponent(addr.line1+', '+addr.city+', '+addr.country)}`}
@@ -443,15 +448,15 @@ function AddressCard({ addr, index }) {
                     style={{ flex: 1, padding: '8px 0', borderRadius: 9, textAlign: 'center',
                       background: `${addr.accent}10`, color: addr.accent,
                       fontSize: 12, fontWeight: 700, textDecoration: 'none',
-                      border: `1px solid ${addr.accent}25`, display: 'block' }}>
-                    🗺 Open in Google Maps
+                      border: `1px solid ${addr.accent}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    <ExternalLink size={12} /> Open in Google Maps
                   </a>
                   <button onClick={() => copyField(JSON.stringify({name:addr.name,line1:addr.line1,city:addr.city,zip:addr.zip,country:addr.country,phone:addr.phone,lat:addr.lat,lng:addr.lng}, null, 2), 'json')}
                     style={{ flex: 1, padding: '8px 0', borderRadius: 9,
                       background: copiedField === 'json' ? addr.accent : 'rgba(0,0,0,.04)',
                       color: copiedField === 'json' ? '#fff' : '#666',
-                      fontSize: 12, fontWeight: 700, border: '1px solid rgba(0,0,0,.08)', cursor: 'pointer' }}>
-                    {copiedField === 'json' ? '✓ Copied' : '{ } Copy JSON'}
+                      fontSize: 12, fontWeight: 700, border: '1px solid rgba(0,0,0,.08)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                    {copiedField === 'json' ? <><Check size={11} /> Copied</> : '{ } Copy JSON'}
                   </button>
                 </div>
               </motion.div>
@@ -481,7 +486,7 @@ function AddressCard({ addr, index }) {
             fontFamily: 'DM Sans, sans-serif', transition: 'all .18s'
           }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span>📑</span>
+            <FileText size={13} />
             <span>Test-Fixture Dossier</span>
             <span style={{
               fontSize: 9.5, padding: '2px 7px', borderRadius: 999,
@@ -521,7 +526,7 @@ function AddressCard({ addr, index }) {
                 alignItems: 'center',
                 gap: 8
               }}>
-                <span style={{ fontSize: 14, flexShrink: 0 }}>🧪</span>
+                <FlaskConical size={14} color="#c2410c" style={{ flexShrink: 0 }} />
                 <div style={{ fontSize: 10.5, color: '#c2410c', lineHeight: 1.4, fontWeight: 600 }}>
                   <strong>SIMULATED TEST FIXTURE (SYNTHETIC DATA):</strong> Architectural, climatic & transit attributes are generated heuristics for QA mockups and world-building. Zero real PII or census profiling.
                 </div>
