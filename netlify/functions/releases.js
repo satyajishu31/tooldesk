@@ -36,38 +36,44 @@ exports.handler = async function (event, context) {
   }
 
   try {
-    // Attempt to read from public/releases.json or dist/releases.json
+    // Attempt to require directly or read from public/releases.json or dist/releases.json
     let manifestData = null
-    const candidatePaths = [
-      path.resolve(__dirname, '../../public/releases.json'),
-      path.resolve(__dirname, '../../dist/releases.json'),
-      path.resolve(process.cwd(), 'public/releases.json'),
-      path.resolve(process.cwd(), 'dist/releases.json')
-    ]
+    try {
+      manifestData = JSON.parse(JSON.stringify(require('../../public/releases.json')))
+    } catch {}
 
-    for (const p of candidatePaths) {
-      if (fs.existsSync(p)) {
-        try {
-          const raw = fs.readFileSync(p, 'utf8')
-          manifestData = JSON.parse(raw)
-          break
-        } catch {}
+    if (!manifestData) {
+      const candidatePaths = [
+        path.resolve(__dirname, '../../public/releases.json'),
+        path.resolve(__dirname, '../../dist/releases.json'),
+        path.resolve(process.cwd(), 'public/releases.json'),
+        path.resolve(process.cwd(), 'dist/releases.json')
+      ]
+
+      for (const p of candidatePaths) {
+        if (fs.existsSync(p)) {
+          try {
+            const raw = fs.readFileSync(p, 'utf8')
+            manifestData = JSON.parse(raw)
+            break
+          } catch {}
+        }
       }
     }
 
     if (!manifestData) {
       manifestData = {
-        version: '1.2.2',
-        releaseDate: '2026-09-29',
+        version: '1.3.0',
+        releaseDate: '2026-09-30',
         minimumSupportedVersion: '1.0.0',
         notes: 'ToolDesk official release with offline privacy tools.',
         platforms: {
-          macos: { status: 'available', version: '1.2.2' },
-          android: { status: 'available', version: '1.2.2' },
-          windows: { status: 'available', version: '1.2.2' },
-          linux: { status: 'available', version: '1.2.2' },
-          ios: { status: 'pwa-ready', version: '1.2.2' },
-          pwa: { status: 'available', version: '1.2.2' }
+          macos: { status: 'available', version: '1.3.0' },
+          android: { status: 'available', version: '1.3.0' },
+          windows: { status: 'available', version: '1.3.0' },
+          linux: { status: 'available', version: '1.3.0' },
+          ios: { status: 'pwa-ready', version: '1.3.0' },
+          pwa: { status: 'available', version: '1.3.0' }
         }
       }
     }
