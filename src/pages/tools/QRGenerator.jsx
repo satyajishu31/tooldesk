@@ -405,18 +405,19 @@ export default function QRGenerator() {
       <Reveal>
         <div className="qr-studio-tabs" style={{
           display: 'flex',
-          background: 'rgba(0,0,0,.045)',
+          background: 'rgba(0,0,0,.042)',
           backdropFilter: 'blur(10px)',
           WebkitBackdropFilter: 'blur(10px)',
           borderRadius: 14,
           padding: 4,
           gap: 4,
           marginBottom: 20,
-          border: '1px solid rgba(0,0,0,.04)',
+          border: '1px solid rgba(0,0,0,.035)',
           flexWrap: 'wrap'
         }}>
           {STUDIO_TABS.map(tab => {
             const TabIcon = tab.icon
+            const isActive = studioTab === tab.id
             return (
               <button
                 key={tab.id}
@@ -427,25 +428,28 @@ export default function QRGenerator() {
                   flex: '1 1 100px',
                   minWidth: 88,
                   boxSizing: 'border-box',
-                  padding: '10px 8px',
-                  borderRadius: 10,
+                  padding: '10px 12px',
+                  borderRadius: 12,
                   border: 'none',
                   cursor: 'pointer',
                   fontFamily: 'DM Sans,sans-serif',
                   fontSize: 13,
                   fontWeight: 700,
-                  background: studioTab === tab.id ? '#ffffff' : 'transparent',
-                  color: studioTab === tab.id ? '#0d0d1a' : '#64748b',
-                  boxShadow: studioTab === tab.id ? '0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.03)' : 'none',
+                  background: isActive ? 'rgba(255,255,255,0.95)' : 'transparent',
+                  color: isActive ? '#0d0d1a' : '#64748b',
+                  boxShadow: isActive
+                    ? '0 2px 10px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)'
+                    : 'none',
                   transition: 'all .18s cubic-bezier(.22,1,.36,1)',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 6,
                   textAlign: 'center',
+                  minHeight: 44,
                 }}
               >
-                <TabIcon size={15} color={studioTab === tab.id ? '#4F8EF7' : '#64748b'} />
+                <TabIcon size={15} color={isActive ? '#4F8EF7' : '#64748b'} />
                 <span>{tab.label}</span>
               </button>
             )
@@ -489,19 +493,20 @@ export default function QRGenerator() {
 
           {/* Mode tabs */}
           <Reveal>
-        <div style={{ display:'flex', background:'rgba(0,0,0,.045)', borderRadius:14, padding:4, gap:3, marginBottom:16, flexWrap:'wrap', border:'1px solid rgba(0,0,0,.04)' }}>
+        <div style={{ display:'flex', background:'rgba(0,0,0,.042)', borderRadius:14, padding:4, gap:3, marginBottom:16, flexWrap:'wrap', border:'1px solid rgba(0,0,0,.035)' }}>
           {QR_MODES.map(m => {
             const ModeIcon = m.icon
+            const isActive = mode === m.id
             return (
               <button key={m.id} onClick={() => { setMode(m.id); setValue(''); setQrUrl('') }}
-                style={{ flex:1, minWidth:80, padding:'9px 8px', borderRadius:10, border:'none',
-                  cursor:'pointer', fontSize:12, fontWeight:700,
-                  background: mode === m.id ? '#ffffff' : 'transparent',
-                  color: mode === m.id ? '#0d0d1a' : '#64748b',
-                  boxShadow: mode === m.id ? '0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none',
+                style={{ flex:1, minWidth:80, padding:'9px 10px', borderRadius:12, border:'none',
+                  cursor:'pointer', fontSize:12, fontWeight:700, minHeight:40,
+                  background: isActive ? 'rgba(255,255,255,0.95)' : 'transparent',
+                  color: isActive ? '#0d0d1a' : '#64748b',
+                  boxShadow: isActive ? '0 2px 10px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none',
                   transition:'all .18s cubic-bezier(.22,1,.36,1)',
                   display:'inline-flex', alignItems:'center', justifyContent:'center', gap:5 }}>
-                <ModeIcon size={13} color={mode === m.id ? '#4F8EF7' : '#64748b'} />
+                <ModeIcon size={13} color={isActive ? '#4F8EF7' : '#64748b'} />
                 <span>{m.label}</span>
               </button>
             )

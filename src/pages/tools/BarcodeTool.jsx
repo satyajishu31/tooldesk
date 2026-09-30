@@ -393,11 +393,11 @@ export default function BarcodeTool({ isEmbedded = false }) {
   const card = (
     <ToolCard>
         {/* Main Tab Switcher */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: 20, background: 'rgba(0,0,0,.04)', padding: 4, borderRadius: 12 }}>
+        <div style={{ display: 'flex', gap: 3, marginBottom: 20, background: 'rgba(0,0,0,.042)', padding: 4, borderRadius: 14, border: '1px solid rgba(0,0,0,.035)' }}>
           <button
             type="button"
             className={`btn btn-sm ${activeTab === 'generate' ? 'btn-primary' : 'btn-outline'}`}
-            style={{ flex: 1, padding: '10px 14px', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
+            style={{ flex: 1, padding: '10px 14px', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 12, minHeight: 40 }}
             onClick={() => setActiveTab('generate')}
           >
             <Barcode size={15} /> Barcode Generator
@@ -405,7 +405,7 @@ export default function BarcodeTool({ isEmbedded = false }) {
           <button
             type="button"
             className={`btn btn-sm ${activeTab === 'scan' ? 'btn-primary' : 'btn-outline'}`}
-            style={{ flex: 1, padding: '10px 14px', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
+            style={{ flex: 1, padding: '10px 14px', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 12, minHeight: 40 }}
             onClick={() => setActiveTab('scan')}
           >
             <ScanLine size={15} /> Barcode Scanner
@@ -571,11 +571,11 @@ export default function BarcodeTool({ isEmbedded = false }) {
            ══════════════════════════════════════════════════════ */}
         {activeTab === 'scan' && (
           <div>
-            <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+            <div style={{ display: 'flex', gap: 3, marginBottom: 16, background: 'rgba(0,0,0,.042)', padding: 4, borderRadius: 12, border: '1px solid rgba(0,0,0,.035)' }}>
               <button
                 type="button"
                 className={`btn btn-sm ${scanMode === 'camera' ? 'btn-primary' : 'btn-outline'}`}
-                style={{ padding: '7px 14px', fontSize: 12.5, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                style={{ padding: '7px 14px', fontSize: 12.5, display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 10, minHeight: 36 }}
                 onClick={() => setScanMode('camera')}
               >
                 <Camera size={14} /> Live Camera
@@ -583,7 +583,7 @@ export default function BarcodeTool({ isEmbedded = false }) {
               <button
                 type="button"
                 className={`btn btn-sm ${scanMode === 'upload' ? 'btn-primary' : 'btn-outline'}`}
-                style={{ padding: '7px 14px', fontSize: 12.5, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                style={{ padding: '7px 14px', fontSize: 12.5, display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 10, minHeight: 36 }}
                 onClick={() => setScanMode('upload')}
               >
                 <UploadCloud size={14} /> Upload / Paste Image

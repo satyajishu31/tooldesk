@@ -27,21 +27,22 @@ function TabBar({ tabs, active, onChange }) {
       gridAutoFlow: 'column',
       gridAutoColumns: '1fr',
       gap: 4,
-      background: '#F0F1F7',
+      background: 'rgba(0, 0, 0, 0.042)',
       borderRadius: 14,
       padding: 4,
       marginBottom: 24,
       overflowX: 'auto',
       WebkitOverflowScrolling: 'touch',
       scrollbarWidth: 'none',
-      msOverflowStyle: 'none'
+      msOverflowStyle: 'none',
+      border: '1px solid rgba(0, 0, 0, 0.035)'
     }}>
       {tabs.map(t => (
         <motion.button key={t.id} type="button" onClick={() => onChange(t.id)} whileTap={{ scale: 0.96 }}
           style={{
-            minHeight: 42,
-            padding: '10px 12px',
-            borderRadius: 11,
+            minHeight: 44,
+            padding: '10px 14px',
+            borderRadius: 12,
             border: 'none',
             cursor: 'pointer',
             fontFamily: 'DM Sans, sans-serif',
@@ -54,13 +55,15 @@ function TabBar({ tabs, active, onChange }) {
             gap: 7,
             background: active === t.id ? 'linear-gradient(135deg,#4F8EF7,#9C6FDE)' : 'transparent',
             color: active === t.id ? '#fff' : '#64748b',
-            boxShadow: active === t.id ? '0 4px 14px rgba(79,142,247,.35)' : 'none',
-            transition: 'color .2s, box-shadow .2s',
+            boxShadow: active === t.id
+              ? '0 4px 14px rgba(79,142,247,.30), inset 0 1px 0 rgba(255,255,255,0.15)'
+              : 'none',
+            transition: 'color .18s, box-shadow .18s, background .18s',
             lineHeight: 1,
             boxSizing: 'border-box'
           }}
         >
-          <span style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0, verticalAlign: 'middle' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
             {t.icon}
           </span>
           <span style={{ display: 'inline-block', lineHeight: 1 }}>{t.label}</span>
@@ -69,6 +72,7 @@ function TabBar({ tabs, active, onChange }) {
     </div>
   )
 }
+
 
 function HashBox({ hash }) {
   const [copied, copy] = useCopy()
@@ -159,19 +163,19 @@ function HasherTab() {
           </button>
         </div>
         {text.length > 0 && (
-          <div style={{ marginTop: 8 }}>
-            <div style={{ height: 4, background: '#e5e7eb', borderRadius: 2, overflow: 'hidden' }}>
-              <motion.div animate={{ width: `${pct}%`, backgroundColor: scol }} transition={{ duration: 0.4 }} style={{ height: '100%', borderRadius: 2 }} />
+          <div style={{ marginTop: 10 }}>
+            <div style={{ height: 5, background: '#e2e4ef', borderRadius: 999, overflow: 'hidden' }}>
+              <motion.div animate={{ width: `${pct}%`, backgroundColor: scol }} transition={{ duration: 0.4 }} style={{ height: '100%', borderRadius: 999 }} />
             </div>
-            {slbl && <div style={{ fontSize: 11, fontWeight: 700, color: scol, marginTop: 4 }}>{slbl} password</div>}
+            {slbl && <div style={{ fontSize: 11, fontWeight: 700, color: scol, marginTop: 5 }}>{slbl} password</div>}
           </div>
         )}
       </div>
 
       <div className="fgrp">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <label className="lbl" style={{ margin: 0 }}>BCrypt Cost Rounds</label>
-          <span style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 22, color: '#9C6FDE' }}>{rounds}</span>
+          <span style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 22, color: '#9C6FDE', lineHeight: 1 }}>{rounds}</span>
         </div>
         <input
           type="range"
@@ -179,21 +183,22 @@ function HasherTab() {
           max={14}
           value={rounds}
           onChange={e => setRounds(+e.target.value)}
+          aria-label={`BCrypt cost rounds: ${rounds}`}
           style={{
             width: '100%',
             height: 6,
-            borderRadius: 3,
+            borderRadius: 999,
             background: `linear-gradient(to right, #4F8EF7 0%, #4F8EF7 ${((rounds - 4) / 10) * 100}%, #e2e4ef ${((rounds - 4) / 10) * 100}%, #e2e4ef 100%)`,
             WebkitAppearance: 'none',
             appearance: 'none',
             outline: 'none',
             cursor: 'pointer',
-            margin: '8px 0',
+            margin: '10px 0',
             display: 'block'
           }}
           className="rs-thumb"
         />
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#94a3b8', marginTop: 4, padding: '0 2px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#94a3b8', marginTop: 6, padding: '0 2px' }}>
           <span>4 (Fastest)</span>
           {rounds >= 13 ? (
             <span style={{ color: '#f59e0b', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -204,6 +209,7 @@ function HasherTab() {
           )}
           <span>14 (Strongest)</span>
         </div>
+
       </div>
 
       {fallbackNotice && (

@@ -560,7 +560,7 @@ export default function AspectRatioCalculator() {
                 }}
                 style={{
                   padding: '10px 12px',
-                  borderRadius: 12,
+                  borderRadius: 14,
                   border: (width === p.w && height === p.h) ? `2px solid ${p.color}` : '1px solid rgba(0,0,0,0.08)',
                   background: (width === p.w && height === p.h) ? `${p.color}10` : '#fafafa',
                   textAlign: 'left',

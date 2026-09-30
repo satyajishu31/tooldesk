@@ -251,18 +251,19 @@ export default function WordCounter() {
     <ToolShell tool={tool}>
       <ToolCard>
         {/* Mode tabs */}
-        <div style={{display:'flex',gap:3,background:'rgba(0,0,0,.045)',borderRadius:14,padding:4,marginBottom:18,border:'1px solid rgba(0,0,0,.04)',flexWrap:'wrap'}}>
+        <div style={{display:'flex',gap:3,background:'rgba(0,0,0,.042)',borderRadius:14,padding:4,marginBottom:18,border:'1px solid rgba(0,0,0,.035)',flexWrap:'wrap'}}>
           {MODES.map(m=>{
             const ModeIcon = m.icon
+            const isActive = mode===m.id
             return (
               <button key={m.id} onClick={()=>setMode(m.id)}
-                style={{flex:1,minWidth:80,padding:'8px 4px',borderRadius:10,border:'none',cursor:'pointer',
-                  fontFamily:'DM Sans,sans-serif',fontSize:11.5,fontWeight:700,
-                  background:mode===m.id?'#ffffff':'transparent',
-                  color:mode===m.id?'#4F8EF7':'#777',
-                  boxShadow:mode===m.id?'0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)':'none',transition:'all .18s cubic-bezier(.22,1,.36,1)',
+                style={{flex:1,minWidth:80,padding:'8px 6px',borderRadius:12,border:'none',cursor:'pointer',
+                  fontFamily:'DM Sans,sans-serif',fontSize:11.5,fontWeight:700,minHeight:40,
+                  background:isActive?'rgba(255,255,255,0.95)':'transparent',
+                  color:isActive?'#4F8EF7':'#777',
+                  boxShadow:isActive?'0 2px 10px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)':'none',transition:'all .18s cubic-bezier(.22,1,.36,1)',
                   display:'inline-flex',alignItems:'center',justifyContent:'center',gap:5}}>
-                <ModeIcon size={13} color={mode===m.id?'#4F8EF7':'#777'} />
+                <ModeIcon size={13} color={isActive?'#4F8EF7':'#777'} />
                 <span>{m.label}</span>
               </button>
             )

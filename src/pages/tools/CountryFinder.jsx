@@ -1063,17 +1063,19 @@ export default function CountryFinder() {
             </motion.button>
           </div>
 
-          <div style={{ display:'flex', gap:3, marginTop:14, flexWrap:'wrap', background:'rgba(0,0,0,.045)', borderRadius:14, padding:4, border:'1px solid rgba(0,0,0,.04)' }}>
-            {TABS.map(t => (
+          <div style={{ display:'flex', gap:3, marginTop:14, flexWrap:'wrap', background:'rgba(0,0,0,.042)', borderRadius:14, padding:4, border:'1px solid rgba(0,0,0,.035)' }}>
+            {TABS.map(t => {
+              const isActive = mode===t.id
+              return (
               <button key={t.id} onClick={() => setMode(t.id)}
-                style={{ flex:1, minWidth:90, padding:'7px 12px', borderRadius:10, border:'none', cursor:'pointer', fontWeight:700, fontSize:12, fontFamily:'DM Sans,sans-serif',
-                  background:mode===t.id?'#ffffff':'transparent',
-                  color:mode===t.id?'#0d0d1a':'#64748b',
-                  boxShadow:mode===t.id?'0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)':'none',
+                style={{ flex:1, minWidth:90, padding:'8px 12px', borderRadius:12, border:'none', cursor:'pointer', fontWeight:700, fontSize:12, fontFamily:'DM Sans,sans-serif', minHeight:40,
+                  background:isActive?'rgba(255,255,255,0.95)':'transparent',
+                  color:isActive?'#0d0d1a':'#64748b',
+                  boxShadow:isActive?'0 2px 10px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)':'none',
                   transition:'all .18s cubic-bezier(.22,1,.36,1)' }}>
                 {t.label}
               </button>
-            ))}
+            )})}
           </div>
         </ToolCard>
       </Reveal>

@@ -5,7 +5,7 @@ import { TOOLS } from '../../constants'
 import { safeFetchJSON } from '../../utils/safeFetch'
 import { useCopy } from '../../hooks'
 import { useToolHistory } from '../../hooks/useToolHistory'
-import { Clock, Trash2, AlertTriangle, CheckCircle } from 'lucide-react'
+import { Clock, Trash2, AlertTriangle, CheckCircle, Copy, Check } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'breachcheck')
 
@@ -114,11 +114,15 @@ function BreachRemediationPlaybook({ email, breachCount = 0 }) {
             color: copied ? '#22c55e' : '#4F8EF7',
             background: copied ? 'rgba(34,197,94,.08)' : 'rgba(79,142,247,.08)',
             border: `1px solid ${copied ? 'rgba(34,197,94,.25)' : 'rgba(79,142,247,.25)'}`,
-            borderRadius: 8,
+            borderRadius: 10,
             padding: '6px 14px',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6
           }}>
-          {copied ? '✓ Copied Playbook' : '📋 Copy Full Playbook'}
+          {copied ? <Check size={13} /> : <Copy size={13} />}
+          <span>{copied ? 'Copied Playbook' : 'Copy Full Playbook'}</span>
         </button>
       </div>
 
@@ -133,11 +137,11 @@ function BreachRemediationPlaybook({ email, breachCount = 0 }) {
         lineHeight: 1.6,
         color: '#334155'
       }}>
-        <strong style={{ color: '#1e3a8a' }}>ℹ️ Key Security Distinction:</strong> An email appearing in a public breach database confirms that a third-party website experienced an unauthorized database dump. It does <strong>not</strong> mean your private mailbox or device is compromised unless you reused the same password on other platforms.
+        <strong style={{ color: '#1e3a8a' }}>Key Security Distinction:</strong> An email appearing in a public breach database confirms that a third-party website experienced an unauthorized database dump. It does <strong>not</strong> mean your private mailbox or device is compromised unless you reused the same password on other platforms.
       </div>
 
       {/* Triage Progress Tracker */}
-      <div style={{ marginBottom: 16, background: '#f8fafc', padding: '12px 14px', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+      <div style={{ marginBottom: 16, background: '#f8fafc', padding: '12px 14px', borderRadius: 12, border: '1px solid #e2e8f0' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 6 }}>
           <span>Remediation Progress</span>
           <span>{completedCount} of {STEPS.length} Completed ({progressPct}%)</span>

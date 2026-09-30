@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import jsQR from 'jsqr'
 import { ToolCard, Reveal } from '../../components/ToolShell'
 import { useCopy } from '../../hooks'
-import { UploadCloud, CheckCircle2, AlertTriangle, Search, Loader2 } from 'lucide-react'
+import { Camera, UploadCloud, CheckCircle2, AlertTriangle, Search, Loader2 } from 'lucide-react'
 
 export default function QRScanner({ isEmbedded = false }) {
   const [activeTab, setActiveTab] = useState('camera') // 'camera' or 'upload'
@@ -371,22 +371,22 @@ export default function QRScanner({ isEmbedded = false }) {
   const card = (
     <ToolCard>
         {/* Navigation Tabs */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: 18, background: 'rgba(0,0,0,.04)', padding: 4, borderRadius: 12 }}>
+        <div style={{ display: 'flex', gap: 3, marginBottom: 18, background: 'rgba(0,0,0,.042)', padding: 4, borderRadius: 14, border: '1px solid rgba(0,0,0,.035)' }}>
           <button
             type="button"
             className={`btn btn-sm ${activeTab === 'camera' ? 'btn-primary' : 'btn-outline'}`}
-            style={{ flex: 1, padding: '9px 12px', fontSize: 13, fontWeight: 700 }}
+            style={{ flex: 1, padding: '9px 12px', fontSize: 13, fontWeight: 700, borderRadius: 12, minHeight: 40, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
             onClick={() => setActiveTab('camera')}
           >
-            📷 Real-Time Camera
+            <Camera size={15} /> Real-Time Camera
           </button>
           <button
             type="button"
             className={`btn btn-sm ${activeTab === 'upload' ? 'btn-primary' : 'btn-outline'}`}
-            style={{ flex: 1, padding: '9px 12px', fontSize: 13, fontWeight: 700 }}
+            style={{ flex: 1, padding: '9px 12px', fontSize: 13, fontWeight: 700, borderRadius: 12, minHeight: 40, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}
             onClick={() => setActiveTab('upload')}
           >
-            🖼️ Upload Image / Paste Screenshot
+            <UploadCloud size={15} /> Upload Image / Paste Screenshot
           </button>
         </div>
 

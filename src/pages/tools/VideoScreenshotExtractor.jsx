@@ -4,7 +4,7 @@ import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { TOOLS } from '../../constants'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import { addToHistory } from '../../utils/history'
-import { Download, Video, X, Film, Upload, Clock, Sliders, AlertTriangle } from 'lucide-react'
+import { Download, Video, X, Film, Upload, Clock, Sliders, AlertTriangle, Settings, Image as ImageIcon } from 'lucide-react'
 import ToolChainingBar from '../../components/ToolChainingBar'
 
 const tool = TOOLS.find(t => t.id === 'videoscreenshot')
@@ -686,27 +686,31 @@ export default function VideoScreenshotExtractor(){
       {videoInfo && (
         <Reveal delay={0.06}>
           <ToolCard style={{marginBottom:22}}>
-            <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:15,color:'#0d0d1a',marginBottom:18}}>
-              ⚙️ Extraction Settings
+            <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:15,color:'#0d0d1a',marginBottom:18,display:'flex',alignItems:'center',gap:8}}>
+              <Settings size={16} color="#4F8EF7" /> Extraction Settings
             </div>
 
             {/* ── ADVANCED ENHANCEMENT: EXTRACTION STRATEGY TOGGLE ── */}
             <div className="fgrp">
               <label className="lbl">Extraction Mode</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: 8, marginBottom: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: 10, marginBottom: 12, padding: 4, background: 'rgba(0,0,0,0.03)', borderRadius: 14 }}>
                 <button
                   type="button"
                   onClick={() => setExtractStrategy('interval')}
                   style={{
-                    padding: '10px 14px', borderRadius: 10, fontSize: 12.5, fontWeight: 700,
-                    border: `1.5px solid ${extractStrategy === 'interval' ? '#4F8EF7' : 'rgba(0,0,0,0.1)'}`,
-                    background: extractStrategy === 'interval' ? 'rgba(79,142,247,0.08)' : '#fafafa',
-                    color: extractStrategy === 'interval' ? '#4F8EF7' : '#666',
-                    cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 2
+                    padding: '12px 14px', borderRadius: 12, fontSize: 12.5, fontWeight: 700,
+                    border: `1.5px solid ${extractStrategy === 'interval' ? 'rgba(79,142,247,0.35)' : 'rgba(0,0,0,0.06)'}`,
+                    background: extractStrategy === 'interval' ? 'rgba(79,142,247,0.12)' : '#ffffff',
+                    color: extractStrategy === 'interval' ? '#3B7BE8' : '#555',
+                    boxShadow: extractStrategy === 'interval' ? '0 2px 8px rgba(79,142,247,0.15)' : 'none',
+                    backdropFilter: 'blur(8px)',
+                    WebkitBackdropFilter: 'blur(8px)',
+                    cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 3,
+                    transition: 'all 0.16s ease'
                   }}
                 >
                   <span style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Clock size={14} /> Fixed Time Interval
+                    <Clock size={15} /> Fixed Time Interval
                   </span>
                   <span style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>Extract frames periodically (every N seconds)</span>
                 </button>
@@ -715,15 +719,19 @@ export default function VideoScreenshotExtractor(){
                   type="button"
                   onClick={() => setExtractStrategy('scene')}
                   style={{
-                    padding: '10px 14px', borderRadius: 10, fontSize: 12.5, fontWeight: 700,
-                    border: `1.5px solid ${extractStrategy === 'scene' ? '#9C6FDE' : 'rgba(0,0,0,0.1)'}`,
-                    background: extractStrategy === 'scene' ? 'rgba(156,111,222,0.08)' : '#fafafa',
-                    color: extractStrategy === 'scene' ? '#9C6FDE' : '#666',
-                    cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 2
+                    padding: '12px 14px', borderRadius: 12, fontSize: 12.5, fontWeight: 700,
+                    border: `1.5px solid ${extractStrategy === 'scene' ? 'rgba(156,111,222,0.35)' : 'rgba(0,0,0,0.06)'}`,
+                    background: extractStrategy === 'scene' ? 'rgba(156,111,222,0.12)' : '#ffffff',
+                    color: extractStrategy === 'scene' ? '#8B54D4' : '#555',
+                    boxShadow: extractStrategy === 'scene' ? '0 2px 8px rgba(156,111,222,0.15)' : 'none',
+                    backdropFilter: 'blur(8px)',
+                    WebkitBackdropFilter: 'blur(8px)',
+                    cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 3,
+                    transition: 'all 0.16s ease'
                   }}
                 >
                   <span style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Film size={14} /> Auto Keyframe / Scene Change
+                    <Film size={15} /> Auto Keyframe / Scene Change
                   </span>
                   <span style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>Only capture camera cuts & slide transitions</span>
                 </button>
@@ -970,8 +978,8 @@ export default function VideoScreenshotExtractor(){
           <ToolCard style={{marginBottom:22}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16,flexWrap:'wrap',gap:10}}>
               <div>
-                <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:16,color:'#0d0d1a'}}>
-                  🖼️ {frames.length} {extractStrategy === 'scene' ? 'Scene Keyframes' : 'Screenshots'} Ready
+                <div style={{fontFamily:'Syne,sans-serif',fontWeight:700,fontSize:16,color:'#0d0d1a',display:'flex',alignItems:'center',gap:7}}>
+                  <ImageIcon size={18} color="#4F8EF7" /> {frames.length} {extractStrategy === 'scene' ? 'Scene Keyframes' : 'Screenshots'} Ready
                 </div>
                 <div style={{fontSize:12,color:'#aaa',marginTop:3}}>
                   {extractStrategy === 'scene' ? `Auto Scene Cuts (${sceneStats.evaluated} frames sampled) · ${format}` : `${format} · ${QUALITIES[qualityIdx].label} quality`}

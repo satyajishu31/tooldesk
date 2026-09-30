@@ -5,7 +5,7 @@ import { useCopy } from '../../hooks'
 import { safeFetchJSON } from '../../utils/safeFetch'
 import { TOOLS } from '../../constants'
 import { useToolHistory } from '../../hooks/useToolHistory'
-import { Clock, Trash2, Languages, Sparkles, AlertTriangle, Check, Copy, Lightbulb, MessageSquare, Feather, Briefcase, Award } from 'lucide-react'
+import { Clock, Trash2, Languages, Sparkles, AlertTriangle, Check, Copy, Lightbulb, MessageSquare, Feather, Briefcase, Award, ArrowLeftRight } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'translator')
 
@@ -234,7 +234,7 @@ export default function TextTranslator() {
                 background:'#fff', fontSize:18, cursor: srcLang === 'auto' ? 'not-allowed' : 'pointer',
                 display:'flex', alignItems:'center', justifyContent:'center',
                 opacity: srcLang === 'auto' ? .4 : 1, flexShrink:0 }}>
-              ⇄
+              <ArrowLeftRight size={17} style={{ color: '#4F8EF7' }} />
             </motion.button>
 
             {/* Target */}

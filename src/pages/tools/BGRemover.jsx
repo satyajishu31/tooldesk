@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Check, Paintbrush, Download, Upload } from 'lucide-react'
+import { X, Check, Paintbrush, Download, Upload, Eraser, Sparkles, Sliders, Settings } from 'lucide-react'
 import ToolShell, { ToolCard } from '../../components/ToolShell'
 import { TOOLS } from '../../constants'
 import { safeFetchJSON, safeTimeoutSignal } from '../../utils/safeFetch'
@@ -1128,17 +1128,17 @@ export default function BGRemover() {
             </ToolCard>
 
             <ToolCard>
-              <h4 style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 14, color: '#0d0d1a', margin: '0 0 14px 0' }}>
-                ⚙️ Batch Settings
+              <h4 style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 14, color: '#0d0d1a', margin: '0 0 14px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Settings size={15} color="#4F8EF7" /> Batch Settings
               </h4>
               
               {/* Mode Select */}
               <div style={{ marginBottom: 12 }}>
                 <label style={{ fontSize: 11, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '.4px', display: 'block', marginBottom: 6 }}>Removal Mode</label>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', padding: 4, background: 'rgba(0,0,0,0.03)', borderRadius: 12 }}>
                   {MODES.filter(m => m.id !== 'ai').map(m => ( // Strip AI mode in batch local processing
                     <button key={m.id} onClick={() => handleModeChange(m.id)} disabled={batchProcessing}
-                      style={{ flex: 1, padding: '7px 10px', borderRadius: 8, border: `1.5px solid ${mode === m.id ? '#4F8EF7' : 'rgba(0,0,0,.08)'}`, background: mode === m.id ? 'rgba(79,142,247,.08)' : '#fff', color: mode === m.id ? '#4F8EF7' : '#555', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                      style={{ flex: 1, padding: '7px 10px', borderRadius: 9, border: `1.5px solid ${mode === m.id ? 'rgba(79,142,247,0.35)' : 'rgba(0,0,0,.06)'}`, background: mode === m.id ? 'rgba(79,142,247,.12)' : '#fff', color: mode === m.id ? '#3B7BE8' : '#555', fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all .16s ease' }}>
                       {m.label.split(' ')[1]}
                     </button>
                   ))}
@@ -1169,13 +1169,13 @@ export default function BGRemover() {
               {/* Background replace type */}
               <div>
                 <label style={{ fontSize: 11, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '.4px', display: 'block', marginBottom: 6 }}>Background</label>
-                <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                <div style={{ display: 'flex', gap: 6, marginBottom: 8, padding: 4, background: 'rgba(0,0,0,0.03)', borderRadius: 12 }}>
                   <button onClick={() => handleReplaceModeChange('transparent')} disabled={batchProcessing}
-                    style={{ flex: 1, padding: 8, borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${replaceMode === 'transparent' ? '#4F8EF7' : 'rgba(0,0,0,.08)'}`, background: replaceMode === 'transparent' ? 'rgba(79,142,247,.08)' : '#fff', color: replaceMode === 'transparent' ? '#4F8EF7' : '#666' }}>
+                    style={{ flex: 1, padding: '8px 10px', borderRadius: 9, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${replaceMode === 'transparent' ? 'rgba(79,142,247,0.35)' : 'rgba(0,0,0,.06)'}`, background: replaceMode === 'transparent' ? 'rgba(79,142,247,.12)' : '#fff', color: replaceMode === 'transparent' ? '#3B7BE8' : '#666', transition: 'all .16s ease' }}>
                     Transparent
                   </button>
                   <button onClick={() => handleReplaceModeChange('color')} disabled={batchProcessing}
-                    style={{ flex: 1, padding: 8, borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${replaceMode === 'color' ? '#4F8EF7' : 'rgba(0,0,0,.08)'}`, background: replaceMode === 'color' ? 'rgba(79,142,247,.08)' : '#fff', color: replaceMode === 'color' ? '#4F8EF7' : '#666' }}>
+                    style={{ flex: 1, padding: '8px 10px', borderRadius: 9, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${replaceMode === 'color' ? 'rgba(79,142,247,0.35)' : 'rgba(0,0,0,.06)'}`, background: replaceMode === 'color' ? 'rgba(79,142,247,.12)' : '#fff', color: replaceMode === 'color' ? '#3B7BE8' : '#666', transition: 'all .16s ease' }}>
                     Solid Color
                   </button>
                 </div>
@@ -1262,16 +1262,16 @@ export default function BGRemover() {
                 <div className="tool-grid-2-compact" style={{ marginTop: 14, background: '#fafafa', padding: 14, borderRadius: 12, border: '1px solid rgba(0,0,0,.04)' }}>
                   <div>
                     <label className="lbl">Brush Mode</label>
-                    <div style={{ display: 'flex', gap: 6 }}>
+                    <div style={{ display: 'flex', gap: 6, padding: 4, background: 'rgba(0,0,0,0.03)', borderRadius: 12 }}>
                       <button
                         onClick={() => setBrushMode('erase')}
-                        style={{ flex: 1, padding: 8, borderRadius: 9, cursor: 'pointer', border: `1.5px solid ${brushMode === 'erase' ? '#ef4444' : 'rgba(0,0,0,.1)'}`, background: brushMode === 'erase' ? 'rgba(239,68,68,.08)' : '#fff', color: brushMode === 'erase' ? '#ef4444' : '#666', fontSize: 12, fontWeight: 700, height: 'auto' }}>
-                        🧹 Erase BG
+                        style={{ flex: 1, padding: '8px 10px', borderRadius: 9, cursor: 'pointer', border: `1.5px solid ${brushMode === 'erase' ? 'rgba(239,68,68,0.35)' : 'rgba(0,0,0,.06)'}`, background: brushMode === 'erase' ? 'rgba(239,68,68,.12)' : '#fff', color: brushMode === 'erase' ? '#dc2626' : '#666', fontSize: 12, fontWeight: 700, height: 'auto', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5, transition: 'all .16s ease' }}>
+                        <Eraser size={14} /> Erase BG
                       </button>
                       <button
                         onClick={() => setBrushMode('restore')}
-                        style={{ flex: 1, padding: 8, borderRadius: 9, cursor: 'pointer', border: `1.5px solid ${brushMode === 'restore' ? '#22c55e' : 'rgba(0,0,0,.1)'}`, background: brushMode === 'restore' ? 'rgba(34,197,94,.08)' : '#fff', color: brushMode === 'restore' ? '#22c55e' : '#666', fontSize: 12, fontWeight: 700, height: 'auto' }}>
-                        ✨ Restore original
+                        style={{ flex: 1, padding: '8px 10px', borderRadius: 9, cursor: 'pointer', border: `1.5px solid ${brushMode === 'restore' ? 'rgba(34,197,94,0.35)' : 'rgba(0,0,0,.06)'}`, background: brushMode === 'restore' ? 'rgba(34,197,94,.12)' : '#fff', color: brushMode === 'restore' ? '#16a34a' : '#666', fontSize: 12, fontWeight: 700, height: 'auto', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5, transition: 'all .16s ease' }}>
+                        <Sparkles size={14} /> Restore original
                       </button>
                     </div>
                   </div>

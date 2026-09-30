@@ -731,14 +731,15 @@ export default function GradientGenerator() {
         {/* Type */}
         <div className="fgrp">
           <label className="lbl">Gradient Type</label>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:7 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, padding:4, background:'rgba(0,0,0,0.03)', borderRadius:14 }}>
             {TYPES.map(t => (
               <button key={t} onClick={() => setType(t)}
-                style={{ padding:'10px', borderRadius:10, fontSize:12.5, fontWeight:700,
-                  cursor:'pointer', transition:'all .18s cubic-bezier(.22,1,.36,1)',
-                  border:`1.5px solid ${type===t?'#4F8EF7':'rgba(0,0,0,.1)'}`,
-                  background: type===t?'rgba(79,142,247,.09)':'#fafafa',
-                  color: type===t?'#4F8EF7':'#666', textTransform:'capitalize' }}>
+                style={{ padding:'10px', borderRadius:11, fontSize:12.5, fontWeight:700,
+                  cursor:'pointer', transition:'all .16s ease',
+                  border:`1.5px solid ${type===t?'rgba(79,142,247,0.35)':'rgba(0,0,0,.06)'}`,
+                  background: type===t?'rgba(79,142,247,.12)':'#ffffff',
+                  boxShadow: type===t?'0 2px 8px rgba(79,142,247,0.15)':'none',
+                  color: type===t?'#3B7BE8':'#666', textTransform:'capitalize' }}>
                 {t}
               </button>
             ))}
@@ -843,14 +844,14 @@ export default function GradientGenerator() {
 
         {/* Output tabs */}
         <div className="fgrp">
-          <div style={{ display:'flex', gap:4, background:'#f5f5f8', borderRadius:10, padding:4, marginBottom:14 }}>
+          <div style={{ display:'flex', gap:6, background:'rgba(0,0,0,0.03)', borderRadius:14, padding:4, marginBottom:14 }}>
             {OUTPUT_TABS.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
-                style={{ flex:1, padding:'8px', borderRadius:7, border:'none', cursor:'pointer',
+                style={{ flex:1, padding:'8px 12px', borderRadius:11, border: tab===t.id ? '1.5px solid rgba(79,142,247,0.35)' : '1.5px solid transparent', cursor:'pointer',
                   fontSize:12, fontWeight:700,
-                  background: tab===t.id?'#fff':'transparent',
-                  color: tab===t.id?'#4F8EF7':'#aaa',
-                  boxShadow: tab===t.id?'0 2px 8px rgba(0,0,0,.08)':'none', transition:'all .18s cubic-bezier(.22,1,.36,1)' }}>
+                  background: tab===t.id?'rgba(79,142,247,0.12)':'transparent',
+                  color: tab===t.id?'#3B7BE8':'#777',
+                  boxShadow: tab===t.id?'0 2px 8px rgba(79,142,247,0.15)':'none', transition:'all .16s ease' }}>
                 {t.label}
               </button>
             ))}

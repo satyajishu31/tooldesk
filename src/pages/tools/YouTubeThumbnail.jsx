@@ -457,22 +457,25 @@ export default function SocialMediaThumbnail() {
             textTransform:'uppercase', letterSpacing:'.5px', marginBottom:10 }}>
             Select Platform
           </div>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-            {PLATFORMS.map(p => (
+          <div style={{ display:'flex', flexWrap:'wrap', gap:4, background:'rgba(0,0,0,.042)', padding:4, borderRadius:14, border:'1px solid rgba(0,0,0,.035)' }}>
+            {PLATFORMS.map(p => {
+              const isAct = activePlatform === p.id
+              return (
               <motion.button key={p.id}
                 onClick={() => switchPlatform(p.id)}
-                whileHover={{ scale:1.05 }} whileTap={{ scale:.96 }}
-                style={{ display:'flex', alignItems:'center', gap:7,
-                  padding:'8px 16px', borderRadius:12,
-                  border:`1.5px solid ${activePlatform===p.id ? p.color : 'rgba(0,0,0,.1)'}`,
-                  background: activePlatform===p.id ? `${p.color}12` : '#fafafa',
-                  color: activePlatform===p.id ? p.color : '#777',
+                whileHover={{ scale:1.02 }} whileTap={{ scale:.98 }}
+                style={{ display:'inline-flex', alignItems:'center', gap:7,
+                  padding:'9px 16px', borderRadius:12, minHeight:40,
+                  border: isAct ? `1.5px solid ${p.color}` : '1px solid transparent',
+                  background: isAct ? '#ffffff' : 'transparent',
+                  boxShadow: isAct ? '0 2px 8px rgba(15,23,42,0.08)' : 'none',
+                  color: isAct ? p.color : '#666',
                   fontSize:12.5, fontWeight:700, cursor:'pointer',
                   transition:'all .18s cubic-bezier(.22,1,.36,1)' }}>
-                <span style={{ fontSize:16 }}>{p.icon}</span>
+                <span style={{ fontSize:15 }}>{p.icon}</span>
                 <span>{p.name}</span>
               </motion.button>
-            ))}
+            )})}
           </div>
         </div>
 

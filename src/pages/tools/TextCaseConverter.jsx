@@ -7,7 +7,7 @@ import { RewritePanel } from '../../components/AIPanel'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import { safeFetchJSON } from '../../utils/safeFetch'
 import { addToHistory } from '../../utils/history'
-import { Code2, ChevronUp, ChevronDown, Sparkles, AlertTriangle, Zap, FileCode, Copy, Check, Loader2, Lightbulb } from 'lucide-react'
+import { Code2, ChevronUp, ChevronDown, Sparkles, AlertTriangle, Zap, FileCode, Copy, Check, Loader2, Lightbulb, FolderOpen, X, Download } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'textcase')
 
@@ -168,26 +168,22 @@ export default function TextCaseConverter() {
               {input && <span style={{ fontSize:11, color:'#aaa', fontWeight:600 }}>{wordCount}w · {charCount}c · {lineCount}L</span>}
               <button onClick={() => fileRef.current?.click()}
                 style={{ fontSize:11, fontWeight:700, color:'#9C6FDE', background:'rgba(156,111,222,.08)',
-                  border:'1px solid rgba(156,111,222,.2)', borderRadius:999, padding:'3px 10px', cursor:'pointer',
-                  transition:'background .15s' }}
+                  border:'1px solid rgba(156,111,222,.2)', borderRadius:999, padding:'4px 10px', cursor:'pointer',
+                  display:'inline-flex', alignItems:'center', gap:5, transition:'background .15s' }}
                 onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.background='rgba(156,111,222,.14)'}}
-                onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.background='rgba(156,111,222,.08)'}}
-                onMouseDown={e=>{e.currentTarget.style.transform='scale(.95)'}}
-                onMouseUp={e=>{e.currentTarget.style.transform='translateY(-1px)'}}>
-                📂 Load File
+                onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.background='rgba(156,111,222,.08)'}}>
+                <FolderOpen size={12} /> Load File
               </button>
               <input ref={fileRef} type="file" accept=".txt,.md,.csv" style={{display:'none'}}
                 onChange={e=>{loadFile(e.target.files?.[0]);e.target.value=''}}/>
               {input && (
                 <button onClick={() => {setInput(''); setLastCopied(''); setCompare(null)}}
-                  style={{ padding:'3px 10px', borderRadius:999, fontSize:11, fontWeight:600, cursor:'pointer',
+                  style={{ padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:600, cursor:'pointer',
                     border:'1.5px solid rgba(239,68,68,.25)', background:'rgba(239,68,68,.05)', color:'#ef4444',
-                    transition:'background .15s' }}
+                    display:'inline-flex', alignItems:'center', gap:4, transition:'background .15s' }}
                   onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.background='rgba(239,68,68,.1)'}}
-                  onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.background='rgba(239,68,68,.05)'}}
-                  onMouseDown={e=>{e.currentTarget.style.transform='scale(.95)'}}
-                  onMouseUp={e=>{e.currentTarget.style.transform='translateY(-1px)'}}>
-                  ✕ Clear
+                  onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.background='rgba(239,68,68,.05)'}}>
+                  <X size={12} /> Clear
                 </button>
               )}
             </div>
@@ -215,18 +211,21 @@ export default function TextCaseConverter() {
             <motion.div key="results" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0}}>
               {/* Action bar */}
               <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap' }}>
-                <button className={`btn btn-sm ${allCopied?'btn-success':'btn-blue'}`} style={{ fontSize:11 }}
+                <button className={`btn btn-sm ${allCopied?'btn-success':'btn-blue'}`} style={{ fontSize:11, display:'inline-flex', alignItems:'center', gap:5 }}
                   onClick={copyAllOutputs}>
-                  {allCopied ? '✓ Copied all!' : '📋 Copy All Cases'}
+                  {allCopied ? <Check size={13} /> : <Copy size={13} />}
+                  <span>{allCopied ? 'Copied all!' : 'Copy All Cases'}</span>
                 </button>
-                <button className="btn btn-outline btn-sm" style={{ fontSize:11 }}
+                <button className="btn btn-outline btn-sm" style={{ fontSize:11, display:'inline-flex', alignItems:'center', gap:5 }}
                   onClick={() => dlText(results.map(r=>`[${r.label}]\n${r.out}`).join('\n\n'), 'cases.txt')}>
-                  ⬇ Export TXT
+                  <Download size={13} />
+                  <span>Export TXT</span>
                 </button>
                 {compareId && (
-                  <button className="btn btn-outline btn-sm" style={{ fontSize:11, color:'#F06292', borderColor:'rgba(240,98,146,.3)' }}
+                  <button className="btn btn-outline btn-sm" style={{ fontSize:11, color:'#F06292', borderColor:'rgba(240,98,146,.3)', display:'inline-flex', alignItems:'center', gap:5 }}
                     onClick={() => setCompare(null)}>
-                    ✕ Close Compare
+                    <X size={13} />
+                    <span>Close Compare</span>
                   </button>
                 )}
               </div>

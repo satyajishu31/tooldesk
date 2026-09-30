@@ -11,7 +11,7 @@ import { consumePendingInboundFiles } from '../../utils/inboundShare'
 import { convertTextToPdf, convertMarkdownToPdf, getPdfJs } from '../../utils/pdfEngine'
 import { addToHistory } from '../../utils/history'
 import { useToolHistory } from '../../hooks/useToolHistory'
-import { Clock, Trash2, ShieldCheck } from 'lucide-react'
+import { Clock, Trash2, ShieldCheck, FileText, Database, Image as ImageIcon, Film } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'fileconvert')
 
@@ -466,7 +466,7 @@ async function compressVideo(file, opts, onProgress) {
 ══════════════════════════════════════════ */
 const GROUPS = [
   {
-    id:'doc', label:'📄 Documents', color:'#ef4444', bg:'rgba(239,68,68,.07)',
+    id:'doc', label:'Documents', icon: FileText, color:'#ef4444', bg:'rgba(239,68,68,.07)',
     desc:'PDF, TXT, Markdown, HTML — convert between text formats',
     subs: [
       {id:'pdf-txt',  from:'PDF',  to:'TXT',  label:'PDF → TXT',  desc:'Extract text from PDF',      accept:'.pdf',            binary:true,  icon:'📕→📄'},
@@ -483,7 +483,7 @@ const GROUPS = [
     ],
   },
   {
-    id:'data', label:'📊 Data', color:'#22c55e', bg:'rgba(34,197,94,.07)',
+    id:'data', label:'Data', icon: Database, color:'#22c55e', bg:'rgba(34,197,94,.07)',
     desc:'CSV, JSON, XML, YAML — convert data formats instantly',
     subs: [
       {id:'csv-json',  from:'CSV',  to:'JSON', label:'CSV → JSON',  desc:'Table to JSON array',       accept:'.csv',            binary:false, icon:'📊→💾'},
@@ -494,7 +494,7 @@ const GROUPS = [
     ],
   },
   {
-    id:'image', label:'🖼️ Images', color:'#4F8EF7', bg:'rgba(79,142,247,.07)',
+    id:'image', label:'Images', icon: ImageIcon, color:'#4F8EF7', bg:'rgba(79,142,247,.07)',
     desc:'Compress, resize, convert or reformat any image',
     subs: [
       {id:'img-compress', from:'IMAGE', to:'COMPRESSED', label:'Compress Image', desc:'Reduce file size with quality control', accept:'image/*', binary:true, icon:'🖼️→⚡', isMedia:'image', mode:'compress'},
@@ -506,7 +506,7 @@ const GROUPS = [
     ],
   },
   {
-    id:'video', label:'🎬 Video', color:'#9C6FDE', bg:'rgba(156,111,222,.07)',
+    id:'video', label:'Video', icon: Film, color:'#9C6FDE', bg:'rgba(156,111,222,.07)',
     desc:'Compress or re-encode video with a real H.264/VP9 encoder, in the browser',
     subs: [
       {id:'video-compress', from:'VIDEO', to:'MP4', label:'Compress Video', desc:'Reduce video size with quality presets & codec choice', accept:'video/*,.mp4,.mov,.webm,.avi,.mkv', binary:true, icon:'🎬→⚡', isMedia:'video', mode:'compress'},
@@ -603,18 +603,24 @@ async function doConvert(sub, textInput, binaryInput, mediaOpts, fileBlob, signa
 ══════════════════════════════════════════ */
 function GroupTabs({ active, onChange }) {
   return (
-    <div style={{display:'flex',gap:6,marginBottom:20,flexWrap:'wrap'}}>
-      {GROUPS.map(g=>(
-        <button key={g.id} onClick={()=>onChange(g.id)}
-          style={{display:'flex',alignItems:'center',gap:6,padding:'8px 16px',
-            borderRadius:12,cursor:'pointer',transition:'all .18s',
-            border:`1.5px solid ${active===g.id?g.color:'rgba(0,0,0,.09)'}`,
-            background:active===g.id?g.bg:'#fafafa',
-            color:active===g.id?g.color:'#666',
-            fontFamily:'DM Sans,sans-serif',fontWeight:active===g.id?700:500,fontSize:13}}>
-          {g.label}
-        </button>
-      ))}
+    <div style={{display:'flex',gap:3,marginBottom:20,flexWrap:'wrap',background:'rgba(0,0,0,.042)',padding:4,borderRadius:14,border:'1px solid rgba(0,0,0,.035)'}}>
+      {GROUPS.map(g=>{
+        const Icon = g.icon
+        const isAct = active === g.id
+        return (
+          <button key={g.id} onClick={()=>onChange(g.id)}
+            style={{display:'inline-flex',alignItems:'center',gap:7,padding:'9px 16px',minHeight:40,
+              borderRadius:12,cursor:'pointer',transition:'all .18s',
+              border: isAct ? `1px solid ${g.color}35` : '1px solid transparent',
+              background: isAct ? '#ffffff' : 'transparent',
+              boxShadow: isAct ? '0 2px 8px rgba(15,23,42,0.08)' : 'none',
+              color: isAct ? g.color : '#555',
+              fontFamily:'DM Sans,sans-serif',fontWeight:isAct?700:600,fontSize:13}}>
+            {Icon && <Icon size={15} />}
+            <span>{g.label}</span>
+          </button>
+        )
+      })}
     </div>
   )
 }

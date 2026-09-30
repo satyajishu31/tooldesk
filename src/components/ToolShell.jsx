@@ -29,8 +29,9 @@ export const ToolCard = memo(function ToolCard({ children, style={}, className='
     <div
       className={`tool-card-glass ${className}`.trim()}
       style={{
-        borderRadius:22, padding:'clamp(16px,4vw,26px)',
-        backfaceVisibility:'hidden',
+        borderRadius: 22, padding: 'clamp(16px,4vw,26px)',
+        backfaceVisibility: 'hidden',
+        transition: 'box-shadow .18s ease',
         ...style,
       }}>{children}</div>
   )

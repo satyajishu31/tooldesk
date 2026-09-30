@@ -352,7 +352,7 @@ export default function ColorPicker(){
         {/* Tabs */}
         <div style={{
           display: 'flex',
-          background: 'rgba(0,0,0,.045)',
+          background: 'rgba(0,0,0,.042)',
           borderRadius: 14,
           padding: 4,
           gap: 3,
@@ -362,27 +362,30 @@ export default function ColorPicker(){
           WebkitOverflowScrolling: 'touch',
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
-          border: '1px solid rgba(0,0,0,.04)'
+          border: '1px solid rgba(0,0,0,.035)'
         }}>
-          {TABS.map(t => (
+          {TABS.map(t => {
+            const isActive = tab === t
+            return (
             <button key={t} onClick={() => setTab(t)}
               style={{
                 flex: '0 0 auto',
-                padding: '8px 13px',
-                borderRadius: 10,
+                padding: '8px 14px',
+                borderRadius: 12,
                 border: 'none',
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
                 fontSize: 12,
                 fontWeight: 700,
-                background: tab === t ? '#ffffff' : 'transparent',
-                color: tab === t ? '#0d0d1a' : '#64748b',
-                boxShadow: tab === t ? '0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none',
+                minHeight: 40,
+                background: isActive ? 'rgba(255,255,255,0.95)' : 'transparent',
+                color: isActive ? '#0d0d1a' : '#64748b',
+                boxShadow: isActive ? '0 2px 10px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none',
                 transition: 'all .18s cubic-bezier(.22,1,.36,1)'
               }}>
               {t}
             </button>
-          ))}
+          )})}
         </div>
 
         <AnimatePresence mode="wait">

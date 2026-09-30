@@ -472,28 +472,32 @@ ${d.dnsInfo?`<div class="section"><h2>🌐 Server</h2><div class="grid">
             {/* Tabs — horizontally scrollable on mobile */}
             <Reveal delay={.04}>
               <div className="wa-tabs" style={{
-                display:'flex', gap:6, marginBottom:14,
+                display:'flex', gap:3, marginBottom:16,
                 overflowX:'auto', WebkitOverflowScrolling:'touch',
-                paddingBottom:4,
+                padding: 4, borderRadius: 14,
+                background: 'rgba(0,0,0,.042)', border: '1px solid rgba(0,0,0,.035)',
                 scrollbarWidth:'none', msOverflowStyle:'none',
               }}>
                 <style>{`.wa-tabs::-webkit-scrollbar{display:none}`}</style>
-                {TABS.map(t => (
-                  <button key={t} onClick={() => setTab(t)}
-                    style={{
-                      flexShrink:0,
-                      padding:'8px 16px', borderRadius:999,
-                      border: tab===t ? '1px solid #0d0d1a' : '1px solid rgba(0,0,0,.07)',
-                      cursor:'pointer',
-                      fontSize:12.5, fontWeight:700,
-                      background: tab===t ? '#0d0d1a' : '#ffffff',
-                      color: tab===t ? '#fff' : '#555',
-                      boxShadow: tab===t ? '0 4px 14px rgba(13,13,26,.2)' : 'inset 0 1px 0 rgba(255,255,255,.9)',
-                      transition:'all .18s', whiteSpace:'nowrap',
-                    }}>
-                    {t}
-                  </button>
-                ))}
+                {TABS.map(t => {
+                  const isAct = tab === t
+                  return (
+                    <button key={t} onClick={() => setTab(t)}
+                      style={{
+                        flexShrink:0, minHeight: 38,
+                        padding:'8px 16px', borderRadius: 12,
+                        border: 'none',
+                        cursor:'pointer',
+                        fontSize:12.5, fontWeight:700,
+                        background: isAct ? '#ffffff' : 'transparent',
+                        color: isAct ? '#0d0d1a' : '#666',
+                        boxShadow: isAct ? '0 2px 8px rgba(15,23,42,.08)' : 'none',
+                        transition:'all .18s', whiteSpace:'nowrap',
+                      }}>
+                      {t}
+                    </button>
+                  )
+                })}
               </div>
             </Reveal>
 

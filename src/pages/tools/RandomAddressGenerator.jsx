@@ -6,7 +6,7 @@ import { TOOLS } from '../../constants'
 import { D, FLAGS } from './generatorData.js'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import { addToHistory } from '../../utils/history'
-import { Home, Building2, Mail, Phone, Globe, MapPin as MapPinIcon, FileText, Check, Copy, ExternalLink, FlaskConical } from 'lucide-react'
+import { Home, Building2, Mail, Phone, Globe, MapPin as MapPinIcon, FileText, Check, Copy, ExternalLink, FlaskConical, LayoutGrid, List, RotateCw } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'randaddress')
 
@@ -714,14 +714,30 @@ export default function RandomAddressGenerator() {
           {/* Format */}
           <div>
             <div className="lbl">View</div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {[['cards', '🗃'], ['list', '📋']].map(([f, icon]) => (
-                <motion.button key={f} onClick={() => setFormat(f)}
-                  whileHover={{ y: -2 }} whileTap={{ scale: .94 }}
-                  style={{ flex: 1, padding: '10px', borderRadius: 10, cursor: 'pointer', border: `1.5px solid ${format === f ? '#4F8EF7' : 'rgba(0,0,0,.1)'}`, background: format === f ? 'rgba(79,142,247,.09)' : '#fafafa', color: format === f ? '#4F8EF7' : '#777', fontWeight: 700, fontSize: 13, fontFamily: 'DM Sans, sans-serif', transition: 'all .18s' }}>
-                  {icon}
+            <div style={{ display: 'flex', gap: 3, background:'rgba(0,0,0,.042)', padding:3, borderRadius:14, border:'1px solid rgba(0,0,0,.035)' }}>
+              {[
+                { id: 'cards', label: 'Cards', icon: LayoutGrid },
+                { id: 'list', label: 'List', icon: List }
+              ].map(item => {
+                const Icon = item.icon
+                const isAct = format === item.id
+                return (
+                <motion.button key={item.id} onClick={() => setFormat(item.id)}
+                  whileHover={{ y: -1 }} whileTap={{ scale: .96 }}
+                  style={{
+                    flex: 1, padding: '8px 10px', borderRadius: 11, cursor: 'pointer',
+                    border: isAct ? '1px solid rgba(79,142,247,.25)' : '1px solid transparent',
+                    background: isAct ? '#ffffff' : 'transparent',
+                    boxShadow: isAct ? '0 2px 8px rgba(15,23,42,0.08)' : 'none',
+                    color: isAct ? '#4F8EF7' : '#777',
+                    fontWeight: 700, fontSize: 12, fontFamily: 'DM Sans, sans-serif',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                    transition: 'all .18s',
+                  }}>
+                  <Icon size={14} />
+                  <span>{item.label}</span>
                 </motion.button>
-              ))}
+              )})}
             </div>
           </div>
         </div>
@@ -730,7 +746,7 @@ export default function RandomAddressGenerator() {
           whileHover={{ scale: 1.01, y: -2 }} whileTap={{ scale: .97 }}
           style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: 16, background: 'linear-gradient(135deg, #4F8EF7, #9C6FDE)', color: '#fff', boxShadow: '0 6px 20px rgba(79,142,247,.32)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
           <motion.span animate={loading ? { rotate: 360 } : { rotate: 0 }} transition={loading ? { duration: .5, repeat: Infinity, ease: 'linear' } : {}}>
-            {loading ? '⚙️' : '📍'}
+            {loading ? <RotateCw size={17} /> : <MapPinIcon size={17} />}
           </motion.span>
           {loading ? 'Generating…' : `Generate ${count} Random Address${count !== 1 ? 'es' : ''}`}
         </motion.button>

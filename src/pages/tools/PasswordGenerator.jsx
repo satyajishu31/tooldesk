@@ -7,7 +7,7 @@ import { PassphrasePanel } from '../../components/AIPanel'
 import { addToHistory } from '../../utils/history'
 import { useToolHistory } from '../../hooks/useToolHistory'
 import { saveFileWithFallback } from '../../utils/fileSaver'
-import { Clock, Trash2, RotateCcw, X } from 'lucide-react'
+import { Clock, Trash2, RotateCcw, X, Lock, KeyRound, Hash, Package } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'password')
 
@@ -265,18 +265,29 @@ export default function PasswordGenerator() {
       <ToolCard style={{ marginBottom: 20 }}>
 
         {/* Mode tabs */}
-        <div className="tool-mode-tabs" style={{ display:'flex', background:'rgba(0,0,0,.045)', borderRadius:14, padding:4, gap:3, marginBottom:20, border:'1px solid rgba(0,0,0,.04)' }}>
-          {[['password','🔐 Password'],['passphrase','🔤 Passphrase'],['pin','🔢 PIN'],['bulk','📦 Bulk']].map(([m,l]) => (
-            <button key={m} onClick={() => setMode(m)}
-              style={{ flex:1, padding:'8px 6px', borderRadius:10, border:'none', cursor:'pointer',
-                fontSize:11.5, fontWeight:700,
-                background: mode===m ? '#ffffff' : 'transparent',
-                color:      mode===m ? '#0d0d1a' : '#777',
-                boxShadow:  mode===m ? '0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none',
-                transition:'all .18s cubic-bezier(.22,1,.36,1)' }}>
-              {l}
-            </button>
-          ))}
+        <div className="tool-mode-tabs" style={{ display:'flex', background:'rgba(0,0,0,.042)', borderRadius:14, padding:4, gap:3, marginBottom:20, border:'1px solid rgba(0,0,0,.035)' }}>
+          {[
+            { id: 'password', label: 'Password', icon: Lock },
+            { id: 'passphrase', label: 'Passphrase', icon: KeyRound },
+            { id: 'pin', label: 'PIN', icon: Hash },
+            { id: 'bulk', label: 'Bulk', icon: Package },
+          ].map(item => {
+            const Icon = item.icon
+            const isAct = mode === item.id
+            return (
+              <button key={item.id} onClick={() => setMode(item.id)}
+                style={{ flex:1, padding:'8px 8px', borderRadius:12, border:'none', cursor:'pointer',
+                  fontSize:12, fontWeight:700, minHeight:40,
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  background: isAct ? 'rgba(255,255,255,0.95)' : 'transparent',
+                  color:      isAct ? '#0d0d1a' : '#777',
+                  boxShadow:  isAct ? '0 2px 10px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none',
+                  transition:'all .18s cubic-bezier(.22,1,.36,1)' }}>
+                <Icon size={14} />
+                <span>{item.label}</span>
+              </button>
+            )
+          })}
         </div>
 
         {/* ── PASSWORD DISPLAY ── */}
@@ -587,8 +598,8 @@ export default function PasswordGenerator() {
       {/* ── INFO ── */}
       <Reveal delay={0.1}>
         <ToolCard>
-          <div style={{ fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:15, color:'#0d0d1a', marginBottom:14 }}>
-            🔐 Password Security Guide
+          <div style={{ fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:15, color:'#0d0d1a', marginBottom:14, display:'flex', alignItems:'center', gap:7 }}>
+            <Lock size={16} /> Password Security Guide
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:10, marginBottom:14 }}>
             {[

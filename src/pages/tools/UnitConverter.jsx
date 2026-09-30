@@ -117,17 +117,19 @@ export default function UnitConverter() {
         {/* Category selector */}
         <div className="fgrp">
           <label className="lbl">Category</label>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6, padding:4, borderRadius:16, background:'rgba(0,0,0,.035)', border:'1px solid rgba(0,0,0,.03)' }}>
             {Object.keys(UNIT_CATEGORIES).map(c => {
               const Icon = CAT_ICONS[c] || Hash
+              const isAct = cat === c
               return (
                 <button key={c} onClick={() => handleCatChange(c)}
                   style={{ padding:'7px 14px', borderRadius:999, fontSize:12.5, fontWeight:700,
                     cursor:'pointer', transition:'all .18s cubic-bezier(.22,1,.36,1)', display:'inline-flex', alignItems:'center', gap:6,
-                    border:`1.5px solid ${cat===c?'#4F8EF7':'rgba(0,0,0,.1)'}`,
-                    background:cat===c?'rgba(79,142,247,.1)':'#fafafa',
-                    color:cat===c?'#4F8EF7':'#666' }}>
-                  <Icon size={14} style={{ color: cat===c ? '#4F8EF7' : '#666', flexShrink: 0 }} />
+                    border: isAct ? '1.5px solid #4F8EF7' : '1px solid transparent',
+                    background: isAct ? '#ffffff' : 'transparent',
+                    boxShadow: isAct ? '0 2px 8px rgba(15,23,42,0.08)' : 'none',
+                    color: isAct ? '#4F8EF7' : '#666' }}>
+                  <Icon size={14} style={{ color: isAct ? '#4F8EF7' : '#666', flexShrink: 0 }} />
                   {c}
                 </button>
               )
@@ -176,7 +178,7 @@ export default function UnitConverter() {
           <div>
             <label className="lbl">Result</label>
             <div style={{ padding:'10px 14px', background:'linear-gradient(135deg,rgba(79,142,247,.07),rgba(156,111,222,.07))',
-              borderRadius:10, border:'1.5px solid rgba(79,142,247,.2)', minHeight:44,
+              borderRadius:12, border:'1.5px solid rgba(79,142,247,.2)', minHeight:44,
               display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer',
               transition:'box-shadow .2s' }}
               onClick={() => copy(result)}

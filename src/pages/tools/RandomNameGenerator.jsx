@@ -408,22 +408,25 @@ export default function RandomNameGenerator() {
           {/* Gender */}
           <div>
             <div className="lbl">Gender</div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {GENDERS.map(g => (
+            <div style={{ display: 'flex', gap: 3, background:'rgba(0,0,0,.042)', padding:3, borderRadius:14, border:'1px solid rgba(0,0,0,.035)' }}>
+              {GENDERS.map(g => {
+                const isAct = gender === g
+                return (
                 <motion.button key={g} onClick={() => setGender(g)}
-                  whileHover={{ y: -2 }} whileTap={{ scale: .94 }}
+                  whileHover={{ y: -1 }} whileTap={{ scale: .96 }}
                   style={{
-                    flex: 1, padding: '10px 6px', borderRadius: 10, cursor: 'pointer',
-                    border: `1.5px solid ${gender === g ? '#4F8EF7' : 'rgba(0,0,0,.1)'}`,
-                    background: gender === g ? 'rgba(79,142,247,.09)' : '#fafafa',
-                    color: gender === g ? '#4F8EF7' : '#777',
+                    flex: 1, padding: '8px 6px', borderRadius: 11, cursor: 'pointer',
+                    border: isAct ? '1px solid rgba(79,142,247,.25)' : '1px solid transparent',
+                    background: isAct ? '#ffffff' : 'transparent',
+                    boxShadow: isAct ? '0 2px 8px rgba(15,23,42,0.08)' : 'none',
+                    color: isAct ? '#4F8EF7' : '#777',
                     fontWeight: 700, fontSize: 12, fontFamily: 'DM Sans, sans-serif',
                     transition: 'all .18s',
                   }}>
-                  {g === 'male' ? '♂' : g === 'female' ? '♀' : '⚡'}<br/>
+                  {g === 'male' ? '♂' : g === 'female' ? '♀' : '✦'}<br/>
                   <span style={{ fontSize: 10, textTransform: 'capitalize' }}>{g}</span>
                 </motion.button>
-              ))}
+              )})}
             </div>
           </div>
 

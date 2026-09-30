@@ -128,7 +128,7 @@ export default function WordReplacer() {
             <label style={{ fontSize: 11, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '.6px', display: 'block', marginBottom: 6 }}>Find</label>
             <input value={find} onChange={e => { setFind(e.target.value); setReplaced(false) }}
               placeholder="Word or phrase…"
-              style={{ width: '100%', padding: '11px 14px', borderRadius: 10, fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: '#2d2d3d', background: '#fafafa', outline: 'none', transition: 'border-color .2s, box-shadow .2s',
+              style={{ width: '100%', padding: '11px 14px', borderRadius: 12, fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: '#2d2d3d', background: '#fafafa', outline: 'none', transition: 'border-color .2s, box-shadow .2s',
                 border: `1.5px solid ${find && count === 0 && text && !replaced ? '#ef444455' : find && count > 0 ? '#FF980088' : 'rgba(0,0,0,.1)'}` }}
               onFocus={e => { e.target.style.boxShadow = '0 0 0 3px rgba(255,152,0,.12)' }}
               onBlur={e  => { e.target.style.boxShadow = 'none' }}/>
@@ -146,7 +146,7 @@ export default function WordReplacer() {
             <label style={{ fontSize: 11, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '.6px', display: 'block', marginBottom: 6 }}>Replace With</label>
             <input value={withText} onChange={e => { setWithText(e.target.value); setReplaced(false) }}
               placeholder="Replacement (empty = delete)…"
-              style={{ width: '100%', padding: '11px 14px', border: '1.5px solid rgba(0,0,0,.1)', borderRadius: 10, fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: '#2d2d3d', background: '#fafafa', outline: 'none', transition: 'border-color .2s, box-shadow .2s' }}
+              style={{ width: '100%', padding: '11px 14px', border: '1.5px solid rgba(0,0,0,.1)', borderRadius: 12, fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: '#2d2d3d', background: '#fafafa', outline: 'none', transition: 'border-color .2s, box-shadow .2s' }}
               onFocus={e => { e.target.style.borderColor = '#22c55e'; e.target.style.boxShadow = '0 0 0 3px rgba(34,197,94,.1)' }}
               onBlur={e  => { e.target.style.borderColor = 'rgba(0,0,0,.1)'; e.target.style.boxShadow = 'none' }}/>
           </div>

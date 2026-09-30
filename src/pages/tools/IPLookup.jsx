@@ -7,7 +7,7 @@ import { TOOLS } from '../../constants'
 import { addToHistory } from '../../utils/history'
 import { useToolHistory } from '../../hooks/useToolHistory'
 import { saveFileWithFallback } from '../../utils/fileSaver'
-import { Clock, Trash2 } from 'lucide-react'
+import { Clock, Trash2, Globe, Download, ShieldCheck, Activity, Search, MapPin, AlertTriangle, Loader2 } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'iplookup') || {
   id: 'iplookup',
@@ -236,9 +236,11 @@ BGP/ASN registrations and Regional Internet Registry routing allocations.
               style={{
                 padding: '12px 22px', borderRadius: 13, border: 'none',
                 background: 'linear-gradient(135deg,#0d0d1a,#1e1040)',
-                color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap'
+                color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap',
+                display: 'inline-flex', alignItems: 'center', gap: 7
               }}>
-              {loading ? '🔍 Analyzing…' : '🔍 Lookup IP'}
+              {loading ? <Loader2 size={15} className="spin" /> : <Search size={15} />}
+              {loading ? 'Analyzing…' : 'Lookup IP'}
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.04 }}
@@ -246,9 +248,10 @@ BGP/ASN registrations and Regional Internet Registry routing allocations.
               onClick={() => { setIp(''); lookup('') }}
               style={{
                 padding: '12px 18px', borderRadius: 13, border: '1.5px solid rgba(79,142,247,.25)',
-                background: 'rgba(79,142,247,.06)', color: '#4F8EF7', fontWeight: 700, fontSize: 13, cursor: 'pointer'
+                background: 'rgba(79,142,247,.06)', color: '#4F8EF7', fontWeight: 700, fontSize: 13, cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: 6
               }}>
-              📍 My Live IP
+              <MapPin size={15} /> My Live IP
             </motion.button>
           </div>
           <AnimatePresence>
@@ -259,9 +262,10 @@ BGP/ASN registrations and Regional Internet Registry routing allocations.
                 exit={{ opacity: 0 }}
                 style={{
                   marginTop: 12, padding: '9px 13px', background: 'rgba(239,68,68,.06)',
-                  border: '1px solid rgba(239,68,68,.2)', borderRadius: 9, fontSize: 12.5, color: '#b91c1c'
+                  border: '1px solid rgba(239,68,68,.2)', borderRadius: 9, fontSize: 12.5, color: '#b91c1c',
+                  display: 'flex', alignItems: 'center', gap: 6
                 }}>
-                ⚠️ {error}
+                <AlertTriangle size={15} color="#ef4444" /> {error}
               </motion.div>
             )}
           </AnimatePresence>
@@ -273,9 +277,9 @@ BGP/ASN registrations and Regional Internet Registry routing allocations.
         <ToolCard style={{ marginBottom: 18, textAlign: 'center', padding: '48px 20px' }}>
           <motion.div
             animate={{ rotate: 360 }}
-            transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
-            style={{ fontSize: 40, display: 'inline-block', marginBottom: 12 }}>
-            🌐
+            transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+            style={{ display: 'inline-flex', marginBottom: 12 }}>
+            <Globe size={42} color="#4F8EF7" />
           </motion.div>
           <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 16, color: '#0d0d1a' }}>
             Fetching IP Intelligence & Geolocation...
@@ -466,16 +470,17 @@ BGP/ASN registrations and Regional Internet Registry routing allocations.
             {/* Comprehensive Detail Grid */}
             <ToolCard style={{ marginBottom: 18 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a' }}>
-                  📊 Geolocation & Network Details
+                <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15, color: '#0d0d1a', display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <Globe size={16} /> Geolocation & Network Details
                 </div>
                 <button
                   onClick={downloadReport}
                   style={{
                     padding: '6px 14px', borderRadius: 10, border: '1px solid rgba(79,142,247,.25)',
-                    background: 'rgba(79,142,247,.06)', color: '#4F8EF7', fontSize: 12, fontWeight: 700, cursor: 'pointer'
+                    background: 'rgba(79,142,247,.06)', color: '#4F8EF7', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center', gap: 6
                   }}>
-                  ⬇️ Download Audit Report (.txt)
+                  <Download size={13} /> Download Audit Report (.txt)
                 </button>
               </div>
 

@@ -5,6 +5,7 @@ import { TOOLS } from '../../constants'
 import { saveFileWithFallback } from '../../utils/fileSaver'
 import { safeFetchJSON } from '../../utils/safeFetch'
 import { addToHistory } from '../../utils/history'
+import { Type, Image as ImageIcon, Sparkles } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'favicon')
 
@@ -350,9 +351,9 @@ export default function FaviconGenerator() {
   }
 
   const TABS = [
-    { id: 'text',  label: '🔤 Text / Emoji' },
-    { id: 'image', label: '🖼️ Upload Image' },
-    { id: 'ai',    label: '✨ AI Vector Generator' },
+    { id: 'text',  label: 'Text / Emoji', icon: Type },
+    { id: 'image', label: 'Upload Image', icon: ImageIcon },
+    { id: 'ai',    label: 'AI Vector Generator', icon: Sparkles },
   ]
 
   return (
@@ -370,20 +371,25 @@ export default function FaviconGenerator() {
         </div>
 
         {/* ── MODE TABS ── */}
-        <div style={{ display: 'flex', gap: 3, marginBottom: 22, borderRadius: 14, padding: 4, border: '1px solid rgba(0,0,0,.04)', background: 'rgba(0,0,0,.045)' }}>
-          {TABS.map(tab => (
+        <div style={{ display: 'flex', gap: 3, marginBottom: 22, borderRadius: 14, padding: 4, border: '1px solid rgba(0,0,0,.035)', background: 'rgba(0,0,0,.042)' }}>
+          {TABS.map(tab => {
+            const Icon = tab.icon
+            const isActive = mode === tab.id
+            return (
             <button key={tab.id} onClick={() => setMode(tab.id)}
               style={{
-                flex: 1, padding: '9px 0', border: 'none', cursor: 'pointer', borderRadius: 10,
-                fontFamily: 'DM Sans,sans-serif', fontSize: 13, fontWeight: 600,
-                background: mode === tab.id ? '#ffffff' : 'transparent',
-                color: mode === tab.id ? '#0d0d1a' : '#666',
-                boxShadow: mode === tab.id ? '0 2px 8px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none',
+                flex: 1, padding: '9px 4px', border: 'none', cursor: 'pointer', borderRadius: 12,
+                fontFamily: 'DM Sans,sans-serif', fontSize: 13, fontWeight: 600, minHeight: 40,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                background: isActive ? 'rgba(255,255,255,0.95)' : 'transparent',
+                color: isActive ? '#0d0d1a' : '#666',
+                boxShadow: isActive ? '0 2px 10px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.03), inset 0 1px 0 rgba(255,255,255,1)' : 'none',
                 transition: 'all .18s cubic-bezier(.22,1,.36,1)',
               }}>
-              {tab.label}
+              <Icon size={14} />
+              <span>{tab.label}</span>
             </button>
-          ))}
+          )})}
         </div>
 
         {/* ── TEXT / EMOJI MODE ── */}

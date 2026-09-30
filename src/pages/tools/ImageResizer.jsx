@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { AlertTriangle, X, UploadCloud, Loader2, Image, Upload } from 'lucide-react'
+import { AlertTriangle, X, UploadCloud, Loader2, Image, Upload, Maximize2, Package, Palette, Settings, Check } from 'lucide-react'
 import ToolShell, { ToolCard, Reveal } from '../../components/ToolShell'
 import { TOOLS } from '../../constants'
 import { saveFileWithFallback } from '../../utils/fileSaver'
@@ -544,11 +544,17 @@ export default function ImageResizer() {
             )}
 
             {/* ── TAB NAV ── */}
-            <div style={{display:'flex',gap:4,background:'#f3f4f6',borderRadius:12,padding:4,marginBottom:20}}>
-              {[{id:'resize',label:'📐 Resize'},{id:'presets',label:'📦 Presets'},{id:'format',label:'🎨 Format'},{id:'advanced',label:'⚙️ Advanced'}].map(t=>(
+            <div style={{display:'flex',gap:6,background:'rgba(0,0,0,0.03)',borderRadius:14,padding:4,marginBottom:20}}>
+              {[
+                {id:'resize', label:'Resize', Icon: Maximize2},
+                {id:'presets', label:'Presets', Icon: Package},
+                {id:'format', label:'Format', Icon: Palette},
+                {id:'advanced', label:'Advanced', Icon: Settings}
+              ].map(t=>(
                 <button key={t.id} onClick={()=>setTab(t.id)}
-                  style={{flex:1,padding:'9px 6px',borderRadius:9,border:'none',cursor:'pointer',fontSize:11.5,fontWeight:700,transition:'all .18s',background:tab===t.id?'#fff':'transparent',color:tab===t.id?'#4F8EF7':'#888',boxShadow:tab===t.id?'0 2px 8px rgba(0,0,0,.09)':'none'}}>
-                  {t.label}
+                  style={{flex:1,padding:'8px 10px',borderRadius:11,border: tab===t.id ? '1.5px solid rgba(79,142,247,0.35)' : '1.5px solid transparent',cursor:'pointer',fontSize:12,fontWeight:700,transition:'all .16s ease',background:tab===t.id?'rgba(79,142,247,0.12)':'transparent',color:tab===t.id?'#3B7BE8':'#777',boxShadow:tab===t.id?'0 2px 8px rgba(79,142,247,0.15)':'none',display:'inline-flex',alignItems:'center',justifyContent:'center',gap:6}}>
+                  <t.Icon size={14} />
+                  <span>{t.label}</span>
                 </button>
               ))}
             </div>
@@ -617,10 +623,10 @@ export default function ImageResizer() {
             {/* ── TAB: PRESETS ── */}
             {tab==='presets' && (
               <motion.div initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} transition={{duration:.22}}>
-                <div style={{display:'flex',gap:5,flexWrap:'wrap',marginBottom:14}}>
+                <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:14,padding:4,background:'rgba(0,0,0,0.03)',borderRadius:12}}>
                   {CATS.map(c=>(
                     <button key={c} onClick={()=>setCat(c)}
-                      style={{padding:'5px 13px',borderRadius:999,fontSize:11.5,fontWeight:700,cursor:'pointer',border:'none',background:cat===c?'#4F8EF7':'rgba(0,0,0,.06)',color:cat===c?'#fff':'#888',transition:'all .15s cubic-bezier(.22,1,.36,1)'}}>
+                      style={{padding:'5px 13px',borderRadius:9,fontSize:11.5,fontWeight:700,cursor:'pointer',border: cat===c ? '1.5px solid rgba(79,142,247,0.35)' : '1.5px solid transparent',background:cat===c?'rgba(79,142,247,.12)':'transparent',color:cat===c?'#3B7BE8':'#666',transition:'all .16s ease'}}>
                       {c}
                     </button>
                   ))}

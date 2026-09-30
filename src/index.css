@@ -114,6 +114,60 @@
   --tool-glass-l3-blur: blur(8px);
   --tool-glass-l3-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
   --tool-glass-l3-specular: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+
+  /* ── Tool-Page Premium Polish Tokens (v1.3.0) ── */
+  /* Curvature hierarchy — Apple-inspired nested radii */
+  --tool-radius-outer: 22px;
+  --tool-radius-card: 18px;
+  --tool-radius-panel: 14px;
+  --tool-radius-control: 12px;
+  --tool-radius-input: 12px;
+  --tool-radius-button: 12px;
+  --tool-radius-pill: 999px;
+
+  /* Control dimensions */
+  --tool-control-height: 44px;
+  --tool-control-height-sm: 38px;
+  --tool-tab-height: 44px;
+  --tool-tab-height-sm: 40px;
+
+  /* Spacing rhythm */
+  --tool-spacing-xs: 4px;
+  --tool-spacing-sm: 8px;
+  --tool-spacing-md: 12px;
+  --tool-spacing-lg: 16px;
+  --tool-spacing-xl: 20px;
+  --tool-spacing-2xl: 24px;
+  --tool-panel-gap: 20px;
+
+  /* Glass accents — controlled ~30% presence */
+  --tool-glass-accent-bg: rgba(255, 255, 255, 0.60);
+  --tool-glass-accent-border: rgba(255, 255, 255, 0.70);
+  --tool-glass-accent-blur: blur(12px) saturate(140%);
+  --tool-glass-selected-bg: rgba(255, 255, 255, 0.95);
+  --tool-glass-selected-shadow: 0 2px 10px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 1);
+  --tool-glass-tab-rail-bg: rgba(0, 0, 0, 0.042);
+  --tool-glass-tab-rail-border: 1px solid rgba(0, 0, 0, 0.035);
+
+  /* Subtle depth */
+  --tool-shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.02);
+  --tool-shadow-card: 0 4px 20px rgba(0, 0, 0, 0.035), 0 1px 3px rgba(0, 0, 0, 0.02);
+  --tool-shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.02);
+
+  /* Slider tokens */
+  --tool-slider-track-h: 6px;
+  --tool-slider-thumb-size: 20px;
+  --tool-slider-thumb-border: 3px;
+  --tool-slider-track-radius: 999px;
+  --tool-slider-track-inactive: #e2e4ef;
+  --tool-slider-track-active: var(--blue);
+  --tool-slider-thumb-shadow: 0 2px 8px rgba(79, 142, 247, 0.35);
+
+  /* Progress bar tokens */
+  --tool-progress-h: 6px;
+  --tool-progress-radius: 999px;
+  --tool-progress-bg: #e2e4ef;
+  --tool-progress-fill: linear-gradient(90deg, #4F8EF7, #9C6FDE);
 }
 
 /* ── HTML / Body ── */
@@ -1827,6 +1881,377 @@ main, section, article, .tool-shell {
 @media (max-width: 360px) {
   .tool-grid-4 {
     grid-template-columns: 1fr !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOOL-PAGE PREMIUM POLISH v1.3.0
+   All selectors scoped to .tool-page to protect Home page.
+   Approximately 70% solid / 30% premium glass accent.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. TOOL-CARD REFINED CURVATURE ── */
+.tool-page .tool-card-glass {
+  border-radius: var(--tool-radius-outer);
+  box-shadow: var(--tool-shadow-card), var(--tool-glass-l1-specular);
+}
+
+/* ── 2. INPUTS — Premium depth & alignment ── */
+.tool-page .inp,
+.tool-page input.inp,
+.tool-page textarea.inp {
+  border-radius: var(--tool-radius-input);
+  min-height: var(--tool-control-height);
+  padding: 11px 16px;
+  line-height: 1.5;
+}
+.tool-page textarea.inp {
+  min-height: 120px;
+}
+.tool-page .inp:focus,
+.tool-page textarea.inp:focus {
+  border-color: rgba(79, 142, 247, 0.55);
+  box-shadow: 0 0 0 3px rgba(79, 142, 247, 0.12), inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+/* ── 3. SELECT / DROPDOWN — consistent curvature ── */
+.tool-page select.sel,
+.tool-page .sel {
+  border-radius: var(--tool-radius-input);
+  min-height: var(--tool-control-height);
+  padding: 11px 36px 11px 14px;
+}
+
+/* ── 4. BUTTONS — Refined tactile feel ── */
+.tool-page .btn {
+  border-radius: var(--tool-radius-button);
+  min-height: var(--tool-control-height);
+  padding: 10px 22px;
+  letter-spacing: 0.01em;
+}
+.tool-page .btn-primary {
+  box-shadow: 0 4px 14px rgba(13, 13, 26, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.tool-page .btn-primary:hover:not(:disabled) {
+  box-shadow: 0 8px 24px rgba(13, 13, 26, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.tool-page .btn-blue {
+  box-shadow: 0 4px 14px rgba(79, 142, 247, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.tool-page .btn-blue:hover:not(:disabled) {
+  box-shadow: 0 8px 24px rgba(79, 142, 247, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.20);
+}
+.tool-page .btn-outline {
+  border-radius: var(--tool-radius-button);
+}
+.tool-page .btn-sm {
+  border-radius: 9px;
+  min-height: var(--tool-control-height-sm);
+  padding: 7px 16px;
+}
+
+/* ── 5. SLIDER — Premium Apple-inspired rail & thumb ── */
+.tool-page input[type="range"],
+.tool-page .slider,
+.tool-page .rs-thumb {
+  height: var(--tool-slider-track-h);
+  border-radius: var(--tool-slider-track-radius);
+  margin: 10px 0;
+}
+.tool-page input[type="range"]::-webkit-slider-thumb,
+.tool-page .slider::-webkit-slider-thumb,
+.tool-page .rs-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--tool-slider-thumb-size);
+  height: var(--tool-slider-thumb-size);
+  border-radius: 50%;
+  background: #fff;
+  border: var(--tool-slider-thumb-border) solid var(--blue);
+  box-shadow: var(--tool-slider-thumb-shadow), 0 0 0 3px rgba(79, 142, 247, 0.08);
+  cursor: pointer;
+  transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
+  will-change: transform;
+  /* Center thumb on track */
+  margin-top: calc((var(--tool-slider-track-h) - var(--tool-slider-thumb-size)) / 2);
+}
+.tool-page input[type="range"]::-webkit-slider-thumb:hover,
+.tool-page .slider::-webkit-slider-thumb:hover,
+.tool-page .rs-thumb::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: var(--tool-slider-thumb-shadow), 0 0 0 5px rgba(79, 142, 247, 0.12);
+}
+.tool-page input[type="range"]::-webkit-slider-thumb:active,
+.tool-page .slider::-webkit-slider-thumb:active,
+.tool-page .rs-thumb::-webkit-slider-thumb:active {
+  transform: scale(1.08);
+}
+.tool-page input[type="range"]:focus-visible::-webkit-slider-thumb,
+.tool-page .slider:focus-visible::-webkit-slider-thumb,
+.tool-page .rs-thumb:focus-visible::-webkit-slider-thumb {
+  box-shadow: var(--tool-slider-thumb-shadow), 0 0 0 4px rgba(79, 142, 247, 0.25);
+}
+/* Firefox */
+.tool-page input[type="range"]::-moz-range-thumb,
+.tool-page .slider::-moz-range-thumb,
+.tool-page .rs-thumb::-moz-range-thumb {
+  width: var(--tool-slider-thumb-size);
+  height: var(--tool-slider-thumb-size);
+  border-radius: 50%;
+  background: #fff;
+  border: var(--tool-slider-thumb-border) solid var(--blue);
+  box-shadow: var(--tool-slider-thumb-shadow), 0 0 0 3px rgba(79, 142, 247, 0.08);
+  cursor: pointer;
+}
+.tool-page input[type="range"]::-moz-range-track,
+.tool-page .slider::-moz-range-track,
+.tool-page .rs-thumb::-moz-range-track {
+  height: var(--tool-slider-track-h);
+  border-radius: var(--tool-slider-track-radius);
+  background: var(--tool-slider-track-inactive);
+}
+/* Webkit track — provides visible rail */
+.tool-page input[type="range"]::-webkit-slider-runnable-track {
+  height: var(--tool-slider-track-h);
+  border-radius: var(--tool-slider-track-radius);
+}
+/* Purple variant (Bcrypt security audit) */
+.tool-page .rs-thumb-purple::-webkit-slider-thumb {
+  border-color: #9C6FDE;
+  box-shadow: 0 2px 8px rgba(156, 111, 222, 0.35), 0 0 0 3px rgba(156, 111, 222, 0.08);
+}
+.tool-page .rs-thumb-purple::-moz-range-thumb {
+  border-color: #9C6FDE;
+  box-shadow: 0 2px 8px rgba(156, 111, 222, 0.35), 0 0 0 3px rgba(156, 111, 222, 0.08);
+}
+
+/* ── 6. PROGRESS RAILS & FILLS ── */
+.tool-page .progress-rail {
+  height: var(--tool-progress-h);
+  background: var(--tool-progress-bg);
+  border-radius: var(--tool-progress-radius);
+  overflow: hidden;
+}
+.tool-page .progress-fill {
+  height: 100%;
+  border-radius: var(--tool-progress-radius);
+  background: var(--tool-progress-fill);
+}
+
+/* ── 7. OUTPUT BOX — premium depth ── */
+.tool-page .out-box {
+  border-radius: var(--tool-radius-panel);
+}
+
+/* ── 8. INFO BARS — consistent curvature ── */
+.tool-page .info-bar {
+  border-radius: var(--tool-radius-panel);
+}
+
+/* ── 9. UPLOAD ZONE — refined curvature ── */
+.tool-page .upzone {
+  border-radius: var(--tool-radius-card);
+}
+
+/* ── 10. TAGS/CHIPS — refined treatment ── */
+.tool-page .tag {
+  border-radius: var(--tool-radius-pill);
+}
+.tool-page .tag.on {
+  background: rgba(79, 142, 247, 0.08);
+  border-color: rgba(79, 142, 247, 0.30);
+  box-shadow: 0 1px 4px rgba(79, 142, 247, 0.08);
+}
+
+/* ── 11. LABEL ALIGNMENT ── */
+.tool-page .lbl {
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.tool-page .fgrp {
+  margin-bottom: var(--tool-panel-gap);
+}
+
+/* ── 12. FORM ROW ── */
+.tool-page .frow {
+  gap: var(--tool-spacing-md);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOOL-PAGE TAB / SEGMENTED CONTROL SYSTEM v1.3.0
+   Unified premium treatment for all tool-page segmented controls.
+   Subtle glass active state (~30% glass).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Base segmented rail shared across all tool tabs */
+.tool-page .apple-segmented {
+  border-radius: var(--tool-radius-panel);
+  padding: var(--tool-spacing-xs);
+  gap: var(--tool-spacing-xs);
+  background: var(--tool-glass-tab-rail-bg);
+  border: var(--tool-glass-tab-rail-border);
+}
+.tool-page .apple-segmented-item {
+  border-radius: var(--tool-radius-control);
+  min-height: var(--tool-tab-height-sm);
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.18s var(--ease);
+}
+.tool-page .apple-segmented-item:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.45);
+  color: #334155;
+}
+.tool-page .apple-segmented-item.active {
+  background: var(--tool-glass-selected-bg);
+  color: #0f172a;
+  box-shadow: var(--tool-glass-selected-shadow);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* QR Studio Tabs refinement */
+.tool-page .qr-studio-tab-item {
+  border-radius: var(--tool-radius-control) !important;
+  min-height: var(--tool-tab-height-sm) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  transition: all 0.18s var(--ease) !important;
+}
+
+/* PDF Studio category items refinement */
+.tool-page .pdf-studio-category-item {
+  border-radius: var(--tool-radius-control) !important;
+  min-height: var(--tool-tab-height-sm) !important;
+  padding: 9px 10px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOOL-PAGE STATUS SURFACES — error / warning / success
+   ═══════════════════════════════════════════════════════════════════════════ */
+.tool-page .info-bar.blue,
+.tool-page .info-bar.green,
+.tool-page .info-bar.amber {
+  border-radius: var(--tool-radius-panel);
+  padding: 13px 16px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOOL-PAGE MOBILE TAB OVERFLOW BEHAVIOR
+   Prevents destructive wrapping on small screens.
+   Uses horizontal scroll with hidden scrollbar for overflowing tabs.
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  /* Bcrypt, PDF, and similar multi-tab tool bars */
+  .tool-page .apple-segmented {
+    padding: 3px !important;
+    gap: 3px !important;
+    border-radius: var(--tool-radius-control) !important;
+  }
+  .tool-page .apple-segmented-item {
+    min-height: 38px !important;
+    padding: 8px 10px !important;
+    font-size: 12.5px !important;
+  }
+
+  /* QR mode tabs — 9 items need horizontal scroll on small screens */
+  .tool-page .qr-studio-tab-item {
+    min-height: 38px !important;
+    padding: 8px 6px !important;
+    font-size: 12px !important;
+  }
+
+  /* Ensure all inline tool tabs have touch-safe sizing */
+  .tool-page .btn {
+    min-height: 42px;
+  }
+
+  /* Prevent slider labels from overlapping */
+  .tool-page input[type="range"] {
+    margin: 8px 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .tool-page .apple-segmented-item {
+    padding: 7px 6px !important;
+    font-size: 12px !important;
+    gap: 4px !important;
+  }
+  .tool-page .pdf-studio-category-item {
+    padding: 7px 6px !important;
+    font-size: 11.5px !important;
+  }
+  .tool-page .qr-studio-tab-item {
+    padding: 7px 4px !important;
+    font-size: 11.5px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOOL-PAGE NESTED CARD CONSISTENCY
+   Ensures inner panels have mathematically coherent corner radii
+   relative to their parent cards.
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* Inner panels within tool cards */
+.tool-page .tool-card-glass .info-bar,
+.tool-page .tool-card-glass .out-box,
+.tool-page .tool-card-glass .upzone {
+  border-radius: var(--tool-radius-panel);
+}
+/* Inner option cards / action cards */
+.tool-page .tool-card-glass [style*="borderRadius: 14"],
+.tool-page .tool-card-glass [style*="borderRadius:14"] {
+  /* Let existing inline radii pass through — these are already reasonable */
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOOL-PAGE KEYBOARD / VIEWPORT SAFETY
+   Prevents controls from being hidden behind mobile keyboard.
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .tool-page {
+    /* Prevent keyboard-induced viewport jank */
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Ensure buttons at bottom of tool cards remain accessible */
+  .tool-page .btn-w,
+  .tool-page .btn[style*="width: 100%"],
+  .tool-page .btn[style*="width:100%"] {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOOL-PAGE RESPONSIVE REFINEMENTS
+   Fine-grained adjustments for 320–430px viewport range
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .tool-page .tool-card-glass {
+    border-radius: 18px;
+    padding: clamp(14px, 3.5vw, 22px) !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .tool-page .tool-card-glass {
+    border-radius: 16px;
+    padding: 14px !important;
+  }
+  .tool-page .btn {
+    padding: 10px 16px;
+    font-size: 13.5px;
+  }
+  .tool-page .inp {
+    padding: 10px 14px;
   }
 }
 

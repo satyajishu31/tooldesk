@@ -1650,7 +1650,7 @@ export default function PDFToolkit() {
         {/* ── 1. HIGH-LEVEL CATEGORY SELECTOR (Apple-Style Glass Segmented Tabs) ── */}
         <div style={{ marginBottom: 22 }}>
           <label className="lbl" style={{ marginBottom: 10 }}>STUDIO SUITE</label>
-          <div className="apple-segmented pdf-studio-categories" style={{ padding: 5, borderRadius: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 4 }}>
+          <div className="apple-segmented pdf-studio-categories" style={{ padding: 4, borderRadius: 14, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 4, background: 'rgba(0,0,0,.042)', border: '1px solid rgba(0,0,0,.035)' }}>
             {CATEGORIES.map(cat => (
               <button
                 key={cat.id}
@@ -1658,7 +1658,7 @@ export default function PDFToolkit() {
                 onClick={() => handleCategoryChange(cat.id)}
                 className={`apple-segmented-item pdf-studio-category-item ${activeCategory === cat.id ? 'active' : ''}`}
                 style={{
-                  padding: '9px 6px',
+                  padding: '9px 8px',
                   borderRadius: 12,
                   fontSize: 13,
                   fontWeight: 700,
@@ -1666,6 +1666,7 @@ export default function PDFToolkit() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 6,
+                  minHeight: 44,
                   transition: 'all .18s var(--ease)',
                 }}
               >
@@ -1699,14 +1700,16 @@ export default function PDFToolkit() {
                   }}
                   onMouseEnter={e => {
                     if (!isSelected) {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.98)'
-                      e.currentTarget.style.borderColor = 'rgba(79,142,247,.35)'
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.96)'
+                      e.currentTarget.style.borderColor = 'rgba(79,142,247,.30)'
+                      e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,.04), inset 0 1px 0 rgba(255,255,255,0.95)'
                     }
                   }}
                   onMouseLeave={e => {
                     if (!isSelected) {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.88)'
-                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.85)'
+                      e.currentTarget.style.background = 'rgba(248, 249, 255, 0.9)'
+                      e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.08)'
+                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,.02), inset 0 1px 0 rgba(255,255,255,0.9)'
                     }
                   }}
                 >

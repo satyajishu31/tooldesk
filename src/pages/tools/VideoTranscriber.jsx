@@ -7,7 +7,7 @@ import { saveFileWithFallback } from '../../utils/fileSaver'
 import { addToHistory } from '../../utils/history'
 import { safeFetchJSON } from '../../utils/safeFetch'
 import { resolveApiUrl, getApiHeaders } from '../../utils/apiConfig'
-import { Search, Music, Scissors, Sparkles, GitMerge, Check, CheckCircle2, Film, HardDrive, Clock, X, AlertTriangle, Zap, UploadCloud, Loader2 } from 'lucide-react'
+import { Search, Music, Scissors, Sparkles, GitMerge, Check, CheckCircle2, Film, HardDrive, Clock, X, AlertTriangle, Zap, UploadCloud, Loader2, FileText, Globe, Database, Download, FileCode, Bot, Clipboard } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'videotranscriber')
 
@@ -1520,7 +1520,7 @@ export default function VideoTranscriber() {
             }}>
               <div>
                 <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 16, color: '#0d0d1a', display: 'flex', alignItems: 'center', gap: 7 }}>
-                  <span>🤖</span> AI Video Intelligence & Smart Chapters
+                  <Bot size={17} color="#4F8EF7" /> AI Video Intelligence & Smart Chapters
                 </div>
                 <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 3 }}>
                   Executive meeting minutes, timestamped chapter navigation, and action item extraction.
@@ -1543,9 +1543,9 @@ export default function VideoTranscriber() {
                       copy(report)
                     }}
                     className="btn btn-sm btn-outline"
-                    style={{ fontSize: 12, padding: '7px 14px', borderRadius: 999 }}
+                    style={{ fontSize: 12, padding: '7px 14px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: 5 }}
                   >
-                    📋 Copy Report
+                    <Clipboard size={13} /> Copy Report
                   </button>
                 )}
                 <button
@@ -1771,20 +1771,30 @@ export default function VideoTranscriber() {
           <ToolCard style={{ marginBottom: 18 }}>
             <div style={{
               fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 15,
-              color: '#0d0d1a', marginBottom: 16
-            }}>⬇️ Export Transcript</div>
+              color: '#0d0d1a', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 7
+            }}>
+              <Download size={16} color="#4F8EF7" /> Export Transcript
+            </div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {[{ f: 'TXT', icon: '📝' }, { f: 'SRT', icon: '🎬' }, { f: 'VTT', icon: '🌐' }, { f: 'JSON', icon: '📊' }, { f: 'MD', icon: '📑' }].map(({ f, icon }) => (
+              <div style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap', padding: 4, background: 'rgba(0,0,0,0.03)', borderRadius: 14 }}>
+                {[
+                  { f: 'TXT', Icon: FileText },
+                  { f: 'SRT', Icon: Film },
+                  { f: 'VTT', Icon: Globe },
+                  { f: 'JSON', Icon: Database },
+                  { f: 'MD', Icon: FileCode }
+                ].map(({ f, Icon }) => (
                   <button key={f} onClick={() => setExportFmt(f)}
                     style={{
-                      padding: '9px 14px', borderRadius: 12,
-                      border: `1.5px solid ${exportFmt === f ? '#4F8EF7' : 'rgba(0,0,0,.1)'}`,
-                      background: exportFmt === f ? 'rgba(79,142,247,.09)' : '#fafafa',
+                      padding: '8px 14px', borderRadius: 11,
+                      border: `1.5px solid ${exportFmt === f ? 'rgba(79,142,247,0.35)' : 'rgba(0,0,0,.06)'}`,
+                      background: exportFmt === f ? 'rgba(79,142,247,.12)' : '#ffffff',
+                      boxShadow: exportFmt === f ? '0 2px 8px rgba(79,142,247,0.15)' : 'none',
                       cursor: 'pointer', fontFamily: 'DM Sans,sans-serif', fontWeight: 700,
-                      fontSize: 13, color: exportFmt === f ? '#4F8EF7' : '#666', transition: 'all .18s'
+                      fontSize: 12.5, color: exportFmt === f ? '#3B7BE8' : '#555', transition: 'all .16s ease',
+                      display: 'inline-flex', alignItems: 'center', gap: 6
                     }}>
-                    {icon} {f}
+                    <Icon size={14} /> {f}
                   </button>
                 ))}
               </div>

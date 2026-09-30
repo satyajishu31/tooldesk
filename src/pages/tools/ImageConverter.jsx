@@ -268,9 +268,10 @@ export default function ImageConverter() {
                 <motion.div key={f.mime} whileHover={{y:-2}} whileTap={{scale:.97}}
                   onClick={()=>handleFormatChange(f.mime)}
                   style={{padding:'13px 10px',borderRadius:13,textAlign:'center',cursor:'pointer',
-                    border:`1.5px solid ${batchFmt===f.mime?'#4F8EF7':'rgba(0,0,0,.08)'}`,
-                    background:batchFmt===f.mime?'rgba(79,142,247,.07)':'#fafafa',
-                    transition:'all .18s'}}>
+                    border:`1.5px solid ${batchFmt===f.mime?'rgba(79,142,247,0.35)':'rgba(0,0,0,.08)'}`,
+                    background:batchFmt===f.mime?'rgba(79,142,247,.12)':'var(--tool-glass-l2-bg)',
+                    boxShadow:batchFmt===f.mime?'0 2px 8px rgba(79,142,247,0.15)':'none',
+                    transition:'all .16s ease'}}>
                   <div style={{display:'flex',justifyContent:'center',marginBottom:6}}>
                     <FmtIcon size={22} color={batchFmt===f.mime?'#4F8EF7':'#64748b'} />
                   </div>

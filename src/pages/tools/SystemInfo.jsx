@@ -545,26 +545,29 @@ export default function SystemInfo() {
           </div>
 
           {/* Navigation Sub-Tabs */}
-          <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid rgba(0,0,0,0.08)', paddingBottom: 10, marginBottom: 18, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 3, background: 'rgba(0,0,0,0.042)', padding: 4, borderRadius: 14, border: '1px solid rgba(0,0,0,0.035)', marginBottom: 18, flexWrap: 'wrap' }}>
             {[
               { id: 'audit', label: 'Surface Analysis', icon: BarChart3 },
               { id: 'signals', label: 'Hardware Signals', icon: Cpu },
               { id: 'mitigations', label: 'Privacy Trade-offs', icon: ShieldCheck }
             ].map(tab => {
               const TabIcon = tab.icon
+              const isAct = activeFpTab === tab.id
               return (
                 <button
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveFpTab(tab.id)}
                   style={{
-                    background: activeFpTab === tab.id ? 'var(--blue, #2563eb)' : 'transparent',
-                    color: activeFpTab === tab.id ? '#fff' : '#666',
+                    background: isAct ? '#ffffff' : 'transparent',
+                    color: isAct ? '#0d0d1a' : '#666',
+                    boxShadow: isAct ? '0 2px 8px rgba(15,23,42,0.08)' : 'none',
                     border: 'none',
-                    padding: '6px 14px',
-                    borderRadius: 8,
+                    padding: '8px 14px',
+                    borderRadius: 12,
                     fontSize: 12.5,
-                    fontWeight: activeFpTab === tab.id ? 700 : 500,
+                    fontWeight: isAct ? 700 : 500,
+                    minHeight: 38,
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
                     display: 'inline-flex',

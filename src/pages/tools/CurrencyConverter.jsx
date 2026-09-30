@@ -6,7 +6,7 @@ import { TOOLS } from '../../constants'
 import { safeFetchJSON, safeTimeoutSignal } from '../../utils/safeFetch'
 import { addToHistory } from '../../utils/history'
 import { useToolHistory } from '../../hooks/useToolHistory'
-import { Clock, Trash2 } from 'lucide-react'
+import { Clock, Trash2, ArrowLeftRight } from 'lucide-react'
 
 const tool = TOOLS.find(t => t.id === 'currency')
 
@@ -262,12 +262,14 @@ export default function CurrencyConverter() {
             </div>
 
             <motion.button onClick={swap}
+              title="Swap currencies"
               whileHover={{rotate:180,scale:1.1}} whileTap={{scale:.9}}
               style={{padding:'11px 14px',borderRadius:12,
                 border:'1.5px solid rgba(79,142,247,.25)',
-                background:'rgba(79,142,247,.06)',cursor:'pointer',fontSize:20,
+                background:'rgba(79,142,247,.06)',cursor:'pointer',
+                display:'inline-flex',alignItems:'center',justifyContent:'center',
                 alignSelf:'flex-end',transition:'background .2s'}}>
-              ⇌
+              <ArrowLeftRight size={17} style={{ color: '#4F8EF7' }} />
             </motion.button>
 
             <div>
@@ -328,7 +330,7 @@ export default function CurrencyConverter() {
           <div className="tool-grid-2-compact" style={{marginBottom:18}}>
             {[{l:`1 ${from}`,v:`${rate1} ${to}`},{l:`1 ${to}`,v:`${rate2} ${from}`}].map(r=>(
               <div key={r.l} style={{padding:'10px 12px',background:'#F7F8FF',
-                borderRadius:10,border:'1px solid rgba(0,0,0,.06)',textAlign:'center'}}>
+                borderRadius:12,border:'1px solid rgba(0,0,0,.06)',textAlign:'center'}}>
                 <div style={{fontSize:10.5,color:'#bbb',marginBottom:4,fontWeight:600}}>{r.l}</div>
                 <div style={{fontSize:13,fontWeight:800,color:'#333'}}>{r.v}</div>
               </div>

@@ -249,21 +249,27 @@ export default function QuoteGenerator() {
           <input className="inp" placeholder="Search quotes or authors…"
             value={search} onChange={e=>setSearch(e.target.value)}
             style={{ flex:1, minWidth:160, fontSize:13 }}/>
-          <div style={{ display:'flex', gap:6 }}>
-            {['all','faves'].map(t=>(
+          <div style={{ display:'flex', gap:3, background:'rgba(0,0,0,.042)', padding:3, borderRadius:12, border:'1px solid rgba(0,0,0,.035)' }}>
+            {['all','faves'].map(t=>{
+              const isAct = tab === t
+              return (
               <button key={t} onClick={()=>setTab(t)}
-                className={`btn btn-sm ${tab===t?'btn-blue':'btn-outline'}`}
-                style={{ display:'inline-flex', alignItems:'center', gap:5 }}>
+                style={{ padding:'6px 14px', borderRadius:9, border:'none', cursor:'pointer', minHeight:34,
+                  fontSize:12.5, fontWeight:700, display:'inline-flex', alignItems:'center', gap:5,
+                  background: isAct ? '#ffffff' : 'transparent',
+                  color: isAct ? '#0d0d1a' : '#666',
+                  boxShadow: isAct ? '0 2px 8px rgba(15,23,42,0.08)' : 'none',
+                  transition:'all .18s' }}>
                 {t==='faves' ? (
                   <>
-                    <Heart size={12} fill="#ef4444" color="#ef4444" />
-                    <span>{faves.length}</span>
+                    <Heart size={13} fill="#ef4444" color="#ef4444" />
+                    <span>Favorites ({faves.length})</span>
                   </>
                 ) : (
-                  'All'
+                  'All Quotes'
                 )}
               </button>
-            ))}
+            )})}
           </div>
         </div>
 
@@ -275,7 +281,7 @@ export default function QuoteGenerator() {
             </div>
           ) : filtered.map(q => (
             <div key={q.i} onClick={() => setIdx(q.i)}
-              style={{ padding:'11px 13px', borderRadius:11, cursor:'pointer',
+              style={{ padding:'11px 13px', borderRadius:12, cursor:'pointer',
                 border:`1.5px solid ${idx===q.i?accent+'55':'rgba(0,0,0,.07)'}`,
                 background:idx===q.i?`${accent}08`:'#fff', transition:'all .18s cubic-bezier(.22,1,.36,1)',
                 display:'flex', gap:10, alignItems:'flex-start' }}
