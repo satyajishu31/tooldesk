@@ -93,6 +93,8 @@ export const AITypewriterText = memo(function AITypewriterText({
       title={isTyping ? "Click to reveal immediately" : undefined}
       style={{
         display: 'inline',
+        whiteSpace: 'inherit',
+        wordBreak: 'inherit',
         cursor: isTyping ? 'pointer' : 'inherit',
         ...style
       }}

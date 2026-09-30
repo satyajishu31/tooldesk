@@ -491,6 +491,8 @@ export default function AIHelper() {
                       color: m.role === 'user' ? '#ffffff' : m.isError ? '#b91c1c' : '#1e293b',
                       fontSize: 13.5,
                       lineHeight: 1.62,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
                       boxShadow: m.role === 'user' ? '0 2px 8px rgba(79,142,247,0.2)' : '0 2px 6px rgba(0,0,0,0.04)',
                       border: m.role === 'user' ? 'none' : m.isError ? '1px solid rgba(239,68,68,0.18)' : '1px solid rgba(0,0,0,0.05)',
                       transition: 'background 0.2s, border-color 0.2s',
