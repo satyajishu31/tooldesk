@@ -243,11 +243,12 @@ export default function OCRImageText({ isEmbedded = false }) {
                     borderRadius: 14, border: '1px solid rgba(79,142,247,.16)', padding: 24, textAlign: 'center'
                   }}>
                     <div style={{
-                      width: 48, height: 48, borderRadius: 12, background: '#4F8EF7',
+                      width: 48, height: 48, borderRadius: 14, background: '#4F8EF7',
                       color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 22, marginBottom: 16, animation: 'sjSpin 1.4s infinite linear'
+                      marginBottom: 16, animation: 'sjSpin 1.4s infinite linear',
+                      boxShadow: '0 4px 14px rgba(79,142,247,0.35)'
                     }}>
-                      ⚙️
+                      <RefreshCw size={24} />
                     </div>
                     <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 16, color: '#0d0d1a', marginBottom: 6 }}>
                       {progressStage || 'Reading text...'}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Sparkles, X } from 'lucide-react'
 import { hasChainedPayload, consumeChainedPayload, clearChainedPayload } from '../utils/toolChaining'
 
 /**
@@ -83,7 +84,9 @@ export default function ChainedInputBanner({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 18 }}>🪄</span>
+          <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(99, 102, 241, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Sparkles size={16} color="#4f46e5" />
+          </div>
           <div>
             <div style={{
               fontFamily: 'Syne, sans-serif',
@@ -111,9 +114,9 @@ export default function ChainedInputBanner({
             whileTap={{ scale: 0.97 }}
             onClick={handleUse}
             style={{
-              padding: '6px 14px',
+              padding: '7px 16px',
               minHeight: 32,
-              borderRadius: 8,
+              borderRadius: 10,
               background: '#4f46e5',
               border: 'none',
               color: '#ffffff',
@@ -130,9 +133,9 @@ export default function ChainedInputBanner({
             type="button"
             onClick={handleDismiss}
             style={{
-              padding: '6px 10px',
+              padding: '7px 12px',
               minHeight: 32,
-              borderRadius: 8,
+              borderRadius: 10,
               background: 'transparent',
               border: '1px solid rgba(0, 0, 0, 0.1)',
               color: '#64748b',

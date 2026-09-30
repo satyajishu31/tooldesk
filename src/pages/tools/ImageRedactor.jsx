@@ -625,16 +625,24 @@ export default function ImageRedactor({ isEmbedded = false }) {
               padding: 12, background: '#fafbff', borderRadius: 12,
               border: '1px solid rgba(79,142,247,.12)', marginBottom: 16
             }}>
-              <div style={{ display: 'flex', gap: 6 }}>
+              <div style={{ display: 'flex', gap: 6, padding: 4, background: 'rgba(0,0,0,0.03)', borderRadius: 14 }}>
                 {REDACTION_MODES.map(m => {
                   const Icon = m.icon
+                  const active = activeMode === m.id
                   return (
                     <button
                       key={m.id}
                       type="button"
                       onClick={() => setActiveMode(m.id)}
-                      className={`btn btn-sm ${activeMode === m.id ? 'btn-primary' : 'btn-secondary'}`}
-                      style={{ fontSize: 12, padding: '6px 14px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      style={{
+                        fontSize: 12, padding: '7px 14px', borderRadius: 11, cursor: 'pointer',
+                        border: active ? '1.5px solid rgba(79,142,247,0.35)' : '1.5px solid transparent',
+                        background: active ? 'rgba(79,142,247,0.12)' : 'transparent',
+                        color: active ? '#3B7BE8' : '#64748b',
+                        fontWeight: 700, transition: 'all 0.16s ease',
+                        boxShadow: active ? '0 2px 8px rgba(79,142,247,0.15)' : 'none',
+                        display: 'inline-flex', alignItems: 'center', gap: 6
+                      }}>
                       <Icon size={13} />
                       <span>{m.label}</span>
                     </button>
@@ -673,7 +681,8 @@ export default function ImageRedactor({ isEmbedded = false }) {
                     max="32"
                     value={pixelSize}
                     onChange={e => setPixelSize(+e.target.value)}
-                    style={{ flex: 1 }}
+                    className="rs-thumb"
+                    style={{ flex: 1, accentColor: '#4F8EF7', background: `linear-gradient(to right,#4F8EF7 0%,#4F8EF7 ${Math.max(0,Math.min(100,((pixelSize)-(6))/((32)-(6))*100))}%,#e2e4ef ${Math.max(0,Math.min(100,((pixelSize)-(6))/((32)-(6))*100))}%,#e2e4ef 100%)`, WebkitAppearance: 'none', appearance: 'none', height: 5, borderRadius: 3, outline: 'none', cursor: 'pointer' }}
                   />
                 </div>
               )}
@@ -687,7 +696,8 @@ export default function ImageRedactor({ isEmbedded = false }) {
                     max="28"
                     value={blurRadius}
                     onChange={e => setBlurRadius(+e.target.value)}
-                    style={{ flex: 1 }}
+                    className="rs-thumb"
+                    style={{ flex: 1, accentColor: '#4F8EF7', background: `linear-gradient(to right,#4F8EF7 0%,#4F8EF7 ${Math.max(0,Math.min(100,((blurRadius)-(4))/((28)-(4))*100))}%,#e2e4ef ${Math.max(0,Math.min(100,((blurRadius)-(4))/((28)-(4))*100))}%,#e2e4ef 100%)`, WebkitAppearance: 'none', appearance: 'none', height: 5, borderRadius: 3, outline: 'none', cursor: 'pointer' }}
                   />
                 </div>
               )}
@@ -823,7 +833,8 @@ export default function ImageRedactor({ isEmbedded = false }) {
                     max="100"
                     value={exportQuality}
                     onChange={e => setExportQuality(+e.target.value)}
-                    style={{ flex: 1 }}
+                    className="rs-thumb"
+                    style={{ flex: 1, accentColor: '#4F8EF7', background: `linear-gradient(to right,#4F8EF7 0%,#4F8EF7 ${Math.max(0,Math.min(100,((exportQuality)-(20))/((100)-(20))*100))}%,#e2e4ef ${Math.max(0,Math.min(100,((exportQuality)-(20))/((100)-(20))*100))}%,#e2e4ef 100%)`, WebkitAppearance: 'none', appearance: 'none', height: 5, borderRadius: 3, outline: 'none', cursor: 'pointer' }}
                   />
                 </div>
               )}
@@ -834,7 +845,7 @@ export default function ImageRedactor({ isEmbedded = false }) {
               className="btn btn-primary btn-w btn-lg"
               disabled={isProcessing || regions.length === 0}
               onClick={handleDownload}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }}>
               <Download size={16} />
               <span>Download Permanently Redacted Image ({regions.length} region{regions.length !== 1 ? 's' : ''})</span>
             </button>

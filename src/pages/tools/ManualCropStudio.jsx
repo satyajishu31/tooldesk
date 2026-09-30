@@ -467,14 +467,20 @@ export default function ManualCropStudio({ embeddedImg = null, onEmbeddedExport 
             {/* Ratio Selector Buttons */}
             <div className="fgrp" style={{ marginBottom: 16 }}>
               <label className="lbl">Aspect Ratio</label>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', padding: 4, background: 'rgba(0,0,0,0.03)', borderRadius: 14 }}>
                 {RATIO_PRESETS.map(r => (
                   <button
                     key={r.id}
                     type="button"
                     onClick={() => applyRatioConstraint(r.id)}
-                    className={`btn btn-sm ${selectedRatio === r.id ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{ fontSize: 12, padding: '6px 14px', borderRadius: 999 }}>
+                    style={{
+                      fontSize: 12, padding: '7px 14px', borderRadius: 11, cursor: 'pointer',
+                      border: selectedRatio === r.id ? '1.5px solid rgba(79,142,247,0.35)' : '1.5px solid transparent',
+                      background: selectedRatio === r.id ? 'rgba(79,142,247,0.12)' : 'transparent',
+                      color: selectedRatio === r.id ? '#3B7BE8' : '#64748b',
+                      fontWeight: 700, transition: 'all 0.16s ease',
+                      boxShadow: selectedRatio === r.id ? '0 2px 8px rgba(79,142,247,0.15)' : 'none'
+                    }}>
                     {r.label}
                   </button>
                 ))}
@@ -708,7 +714,12 @@ export default function ManualCropStudio({ embeddedImg = null, onEmbeddedExport 
                     max="100"
                     value={exportQuality}
                     onChange={e => setExportQuality(+e.target.value)}
-                    style={{ flex: 1 }}
+                    className="rs-thumb"
+                    style={{
+                      flex: 1, accentColor: '#4F8EF7',
+                      background: `linear-gradient(to right,#4F8EF7 0%,#4F8EF7 ${Math.max(0,Math.min(100,((exportQuality)-(10))/((100)-(10))*100))}%,#e2e4ef ${Math.max(0,Math.min(100,((exportQuality)-(10))/((100)-(10))*100))}%,#e2e4ef 100%)`,
+                      WebkitAppearance: 'none', appearance: 'none', height: 5, borderRadius: 3, outline: 'none', cursor: 'pointer'
+                    }}
                   />
                 </div>
               )}
@@ -719,7 +730,7 @@ export default function ManualCropStudio({ embeddedImg = null, onEmbeddedExport 
               className="btn btn-primary btn-w btn-lg"
               disabled={isProcessing || !crop.w || !crop.h}
               onClick={handleDownload}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12 }}>
               <Download size={16} />
               <span>Download Cropped Image ({crop.w} × {crop.h} px)</span>
             </button>

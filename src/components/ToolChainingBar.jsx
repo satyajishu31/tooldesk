@@ -1,6 +1,7 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { Link2, ArrowRight } from 'lucide-react'
 import { COMPATIBLE_TOOLS, setChainedPayload } from '../utils/toolChaining'
 
 /**
@@ -50,8 +51,8 @@ export default function ToolChainingBar({
         gap: 8,
         marginBottom: 10
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 14 }}>🔗</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <Link2 size={15} color="#4F8EF7" />
           <span style={{
             fontFamily: 'Syne, sans-serif',
             fontSize: 13,
@@ -101,7 +102,7 @@ export default function ToolChainingBar({
           >
             <span>{tool.icon}</span>
             <span>{tool.title}</span>
-            <span style={{ fontSize: 11, color: '#94a3b8' }}>→</span>
+            <ArrowRight size={12} color="#94a3b8" />
           </motion.button>
         ))}
       </div>

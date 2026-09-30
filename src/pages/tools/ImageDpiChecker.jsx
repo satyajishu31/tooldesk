@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ScanSearch, Upload, Copy, Check, X } from 'lucide-react'
+import { ScanSearch, Upload, Copy, Check, X, Printer } from 'lucide-react'
 import { Reveal } from '../../components/ToolShell'
 import { useCopy } from '../../hooks'
 import { parseBinaryImageMetadata } from '../../utils/imageMetadata'
@@ -313,8 +313,8 @@ Generated via ToolDesk Image DPI Analyzer`
             </div>
 
             {/* Projected Print Sizes at Standard Resolutions */}
-            <h4 style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 15, color: '#0d0d1a', marginBottom: 12 }}>
-              📐 Projected Physical Print Dimensions
+            <h4 style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 15, color: '#0d0d1a', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 7 }}>
+              <Printer size={16} color="#4F8EF7" /> Projected Physical Print Dimensions
             </h4>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: 14, marginBottom: 20 }}>
               {/* 300 DPI */}
