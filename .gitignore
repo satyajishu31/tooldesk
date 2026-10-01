@@ -44,6 +44,7 @@ scripts/independent-*.js
 scripts/test-all-platforms-*.js
 scripts/test-all-tool-renders.js
 scripts/test-all-viewports-*.js
+scripts/test-micro-*.js
 
 # Debug/screenshot artifacts
 debug_screenshots/
