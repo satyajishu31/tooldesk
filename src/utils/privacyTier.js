@@ -104,7 +104,7 @@ export const PRIVACY_TIERS = {
     tier: 'local',
     label: 'Local In-Browser',
     icon: '🔒',
-    detail: 'Client-side file parsers (Mammoth, SheetJS, Canvas, AudioContext). 100% on-device.'
+    detail: 'Client-side file parsers (Native OOXML Engine, Canvas, AudioContext). 100% on-device.'
   },
   vault: {
     tier: 'local',
