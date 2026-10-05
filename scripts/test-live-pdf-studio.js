@@ -88,7 +88,11 @@ async function run() {
   await send('Runtime.enable')
 
   await send('Page.navigate', { url: `${BASE_URL}/tools/pdf` })
-  await sleep(2000)
+  for (let t = 0; t < 40; t++) {
+    await sleep(500)
+    const hasContent = await evaluate(`Boolean(document.body && (document.body.innerText.includes('Convert to PDF') || document.body.innerText.includes('PDF Studio')))`).catch(() => false)
+    if (hasContent) break
+  }
 
   // 1. Verify Page Title
   const title = await evaluate('document.title')
