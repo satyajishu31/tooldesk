@@ -972,10 +972,10 @@ export default function PDFToolkit() {
       addToHistory({
         tool: 'PDF Toolkit',
         label: name || 'document.pdf',
-        value: `${activeAction?.label || 'Processed PDF'} (${formatBytes(blob.size)})`,
+        value: `${activeAction?.label || 'Processed PDF'} (${formatBytes(blob?.size || 0)})`,
         action: 'Exported',
         category: 'pdf',
-        metadata: { filename: name, size: blob.size, action: activeAction?.id }
+        metadata: { filename: name, size: blob?.size || 0, action: activeAction?.id }
       })
     } catch {}
   }
@@ -1083,6 +1083,12 @@ export default function PDFToolkit() {
 
         await new Promise((resolve) => {
           let hasResolved = false
+          const timeout = setTimeout(() => {
+            if (!hasResolved) {
+              hasResolved = true
+              resolve(batchSession.getItems())
+            }
+          }, 120000)
           const checkCompletion = () => {
             const items = batchSession.getItems()
             const total = items.length
@@ -1091,6 +1097,7 @@ export default function PDFToolkit() {
             const cancelled = items.filter(i => i.status === BATCH_ITEM_STATUS.CANCELLED).length
             if (total > 0 && done + failed + cancelled >= total && !hasResolved) {
               hasResolved = true
+              clearTimeout(timeout)
               resolve(items)
             }
           }
@@ -1239,6 +1246,7 @@ export default function PDFToolkit() {
         setProgressMsg('Loading OCR recognition engine...')
         const { default: Tesseract } = await import('tesseract.js')
         let recognizedText = ''
+        const ocrParts = []
 
         const tesseractOptions = {
           workerPath: '/tesseract/worker.min.js',
@@ -1593,10 +1601,13 @@ export default function PDFToolkit() {
 
       } else if (activeAction.id === 'watermark') {
         const res = await watermarkPdf(targetFile, {
+          type: watermarkType,
           text: watermarkText,
           opacity: watermarkOpacity,
+          rotation: watermarkAngle,
           angle: watermarkAngle,
           image: watermarkType === 'image' ? watermarkImage : null,
+          imageBlob: watermarkType === 'image' ? watermarkImage : null,
         }, msg => setProgressMsg(msg))
         setResult({
           blob: res.blob,
@@ -3581,7 +3592,7 @@ export default function PDFToolkit() {
                       }}
                     >
                       <img
-                        src={item.dataUrl}
+                        src={item.dataUrl || (item.blob ? URL.createObjectURL(item.blob) : '')}
                         alt={item.name}
                         style={{ width: '100%', height: 'auto', borderRadius: 6, marginBottom: 6 }}
                       />

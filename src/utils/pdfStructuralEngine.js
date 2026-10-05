@@ -39,9 +39,8 @@ if (typeof Promise.withResolvers === 'undefined') {
  */
 let _pdfjsPromise = null
 export async function getPdfJs() {
-  if (typeof window === 'undefined') throw new Error('PDF.js requires browser environment.')
-  if (window.pdfjsLib) {
-    if (!window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
+  if (typeof window !== 'undefined' && window.pdfjsLib) {
+    if (!window.pdfjsLib.GlobalWorkerOptions?.workerSrc) {
       window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
     }
     return window.pdfjsLib
@@ -52,8 +51,12 @@ export async function getPdfJs() {
       try {
         const pdfjs = await import('pdfjs-dist')
         const lib = pdfjs.default || pdfjs
-        lib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
-        window.pdfjsLib = lib
+        if (typeof window !== 'undefined') {
+          lib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
+          window.pdfjsLib = lib
+        } else if (typeof globalThis !== 'undefined' && !globalThis.pdfjsLib) {
+          globalThis.pdfjsLib = lib
+        }
         return lib
       } catch (e) {
         console.error('[pdfEngine] Local pdfjs-dist import error:', e)
@@ -77,6 +80,88 @@ export async function toSafeArrayBuffer(input) {
     return await input.arrayBuffer()
   }
   throw new Error('Unsupported binary data type.')
+}
+
+/**
+ * Robustly decode data URL or fetchable URL into ArrayBuffer across Browser & Node
+ */
+export async function dataUrlToArrayBuffer(dataUrl) {
+  if (!dataUrl || typeof dataUrl !== 'string') throw new Error('Invalid image data URL provided.')
+  if (dataUrl.startsWith('data:')) {
+    const commaIdx = dataUrl.indexOf(',')
+    if (commaIdx !== -1) {
+      const base64 = dataUrl.slice(commaIdx + 1)
+      if (typeof Buffer !== 'undefined') {
+        const buf = Buffer.from(base64, 'base64')
+        return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)
+      }
+      const bin = atob(base64)
+      const len = bin.length
+      const bytes = new Uint8Array(len)
+      for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i)
+      return bytes.buffer
+    }
+  }
+  const res = await fetch(dataUrl)
+  return await res.arrayBuffer()
+}
+
+/**
+ * Embed image blob, file, or data buffer into PDFDoc with automatic format normalization
+ */
+async function ensureEmbeddedImage(doc, imageBlobOrBuffer) {
+  let buf
+  let type = ''
+  if (typeof imageBlobOrBuffer === 'string') {
+    buf = await dataUrlToArrayBuffer(imageBlobOrBuffer)
+    type = imageBlobOrBuffer.includes('image/jpeg') ? 'image/jpeg' : 'image/png'
+  } else if (imageBlobOrBuffer instanceof Blob || imageBlobOrBuffer instanceof File) {
+    type = imageBlobOrBuffer.type || ''
+    buf = await imageBlobOrBuffer.arrayBuffer()
+  } else {
+    buf = await toSafeArrayBuffer(imageBlobOrBuffer)
+  }
+
+  const isJpg = type === 'image/jpeg' || type === 'image/jpg'
+  if (isJpg) {
+    try {
+      return await doc.embedJpg(buf)
+    } catch (_) {}
+  }
+  try {
+    return await doc.embedPng(buf)
+  } catch (_) {}
+  try {
+    return await doc.embedJpg(buf)
+  } catch (_) {}
+
+  // If format is WebP or unhandled and in browser, rasterize via HTML canvas
+  if (typeof document !== 'undefined' && typeof Image !== 'undefined') {
+    const blob = new Blob([buf], { type: type || 'image/png' })
+    const url = URL.createObjectURL(blob)
+    try {
+      const img = new Image()
+      await new Promise((res, rej) => {
+        img.onload = res
+        img.onerror = rej
+        img.src = url
+      })
+      const canvas = document.createElement('canvas')
+      canvas.width = img.naturalWidth || 100
+      canvas.height = img.naturalHeight || 100
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0)
+      const pngBlob = await new Promise(r => canvas.toBlob(r, 'image/png'))
+      if (pngBlob) {
+        const pngBuf = await pngBlob.arrayBuffer()
+        return await doc.embedPng(pngBuf)
+      }
+    } finally {
+      URL.revokeObjectURL(url)
+    }
+  }
+
+  throw new Error('Unsupported or corrupted image format. Please use PNG or JPG.')
 }
 
 /**
@@ -208,11 +293,20 @@ export async function renderPdfPagesToImages(file, format = 'image/png', dpi = 1
   const pdf = await pdfjs.getDocument({ data: arrayBuffer, isEvalSupported: false, enableScripting: false }).promise
   const numPages = pdf.numPages
   const images = []
-  const scale = dpi / 72
+  const targetDpi = Math.max(72, Math.min(300, Number(dpi) || 150))
+  const baseScale = targetDpi / 72
 
   for (let i = 1; i <= numPages; i++) {
-    if (onProgress) onProgress(`Rendering page ${i} of ${numPages} (${dpi} DPI)...`)
+    if (onProgress) onProgress(`Rendering page ${i} of ${numPages} (${targetDpi} DPI)...`)
     const page = await pdf.getPage(i)
+
+    // Clamp canvas dimensions to maximum 4096px to avoid mobile/browser GPU crash
+    let scale = baseScale
+    const unscaled = page.getViewport({ scale: 1.0 })
+    const maxDim = Math.max(unscaled.width, unscaled.height)
+    if (maxDim * scale > 4096) {
+      scale = 4096 / maxDim
+    }
     const viewport = page.getViewport({ scale })
 
     const canvas = document.createElement('canvas')
@@ -222,7 +316,17 @@ export async function renderPdfPagesToImages(file, format = 'image/png', dpi = 1
 
     await page.render({ canvasContext: ctx, viewport }).promise
 
-    const blob = await new Promise(res => canvas.toBlob(res, format, 0.92))
+    const dataUrl = canvas.toDataURL(format, 0.92)
+    let blob = await new Promise(res => canvas.toBlob(res, format, 0.92))
+
+    // Fallback if toBlob returned null due to memory pressure
+    if (!blob && dataUrl) {
+      const bin = atob(dataUrl.split(',')[1])
+      const u8 = new Uint8Array(bin.length)
+      for (let k = 0; k < bin.length; k++) u8[k] = bin.charCodeAt(k)
+      blob = new Blob([u8], { type: format })
+    }
+
     const ext = format === 'image/jpeg' ? 'jpg' : 'png'
     const imgName = `${file.name.replace(/\.pdf$/i, '')}_page_${i}.${ext}`
 
@@ -230,7 +334,9 @@ export async function renderPdfPagesToImages(file, format = 'image/png', dpi = 1
       pageNumber: i,
       name: imgName,
       blob,
-      size: blob.size,
+      dataUrl,
+      thumbnailUrl: dataUrl,
+      size: blob ? blob.size : (dataUrl ? dataUrl.length : 0),
       width: canvas.width,
       height: canvas.height,
     })
@@ -516,15 +622,15 @@ export async function cropPdfPages(file, arg2, arg3 = null, onProgress = null) {
 
     let x, y, width, height
     if (cropBox.xPercent !== undefined || cropBox.yPercent !== undefined) {
-      x = Math.max(0, (cropBox.xPercent || 0) * pWidth)
-      width = Math.min(pWidth - x, (cropBox.widthPercent || 1) * pWidth)
-      height = Math.min(pHeight, (cropBox.heightPercent || 1) * pHeight)
-      y = Math.max(0, pHeight - ((cropBox.yPercent || 0) + (cropBox.heightPercent || 1)) * pHeight)
+      x = Math.max(0, Math.min(pWidth - 10, (cropBox.xPercent || 0) * pWidth))
+      width = Math.max(10, Math.min(pWidth - x, (cropBox.widthPercent || 1) * pWidth))
+      height = Math.max(10, Math.min(pHeight, (cropBox.heightPercent || 1) * pHeight))
+      y = Math.max(0, Math.min(pHeight - height, pHeight - ((cropBox.yPercent || 0) + (cropBox.heightPercent || 1)) * pHeight))
     } else {
-      x = Math.max(0, cropBox.x || 0)
-      y = Math.max(0, cropBox.y || 0)
-      width = Math.min(pWidth - x, cropBox.width || pWidth)
-      height = Math.min(pHeight - y, cropBox.height || pHeight)
+      x = Math.max(0, Math.min(pWidth - 10, cropBox.x || 0))
+      y = Math.max(0, Math.min(pHeight - 10, cropBox.y || 0))
+      width = Math.max(10, Math.min(pWidth - x, cropBox.width || pWidth))
+      height = Math.max(10, Math.min(pHeight - y, cropBox.height || pHeight))
     }
 
     page.setCropBox(x, y, width, height)
@@ -619,16 +725,13 @@ export async function cleanPdfMetadata(file, onProgress = null) {
 }
 
 export async function watermarkPdf(file, watermarkOptions = {}, onProgress) {
-  const {
-    type = 'text',
-    text = 'CONFIDENTIAL',
-    opacity = 0.25,
-    rotation = -45,
-    fontSize = 48,
-    color = { r: 0.8, g: 0.2, b: 0.2 },
-    isBelow = false,
-    imageBlob = null,
-  } = watermarkOptions
+  const imageBlob = watermarkOptions.imageBlob || watermarkOptions.image || null
+  const type = watermarkOptions.type || (imageBlob ? 'image' : 'text')
+  const text = watermarkOptions.text || 'CONFIDENTIAL'
+  const opacity = watermarkOptions.opacity !== undefined ? watermarkOptions.opacity : 0.25
+  const rotation = watermarkOptions.rotation !== undefined ? watermarkOptions.rotation : (watermarkOptions.angle !== undefined ? watermarkOptions.angle : -45)
+  const fontSize = watermarkOptions.fontSize || 48
+  const color = watermarkOptions.color || { r: 0.8, g: 0.2, b: 0.2 }
 
   if (onProgress) onProgress('Loading PDF for watermarking...')
   const buf = await file.arrayBuffer()
@@ -637,8 +740,7 @@ export async function watermarkPdf(file, watermarkOptions = {}, onProgress) {
 
   let embeddedImage = null
   if (type === 'image' && imageBlob) {
-    const imgBuf = await imageBlob.arrayBuffer()
-    embeddedImage = imageBlob.type === 'image/jpeg' ? await doc.embedJpg(imgBuf) : await doc.embedPng(imgBuf)
+    embeddedImage = await ensureEmbeddedImage(doc, imageBlob)
   }
 
   const pages = doc.getPages()
@@ -697,8 +799,8 @@ export async function addPageNumbers(file, options = {}, onProgress = null) {
     position = 'bottom-center',
     margin = 36,
     fontSize = 10,
-    startFrom = 1,
   } = options
+  const startFrom = options.startFrom !== undefined ? options.startFrom : (options.startPage !== undefined ? options.startPage : 1)
 
   if (onProgress) onProgress('Loading document for numbering...')
   const fileName = file?.name || 'document.pdf'
@@ -747,13 +849,30 @@ export async function addPageNumbers(file, options = {}, onProgress = null) {
 }
 
 export async function addHeaderFooter(file, options = {}, onProgress = null) {
-  const {
-    headerLeft = '', headerCenter = '', headerRight = '',
-    footerLeft = '', footerCenter = '', footerRight = '',
-    margin = 36,
-    fontSize = 9,
-    excludeFirstPage = false,
-  } = options
+  let headerLeft = options.headerLeft || ''
+  let headerCenter = options.headerCenter || ''
+  let headerRight = options.headerRight || ''
+  let footerLeft = options.footerLeft || ''
+  let footerCenter = options.footerCenter || ''
+  let footerRight = options.footerRight || ''
+
+  // Support alignment-based parameters from UI (headerText/headerAlign, footerText/footerAlign)
+  if (options.headerText) {
+    const align = options.headerAlign || 'center'
+    if (align === 'left') headerLeft = options.headerText
+    else if (align === 'right') headerRight = options.headerText
+    else headerCenter = options.headerText
+  }
+  if (options.footerText) {
+    const align = options.footerAlign || 'center'
+    if (align === 'left') footerLeft = options.footerText
+    else if (align === 'right') footerRight = options.footerText
+    else footerCenter = options.footerText
+  }
+
+  const margin = options.margin !== undefined ? options.margin : 36
+  const fontSize = options.fontSize || 9
+  const excludeFirstPage = Boolean(options.excludeFirstPage)
 
   if (onProgress) onProgress('Loading document for header & footer...')
   const fileName = file?.name || 'document.pdf'
@@ -827,8 +946,10 @@ export async function flattenPdf(file, onProgress = null) {
   const fileName = file?.name || 'document.pdf'
   const doc = await safeLoadPdfDocument(file, fileName)
   const form = doc.getForm()
+  let fieldCount = 0
   if (form) {
     try {
+      fieldCount = form.getFields().length
       form.flatten()
     } catch (e) {
       console.warn('[flattenPdf] Form flatten notice:', e)
@@ -840,6 +961,7 @@ export async function flattenPdf(file, onProgress = null) {
     blob: new Blob([bytes], { type: 'application/pdf' }),
     name: `flattened-${fileName}`,
     size: bytes.length,
+    fieldCount,
     pageCount: doc.getPageCount(),
   }
 }
@@ -916,28 +1038,43 @@ export async function createPdfFormFields(file, fields = [], onProgress = null) 
   const form = doc.getForm()
   const font = await doc.embedFont(StandardFonts.Helvetica)
   const totalPages = doc.getPageCount()
+  const existingNames = new Set(form.getFields().map(f => f.getName()))
 
-  for (const f of fields) {
+  for (let idx = 0; idx < fields.length; idx++) {
+    const f = fields[idx]
     const pageIndex = Math.max(0, Math.min(totalPages - 1, (f.page || 1) - 1))
     const page = doc.getPage(pageIndex)
     const { width: pWidth, height: pHeight } = page.getSize()
 
-    const x = f.xPercent !== undefined ? f.xPercent * pWidth : (f.x || 50)
-    const y = f.yPercent !== undefined ? pHeight - (f.yPercent + (f.heightPercent || 0.05)) * pHeight : (f.y || 50)
-    const w = f.widthPercent !== undefined ? f.widthPercent * pWidth : (f.width || 150)
-    const h = f.heightPercent !== undefined ? f.heightPercent * pHeight : (f.height || 25)
+    let baseName = (f.name || `field_${idx + 1}`).trim()
+    let safeName = baseName
+    let counter = 1
+    while (existingNames.has(safeName)) {
+      safeName = `${baseName}_${counter++}`
+    }
+    existingNames.add(safeName)
+
+    const rawX = f.xPercent !== undefined ? f.xPercent * pWidth : (f.x || 50)
+    const rawY = f.yPercent !== undefined ? pHeight - (f.yPercent + (f.heightPercent || 0.05)) * pHeight : (f.y || 50)
+    const rawW = f.widthPercent !== undefined ? f.widthPercent * pWidth : (f.width || 150)
+    const rawH = f.heightPercent !== undefined ? f.heightPercent * pHeight : (f.height || 25)
+
+    const w = Math.max(10, Math.min(pWidth, rawW))
+    const h = Math.max(10, Math.min(pHeight, rawH))
+    const x = Math.max(0, Math.min(pWidth - w, rawX))
+    const y = Math.max(0, Math.min(pHeight - h, rawY))
 
     if (f.type === 'checkbox') {
-      const cb = form.createCheckBox(f.name)
+      const cb = form.createCheckBox(safeName)
       cb.addToPage(page, { x, y, width: Math.min(w, h), height: Math.min(w, h) })
       if (f.defaultValue) cb.check()
     } else if (f.type === 'dropdown' && f.options) {
-      const dd = form.createDropdown(f.name)
+      const dd = form.createDropdown(safeName)
       dd.addOptions(f.options)
       dd.addToPage(page, { x, y, width: w, height: h })
       if (f.defaultValue) dd.select(f.defaultValue)
     } else {
-      const tf = form.createTextField(f.name)
+      const tf = form.createTextField(safeName)
       tf.addToPage(page, { x, y, width: w, height: h })
       if (f.defaultValue) tf.setText(sanitizeWinAnsi(f.defaultValue))
     }
@@ -963,20 +1100,19 @@ export async function signPdf(file, signatureDataUrl, pageNumber = 1, rect = {},
   const page = doc.getPage(targetPageIdx)
   const { width: pWidth, height: pHeight } = page.getSize()
 
-  const imgBuf = await fetch(signatureDataUrl).then(r => r.arrayBuffer())
-  let embeddedImg
-  if (signatureDataUrl.includes('image/jpeg')) {
-    embeddedImg = await doc.embedJpg(imgBuf)
-  } else {
-    embeddedImg = await doc.embedPng(imgBuf)
-  }
+  const embeddedImg = await ensureEmbeddedImage(doc, signatureDataUrl)
 
   const defW = 160
   const defH = 60
-  let x = rect.xPercent !== undefined ? rect.xPercent * pWidth : (pWidth - defW - 40)
-  let y = rect.yPercent !== undefined ? pHeight - (rect.yPercent + (rect.heightPercent || 0.08)) * pHeight : 40
-  let w = rect.widthPercent !== undefined ? rect.widthPercent * pWidth : defW
-  let h = rect.heightPercent !== undefined ? rect.heightPercent * pHeight : defH
+  const rawX = rect.xPercent !== undefined ? rect.xPercent * pWidth : (pWidth - defW - 40)
+  const rawY = rect.yPercent !== undefined ? pHeight - (rect.yPercent + (rect.heightPercent || 0.08)) * pHeight : 40
+  const rawW = rect.widthPercent !== undefined ? rect.widthPercent * pWidth : defW
+  const rawH = rect.heightPercent !== undefined ? rect.heightPercent * pHeight : defH
+
+  const w = Math.max(10, Math.min(pWidth, rawW))
+  const h = Math.max(10, Math.min(pHeight, rawH))
+  const x = Math.max(0, Math.min(pWidth - w, rawX))
+  const y = Math.max(0, Math.min(pHeight - h, rawY))
 
   page.drawImage(embeddedImg, {
     x,
@@ -1030,14 +1166,27 @@ export async function redactPdfPages(file, redactionsByPage, onProgress = null) 
       // Burn redaction boxes directly into pixel canvas
       for (const r of pageRedactions) {
         ctx.fillStyle = r.color || '#000000'
-        const rx = r.xPercent * canvas.width
-        const ry = r.yPercent * canvas.height
-        const rw = r.widthPercent * canvas.width
-        const rh = r.heightPercent * canvas.height
+        const xp = Math.max(0, Math.min(1, Number(r.xPercent) || 0))
+        const yp = Math.max(0, Math.min(1, Number(r.yPercent) || 0))
+        const wp = Math.max(0, Math.min(1 - xp, Number(r.widthPercent) || 0))
+        const hp = Math.max(0, Math.min(1 - yp, Number(r.heightPercent) || 0))
+        const rx = xp * canvas.width
+        const ry = yp * canvas.height
+        const rw = wp * canvas.width
+        const rh = hp * canvas.height
         ctx.fillRect(rx, ry, rw, rh)
       }
 
-      const pngBlob = await new Promise(res => canvas.toBlob(res, 'image/png'))
+      let pngBlob = await new Promise(res => canvas.toBlob(res, 'image/png'))
+      if (!pngBlob) {
+        const dataUrl = canvas.toDataURL('image/png')
+        if (dataUrl) {
+          const bin = atob(dataUrl.split(',')[1])
+          const u8 = new Uint8Array(bin.length)
+          for (let k = 0; k < bin.length; k++) u8[k] = bin.charCodeAt(k)
+          pngBlob = new Blob([u8], { type: 'image/png' })
+        }
+      }
       const pngBytes = await pngBlob.arrayBuffer()
       const embeddedImg = await outDoc.embedPng(pngBytes)
 
@@ -1128,7 +1277,15 @@ export async function compressPdf(file, arg2 = null, arg3 = null) {
         for (let i = 1; i <= numPages; i++) {
           if (onProgress) onProgress(`Optimizing page ${i} of ${numPages}...`)
           const page = await pdf.getPage(i)
-          const viewport = page.getViewport({ scale: targetScale })
+
+          // Clamp max dimension to 4096px
+          let pageScale = targetScale
+          const unscaled = page.getViewport({ scale: 1.0 })
+          const maxDim = Math.max(unscaled.width, unscaled.height)
+          if (maxDim * pageScale > 4096) {
+            pageScale = 4096 / maxDim
+          }
+          const viewport = page.getViewport({ scale: pageScale })
 
           const canvas = document.createElement('canvas')
           canvas.width = Math.round(viewport.width)
@@ -1137,7 +1294,16 @@ export async function compressPdf(file, arg2 = null, arg3 = null) {
 
           await page.render({ canvasContext: ctx, viewport }).promise
 
-          const jpegBlob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', jpegQuality))
+          let jpegBlob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', jpegQuality))
+          if (!jpegBlob) {
+            const dataUrl = canvas.toDataURL('image/jpeg', jpegQuality)
+            if (dataUrl) {
+              const bin = atob(dataUrl.split(',')[1])
+              const u8 = new Uint8Array(bin.length)
+              for (let k = 0; k < bin.length; k++) u8[k] = bin.charCodeAt(k)
+              jpegBlob = new Blob([u8], { type: 'image/jpeg' })
+            }
+          }
           if (jpegBlob) {
             const jpegBuf = await jpegBlob.arrayBuffer()
             const embedded = await outDoc.embedJpg(jpegBuf)

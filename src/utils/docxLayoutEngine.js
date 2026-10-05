@@ -318,13 +318,26 @@ export async function layoutDocxToPdf(docIR, onProgress = null) {
         }
 
         const color = seg.run.color ? hexToPdfRgb(seg.run.color) : rgb(0, 0, 0)
-        page.drawText(seg.text, {
-          x: segX,
-          y: baselineY,
-          size: seg.fontSize,
-          font: seg.font,
-          color,
-        })
+        try {
+          page.drawText(seg.text, {
+            x: segX,
+            y: baselineY,
+            size: seg.fontSize,
+            font: seg.font,
+            color,
+          })
+        } catch (encErr) {
+          try {
+            const fallbackText = (seg.text || '').replace(/[^\x20-\x7E\xA0-\xFF]/g, ' ')
+            page.drawText(fallbackText, {
+              x: segX,
+              y: baselineY,
+              size: seg.fontSize,
+              font: fontHelvetica,
+              color,
+            })
+          } catch (_) {}
+        }
 
         // Underline decoration
         if (seg.run.isUnderline) {
