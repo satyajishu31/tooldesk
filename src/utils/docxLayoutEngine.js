@@ -1,10 +1,39 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
+import fontkit from '@pdf-lib/fontkit'
 
 /**
  * High-Fidelity DOCX Document Layout Engine
  * Calculates document geometry, table grid layouts, cell text wrapping,
  * row heights, vertical alignments, borders, embedded images, and pagination.
  */
+
+// Memory cache for font binary buffers across conversions
+const _cachedFontBytes = {}
+
+async function loadFontBytes(filename) {
+  if (_cachedFontBytes[filename]) return _cachedFontBytes[filename]
+  if (typeof window !== 'undefined') {
+    const res = await fetch(`/fonts/${filename}`)
+    if (!res.ok) throw new Error(`Failed to fetch font /fonts/${filename}: ${res.statusText}`)
+    const buf = await res.arrayBuffer()
+    const bytes = new Uint8Array(buf)
+    _cachedFontBytes[filename] = bytes
+    return bytes
+  } else {
+    // Node.js environment (for tests / CLI / SSR)
+    const fsMod = 'fs'
+    const pathMod = 'path'
+    const fs = await import(/* @vite-ignore */ fsMod)
+    const path = await import(/* @vite-ignore */ pathMod)
+    const p = path.resolve('public/fonts', filename)
+    if (fs.existsSync(p)) {
+      const bytes = fs.readFileSync(p)
+      _cachedFontBytes[filename] = bytes
+      return bytes
+    }
+    throw new Error(`Font file not found: ${p}`)
+  }
+}
 
 // Helper to convert hex color (#RRGGBB) to pdf-lib rgb
 export function hexToPdfRgb(hex, defaultColor = rgb(0, 0, 0)) {
@@ -27,8 +56,9 @@ export async function layoutDocxToPdf(docIR, onProgress = null) {
 
   if (onProgress) onProgress('Initializing vector typesetting engine...')
   const pdfDoc = await PDFDocument.create()
+  pdfDoc.registerFontkit(fontkit)
 
-  // Embed standard typography fonts
+  // Embed standard typography fonts as fallback
   const fontTimes = await pdfDoc.embedFont(StandardFonts.TimesRoman)
   const fontTimesBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold)
   const fontTimesItalic = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic)
@@ -42,7 +72,36 @@ export async function layoutDocxToPdf(docIR, onProgress = null) {
   const fontCourier = await pdfDoc.embedFont(StandardFonts.Courier)
   const fontCourierBold = await pdfDoc.embedFont(StandardFonts.CourierBold)
 
+  // Pre-load and embed TrueType Unicode fonts for full multi-language and currency support
+  let unicodeRegular = null
+  let unicodeBold = null
+  let unicodeItalic = null
+  let unicodeBoldItalic = null
+
+  try {
+    const [regBytes, boldBytes, itBytes, biBytes] = await Promise.all([
+      loadFontBytes('LiberationSans-Regular.ttf'),
+      loadFontBytes('LiberationSans-Bold.ttf'),
+      loadFontBytes('LiberationSans-Italic.ttf').catch(() => null),
+      loadFontBytes('LiberationSans-BoldItalic.ttf').catch(() => null),
+    ])
+    unicodeRegular = await pdfDoc.embedFont(regBytes, { subset: true })
+    unicodeBold = await pdfDoc.embedFont(boldBytes, { subset: true })
+    if (itBytes) unicodeItalic = await pdfDoc.embedFont(itBytes, { subset: true })
+    if (biBytes) unicodeBoldItalic = await pdfDoc.embedFont(biBytes, { subset: true })
+  } catch (err) {
+    console.warn('[docxLayout] TrueType font loading fallback to standard fonts:', err.message)
+  }
+
   function resolveFont(family, bold, italic) {
+    // If TrueType Unicode font is loaded, use it to ensure zero WinAnsi encoding crashes
+    if (unicodeRegular) {
+      if (bold && italic) return unicodeBoldItalic || unicodeBold || unicodeRegular
+      if (bold) return unicodeBold || unicodeRegular
+      if (italic) return unicodeItalic || unicodeRegular
+      return unicodeRegular
+    }
+
     const fam = (family || '').toLowerCase()
     if (fam.includes('times') || fam.includes('serif') || fam.includes('cambria') || fam.includes('georgia')) {
       if (bold && italic) return fontTimesBoldItalic
@@ -134,7 +193,36 @@ export async function layoutDocxToPdf(docIR, onProgress = null) {
       const words = run.text.split(/(?<=\s)|(?=\s)/) // preserve spaces
 
       for (const w of words) {
-        const wWidth = font.widthOfTextAtSize(w, fontSize)
+        let wWidth = font.widthOfTextAtSize(w, fontSize)
+        if (wWidth > availW && !w.includes(' ')) {
+          // Break oversized unbroken word into character chunks that fit within availW
+          let chunk = ''
+          for (let c = 0; c < w.length; c++) {
+            const nextChunk = chunk + w[c]
+            if (font.widthOfTextAtSize(nextChunk, fontSize) > availW && chunk) {
+              const cWidth = font.widthOfTextAtSize(chunk, fontSize)
+              if (curLineWidth + cWidth > availW && curLineRuns.length > 0) {
+                lines.push({ runs: curLineRuns, width: curLineWidth })
+                curLineRuns = []
+                curLineWidth = 0
+              }
+              curLineRuns.push({ text: chunk, width: cWidth, font, fontSize, run })
+              lines.push({ runs: curLineRuns, width: curLineWidth + cWidth })
+              curLineRuns = []
+              curLineWidth = 0
+              chunk = w[c]
+            } else {
+              chunk = nextChunk
+            }
+          }
+          if (chunk) {
+            const cWidth = font.widthOfTextAtSize(chunk, fontSize)
+            curLineRuns.push({ text: chunk, width: cWidth, font, fontSize, run })
+            curLineWidth += cWidth
+          }
+          continue
+        }
+
         if (curLineWidth + wWidth <= availW || curLineRuns.length === 0) {
           curLineRuns.push({ text: w, width: wWidth, font, fontSize, run })
           curLineWidth += wWidth
@@ -346,6 +434,41 @@ export async function layoutDocxToPdf(docIR, onProgress = null) {
         measuredRows.push(measuredRow)
       }
 
+      // Resolve vMerge spans across rows
+      for (let rIdx = 0; rIdx < measuredRows.length; rIdx++) {
+        const row = measuredRows[rIdx]
+        for (const cell of row.cells) {
+          if (cell.vMerge === 'restart') {
+            cell.rowSpan = 1
+            cell.isMergeRestart = true
+            let totalSpanH = row.actualHeight
+            let lastR = rIdx
+            for (let nextR = rIdx + 1; nextR < measuredRows.length; nextR++) {
+              const nextRow = measuredRows[nextR]
+              const continueCell = nextRow.cells.find(c => c.colIndex === cell.colIndex)
+              if (continueCell && continueCell.vMerge === 'continue') {
+                cell.rowSpan++
+                totalSpanH += nextRow.actualHeight
+                continueCell.isMergeContinue = true
+                continueCell.masterCell = cell
+                lastR = nextR
+              } else {
+                break
+              }
+            }
+            cell.spannedHeight = totalSpanH
+            if (lastR > rIdx) {
+              const lastCell = measuredRows[lastR].cells.find(c => c.colIndex === cell.colIndex)
+              if (lastCell) lastCell.isLastInMerge = true
+            } else {
+              cell.isLastInMerge = true
+            }
+          } else if (cell.vMerge === 'continue') {
+            cell.isMergeContinue = true
+          }
+        }
+      }
+
       // Render rows with pagination awareness
       for (let rIdx = 0; rIdx < measuredRows.length; rIdx++) {
         const row = measuredRows[rIdx]
@@ -378,13 +501,63 @@ export async function layoutDocxToPdf(docIR, onProgress = null) {
       const cellW = cell.width
       const cellY = rowTopY - rowH
 
+      // If cell is part of vertical merge continuation
+      if (cell.isMergeContinue) {
+        // Draw continue cell borders: suppress top border, suppress bottom border unless last in merge
+        const borders = cell.borders || {}
+        const defaultBorderColor = rgb(0, 0, 0)
+
+        if (cell.isLastInMerge && borders.bottom) {
+          page.drawLine({
+            start: { x: cellX, y: cellY },
+            end: { x: cellX + cellW, y: cellY },
+            thickness: borders.bottom.size || 0.75,
+            color: hexToPdfRgb(borders.bottom.color, defaultBorderColor),
+          })
+        }
+        if (borders.left) {
+          page.drawLine({
+            start: { x: cellX, y: cellY },
+            end: { x: cellX, y: rowTopY },
+            thickness: borders.left.size || 0.75,
+            color: hexToPdfRgb(borders.left.color, defaultBorderColor),
+          })
+        }
+        if (borders.right) {
+          page.drawLine({
+            start: { x: cellX + cellW, y: cellY },
+            end: { x: cellX + cellW, y: rowTopY },
+            thickness: borders.right.size || 0.75,
+            color: hexToPdfRgb(borders.right.color, defaultBorderColor),
+          })
+        }
+
+        // Render any paragraphs explicitly placed in continue cell
+        if (cell.measuredParas && cell.measuredParas.length > 0) {
+          let pCursorY = rowTopY - cell.padTop
+          const innerW = Math.max(10, cellW - cell.padLeft - cell.padRight)
+          for (const p of cell.measuredParas) {
+            renderParagraph(p, cellX + cell.padLeft, pCursorY, innerW)
+            pCursorY -= p.totalHeight
+          }
+        }
+
+        cellX += cellW
+        continue
+      }
+
+      // If cell is a vertical merge restart with span > 1
+      const isMultiRowSpan = cell.isMergeRestart && cell.rowSpan > 1
+      const effectiveH = isMultiRowSpan ? cell.spannedHeight : rowH
+      const effectiveBottomY = rowTopY - effectiveH
+
       // Draw background shading
       if (cell.bgColor) {
         page.drawRectangle({
           x: cellX,
-          y: cellY,
+          y: effectiveBottomY,
           width: cellW,
-          height: rowH,
+          height: effectiveH,
           color: hexToPdfRgb(cell.bgColor),
         })
       }
@@ -392,9 +565,9 @@ export async function layoutDocxToPdf(docIR, onProgress = null) {
       // Calculate vertical alignment offset
       let vOffset = 0
       if (cell.vAlign === 'center') {
-        vOffset = Math.max(0, (rowH - cell.padTop - cell.padBottom - cell.contentHeight) / 2)
+        vOffset = Math.max(0, (effectiveH - cell.padTop - cell.padBottom - cell.contentHeight) / 2)
       } else if (cell.vAlign === 'bottom') {
-        vOffset = Math.max(0, rowH - cell.padTop - cell.padBottom - cell.contentHeight)
+        vOffset = Math.max(0, effectiveH - cell.padTop - cell.padBottom - cell.contentHeight)
       }
 
       // Draw cell text paragraphs
@@ -418,7 +591,7 @@ export async function layoutDocxToPdf(docIR, onProgress = null) {
           color: hexToPdfRgb(borders.top.color, defaultBorderColor),
         })
       }
-      if (borders.bottom) {
+      if (!isMultiRowSpan && borders.bottom) {
         page.drawLine({
           start: { x: cellX, y: cellY },
           end: { x: cellX + cellW, y: cellY },

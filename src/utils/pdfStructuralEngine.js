@@ -272,6 +272,7 @@ export async function generatePdfThumbnails(file, maxPages = 60, onProgress) {
     thumbnails.push({
       pageNumber: i,
       dataUrl,
+      thumbnailUrl: dataUrl,
       width: canvas.width,
       height: canvas.height,
       rotation: page.rotate || 0,
@@ -1083,7 +1084,7 @@ export async function compressPdf(file, arg2 = null, arg3 = null) {
   const buf = await file.arrayBuffer()
   const origSize = file.size || buf.byteLength
 
-  // 1. Lossless object stream compression
+  // 1. Lossless object stream compaction and metadata cleanup
   const doc = await safeLoadPdfDocument(buf.slice(0), file.name)
   const losslessBytes = await doc.save({
     useObjectStreams: true,
@@ -1094,56 +1095,73 @@ export async function compressPdf(file, arg2 = null, arg3 = null) {
   let bestBytes = losslessBytes.length < origSize ? losslessBytes : new Uint8Array(buf)
   let bestSize = bestBytes.length
   let reductionNotice = ''
+  let rasterized = false
 
-  // 2. Balanced or high raster downsampling in browser environment
-  const isLosslessOnly = preset === 'lossless' && !options.dpi
-  if (!isLosslessOnly && typeof window !== 'undefined' && typeof document !== 'undefined') {
+  // 2. High-compression raster downsampling ONLY for scanned/image documents or explicit high preset
+  const canAttemptRaster = (preset === 'high' || options.dpi) && typeof window !== 'undefined' && typeof document !== 'undefined'
+  if (canAttemptRaster) {
     try {
       const pdfjs = await getPdfJs()
       const loadingTask = pdfjs.getDocument({ data: buf.slice(0), isEvalSupported: false, enableScripting: false })
       const pdf = await loadingTask.promise
       const numPages = pdf.numPages
 
-      const targetDpi = options.dpi || (preset === 'high' ? 72 : 96)
-      const targetScale = options.dpi ? (options.dpi / 72) : (preset === 'high' ? 1.0 : 1.33)
-      const jpegQuality = options.quality !== undefined ? Math.max(0.1, Math.min(1.0, options.quality)) : (preset === 'high' ? 0.50 : 0.70)
-      if (onProgress) onProgress(`Applying ${targetDpi} DPI (${preset}) optimization...`)
-
-      const outDoc = await PDFDocument.create()
-
-      for (let i = 1; i <= numPages; i++) {
-        if (onProgress) onProgress(`Optimizing page ${i} of ${numPages}...`)
+      // Check if document has vector text or is predominantly scanned images
+      let totalTextChars = 0
+      for (let i = 1; i <= Math.min(numPages, 3); i++) {
         const page = await pdf.getPage(i)
-        const viewport = page.getViewport({ scale: targetScale })
-
-        const canvas = document.createElement('canvas')
-        canvas.width = Math.round(viewport.width)
-        canvas.height = Math.round(viewport.height)
-        const ctx = canvas.getContext('2d')
-
-        await page.render({ canvasContext: ctx, viewport }).promise
-
-        const jpegBlob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', jpegQuality))
-        if (jpegBlob) {
-          const jpegBuf = await jpegBlob.arrayBuffer()
-          const embedded = await outDoc.embedJpg(jpegBuf)
-          const origVp = page.getViewport({ scale: 1.0 })
-          const p = outDoc.addPage([origVp.width, origVp.height])
-          p.drawImage(embedded, { x: 0, y: 0, width: origVp.width, height: origVp.height })
-        }
-
-        canvas.width = 0
-        canvas.height = 0
+        const tc = await page.getTextContent()
+        totalTextChars += tc.items.reduce((acc, it) => acc + (it.str || '').length, 0)
         if (typeof page.cleanup === 'function') page.cleanup()
       }
 
-      const rasterBytes = await outDoc.save({ useObjectStreams: true })
-      if (rasterBytes.length < bestSize) {
-        bestBytes = rasterBytes
-        bestSize = rasterBytes.length
+      // If document is vector text-heavy and not explicitly configured for rasterization, preserve vector text
+      const isVectorHeavy = totalTextChars > 50 && !options.forceRasterize
+      if (!isVectorHeavy) {
+        const targetDpi = options.dpi || 72
+        const targetScale = options.dpi ? (options.dpi / 72) : 1.0
+        const jpegQuality = options.quality !== undefined ? Math.max(0.1, Math.min(1.0, options.quality)) : 0.65
+        if (onProgress) onProgress(`Applying ${targetDpi} DPI (${preset}) optimization...`)
+
+        const outDoc = await PDFDocument.create()
+
+        for (let i = 1; i <= numPages; i++) {
+          if (onProgress) onProgress(`Optimizing page ${i} of ${numPages}...`)
+          const page = await pdf.getPage(i)
+          const viewport = page.getViewport({ scale: targetScale })
+
+          const canvas = document.createElement('canvas')
+          canvas.width = Math.round(viewport.width)
+          canvas.height = Math.round(viewport.height)
+          const ctx = canvas.getContext('2d')
+
+          await page.render({ canvasContext: ctx, viewport }).promise
+
+          const jpegBlob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', jpegQuality))
+          if (jpegBlob) {
+            const jpegBuf = await jpegBlob.arrayBuffer()
+            const embedded = await outDoc.embedJpg(jpegBuf)
+            const origVp = page.getViewport({ scale: 1.0 })
+            const p = outDoc.addPage([origVp.width, origVp.height])
+            p.drawImage(embedded, { x: 0, y: 0, width: origVp.width, height: origVp.height })
+          }
+
+          canvas.width = 0
+          canvas.height = 0
+          if (typeof page.cleanup === 'function') page.cleanup()
+        }
+
+        const rasterBytes = await outDoc.save({ useObjectStreams: true })
+        if (rasterBytes.length < bestSize) {
+          bestBytes = rasterBytes
+          bestSize = rasterBytes.length
+          rasterized = true
+        }
+      } else {
+        reductionNotice = 'Preserved high-fidelity vector text streams without lossy rasterization.'
       }
     } catch (e) {
-      console.warn('[PDF Compress] Raster downsampling skipped, preserved lossless:', e)
+      console.warn('[PDF Compress] Raster downsampling skipped, preserved vector layout:', e)
     }
   }
 
@@ -1152,6 +1170,8 @@ export async function compressPdf(file, arg2 = null, arg3 = null) {
 
   if (savedBytes === 0) {
     reductionNotice = 'Document is already optimally compressed. Preserved original file.'
+    bestBytes = new Uint8Array(buf)
+    bestSize = origSize
   }
 
   return {
@@ -1163,6 +1183,7 @@ export async function compressPdf(file, arg2 = null, arg3 = null) {
     savedBytes,
     savedPct,
     reductionNotice,
+    rasterized,
   }
 }
 
@@ -1336,17 +1357,157 @@ export async function comparePdfs(fileA, fileB, onProgress) {
 
   const pagesA = docA.getPageCount()
   const pagesB = docB.getPageCount()
+  const maxPages = Math.max(pagesA, pagesB)
 
-  const titleA = docA.getTitle() || 'Untitled'
-  const titleB = docB.getTitle() || 'Untitled'
+  // 1. Metadata extraction & comparison
+  const metaFields = [
+    { field: 'Title', get: d => d.getTitle() },
+    { field: 'Author', get: d => d.getAuthor() },
+    { field: 'Subject', get: d => d.getSubject() },
+    { field: 'Creator', get: d => d.getCreator() },
+    { field: 'Producer', get: d => d.getProducer() },
+    { field: 'Keywords', get: d => d.getKeywords() },
+  ]
+
+  const metaDiffs = []
+  for (const m of metaFields) {
+    const valA = m.get(docA) || ''
+    const valB = m.get(docB) || ''
+    if (valA !== valB) {
+      metaDiffs.push({
+        field: m.field,
+        before: valA || '(empty)',
+        after: valB || '(empty)',
+      })
+    }
+  }
+
+  // 2. Page-by-page comparison (geometry, rotation, and text content)
+  let pageTextsA = []
+  let pageTextsB = []
+
+  if (typeof window !== 'undefined') {
+    try {
+      const pdfjs = await getPdfJs()
+      const pdfjsDocA = await pdfjs.getDocument({ data: bufA.slice(0), isEvalSupported: false, enableScripting: false }).promise
+      const pdfjsDocB = await pdfjs.getDocument({ data: bufB.slice(0), isEvalSupported: false, enableScripting: false }).promise
+
+      for (let i = 1; i <= pagesA; i++) {
+        const page = await pdfjsDocA.getPage(i)
+        const textContent = await page.getTextContent()
+        const text = textContent.items.map(it => it.str || '').join(' ').trim()
+        pageTextsA.push(text)
+        if (typeof page.cleanup === 'function') page.cleanup()
+      }
+
+      for (let i = 1; i <= pagesB; i++) {
+        const page = await pdfjsDocB.getPage(i)
+        const textContent = await page.getTextContent()
+        const text = textContent.items.map(it => it.str || '').join(' ').trim()
+        pageTextsB.push(text)
+        if (typeof page.cleanup === 'function') page.cleanup()
+      }
+    } catch (e) {
+      console.warn('[PDF Compare] PDF.js text layer extraction skipped, falling back to structural geometry:', e)
+    }
+  }
+
+  const pageDiffs = []
+  let identicalPagesCount = 0
+  let modifiedPagesCount = 0
+  let addedPagesCount = 0
+  let removedPagesCount = 0
+
+  for (let p = 1; p <= maxPages; p++) {
+    if (p > pagesA) {
+      // Page added in Doc B
+      pageDiffs.push({
+        page: p,
+        status: 'added',
+        desc: `Page ${p} exists only in Document B`,
+      })
+      addedPagesCount++
+    } else if (p > pagesB) {
+      // Page removed in Doc B
+      pageDiffs.push({
+        page: p,
+        status: 'removed',
+        desc: `Page ${p} was deleted in Document B`,
+      })
+      removedPagesCount++
+    } else {
+      // Page exists in both: compare geometry, rotation, and text
+      const pageObjA = docA.getPage(p - 1)
+      const pageObjB = docB.getPage(p - 1)
+      const sizeA = pageObjA.getSize()
+      const sizeB = pageObjB.getSize()
+      const rotA = pageObjA.getRotation().angle
+      const rotB = pageObjB.getRotation().angle
+
+      const geomMatches = Math.abs(sizeA.width - sizeB.width) < 1 &&
+                          Math.abs(sizeA.height - sizeB.height) < 1 &&
+                          rotA === rotB
+
+      const textA = pageTextsA[p - 1] !== undefined ? pageTextsA[p - 1] : null
+      const textB = pageTextsB[p - 1] !== undefined ? pageTextsB[p - 1] : null
+      const textMatches = textA === null || textB === null ? true : (textA === textB)
+
+      if (geomMatches && textMatches) {
+        pageDiffs.push({
+          page: p,
+          status: 'identical',
+          desc: 'Identical layout and content',
+        })
+        identicalPagesCount++
+      } else {
+        const changes = []
+        if (!geomMatches) {
+          changes.push(`Dimensions: ${Math.round(sizeA.width)}×${Math.round(sizeA.height)}pt → ${Math.round(sizeB.width)}×${Math.round(sizeB.height)}pt`)
+          if (rotA !== rotB) changes.push(`Rotation: ${rotA}° → ${rotB}°`)
+        }
+        if (!textMatches) {
+          const wA = (textA || '').split(/\s+/).filter(Boolean).length
+          const wB = (textB || '').split(/\s+/).filter(Boolean).length
+          changes.push(`Text modified (${wA} words → ${wB} words)`)
+        }
+        pageDiffs.push({
+          page: p,
+          status: 'modified',
+          desc: changes.join(' · ') || 'Visual or textual differences detected',
+        })
+        modifiedPagesCount++
+      }
+    }
+  }
+
+  const isIdentical = identicalPagesCount === maxPages && metaDiffs.length === 0 && pagesA === pagesB
 
   return {
-    fileA: { name: fileA.name, size: fileA.size, pages: pagesA, title: titleA },
-    fileB: { name: fileB.name, size: fileB.size, pages: pagesB, title: titleB },
+    success: true,
+    summary: isIdentical ? 'Documents are identical in layout, text, and metadata' : 'Differences detected between documents',
+    fileA: {
+      name: fileA.name || 'Document A',
+      size: fileA.size || bufA.byteLength,
+      pageCount: pagesA,
+      title: docA.getTitle() || 'Untitled',
+    },
+    fileB: {
+      name: fileB.name || 'Document B',
+      size: fileB.size || bufB.byteLength,
+      pageCount: pagesB,
+      title: docB.getTitle() || 'Untitled',
+    },
     samePageCount: pagesA === pagesB,
     pageDifference: Math.abs(pagesA - pagesB),
-    sizeDiffBytes: fileA.size - fileB.size,
-    identicalMetadata: titleA === titleB && docA.getAuthor() === docB.getAuthor(),
+    pageCountDiff: pagesB - pagesA,
+    sizeDiffBytes: (fileB.size || bufB.byteLength) - (fileA.size || bufA.byteLength),
+    sizeDiff: (fileB.size || bufB.byteLength) - (fileA.size || bufA.byteLength),
+    metaDiffs,
+    pageDiffs,
+    identicalPagesCount,
+    modifiedPagesCount,
+    addedPagesCount,
+    removedPagesCount,
   }
 }
 

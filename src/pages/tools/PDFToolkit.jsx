@@ -1259,12 +1259,15 @@ export default function PDFToolkit() {
           // Render first 5 pages and run OCR
           const pages = await renderPdfPagesToImages(targetFile, 'image/jpeg', 150, msg => setProgressMsg(msg))
           const worker = await Tesseract.createWorker('eng', 1, tesseractOptions)
-          const ocrParts = []
           try {
-            for (let p = 0; p < Math.min(pages.length, 5); p++) {
-              setProgressMsg(`OCR analyzing page ${p + 1} of ${Math.min(pages.length, 5)}...`)
+            const totalOcrPages = pages.length
+            for (let p = 0; p < totalOcrPages; p++) {
+              setProgressMsg(`OCR analyzing page ${p + 1} of ${totalOcrPages}...`)
               const { data: { text } } = await worker.recognize(pages[p].blob)
               if (text?.trim()) ocrParts.push(text.trim())
+              // Free processed page blob to release memory on multi-page documents
+              pages[p] = null
+              await new Promise(r => setTimeout(r, 0))
             }
             recognizedText = ocrParts.join('\n\n')
           } finally {
@@ -3174,9 +3177,9 @@ export default function PDFToolkit() {
                         opacity: isMarkedDelete ? 0.45 : 1,
                       }}
                     >
-                      {thumb?.thumbnailUrl ? (
+                      {(thumb?.thumbnailUrl || thumb?.dataUrl) ? (
                         <img
-                          src={thumb.thumbnailUrl}
+                          src={thumb.thumbnailUrl || thumb.dataUrl}
                           alt={`Page ${pageNum}`}
                           style={{ width: '100%', height: 'auto', display: 'block' }}
                         />
@@ -3718,12 +3721,12 @@ export default function PDFToolkit() {
                 </div>
 
                 {/* Metadata differences */}
-                {result.compare.metaDiffs.length > 0 && (
+                {(result.compare.metaDiffs || []).length > 0 && (
                   <div style={{ background: '#ffffff', padding: '12px 14px', borderRadius: 10, border: '1px solid #e2e8f0' }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>
                       🏷️ Metadata Differences
                     </div>
-                    {result.compare.metaDiffs.map(m => (
+                    {(result.compare.metaDiffs || []).map(m => (
                       <div key={m.field} style={{ fontSize: 12, marginBottom: 4 }}>
                         <strong>{m.field}:</strong> <span style={{ color: '#ef4444' }}>{m.before}</span> → <span style={{ color: '#059669' }}>{m.after}</span>
                       </div>
@@ -3736,7 +3739,7 @@ export default function PDFToolkit() {
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>
                     📑 Page-by-Page Comparison
                   </div>
-                  {result.compare.pageDiffs.map(p => (
+                  {(result.compare.pageDiffs || []).map(p => (
                     <div key={p.page} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: 12 }}>
                       <span>Page {p.page}: {p.desc}</span>
                       <span style={{
@@ -3744,7 +3747,7 @@ export default function PDFToolkit() {
                         background: p.status === 'identical' ? '#dcfce7' : p.status === 'modified' ? '#fef3c7' : '#fee2e2',
                         color: p.status === 'identical' ? '#15803d' : p.status === 'modified' ? '#b45309' : '#b91c1c'
                       }}>
-                        {p.status.toUpperCase()}
+                        {(p.status || 'unknown').toUpperCase()}
                       </span>
                     </div>
                   ))}
@@ -3758,16 +3761,16 @@ export default function PDFToolkit() {
                       const textReport = [
                         `PDF COMPARISON REPORT`,
                         `=====================`,
-                        `Document A: ${result.compare.fileA.name} (${result.compare.fileA.pageCount} pages, ${formatBytes(result.compare.fileA.size)})`,
-                        `Document B: ${result.compare.fileB.name} (${result.compare.fileB.pageCount} pages, ${formatBytes(result.compare.fileB.size)})`,
-                        `Page Count Diff: ${result.compare.pageCountDiff}`,
-                        `Size Diff: ${formatBytes(result.compare.sizeDiff)}`,
+                        `Document A: ${result.compare.fileA?.name || 'Document A'} (${result.compare.fileA?.pageCount || 0} pages, ${formatBytes(result.compare.fileA?.size || 0)})`,
+                        `Document B: ${result.compare.fileB?.name || 'Document B'} (${result.compare.fileB?.pageCount || 0} pages, ${formatBytes(result.compare.fileB?.size || 0)})`,
+                        `Page Count Diff: ${result.compare.pageCountDiff || 0}`,
+                        `Size Diff: ${formatBytes(Math.abs(result.compare.sizeDiff || 0))}`,
                         ``,
                         `Metadata Differences:`,
-                        ...result.compare.metaDiffs.map(m => ` - ${m.field}: "${m.before}" -> "${m.after}"`),
+                        ...(result.compare.metaDiffs || []).map(m => ` - ${m.field}: "${m.before}" -> "${m.after}"`),
                         ``,
                         `Page-by-Page Results:`,
-                        ...result.compare.pageDiffs.map(p => ` - [${p.status.toUpperCase()}] ${p.desc}`)
+                        ...(result.compare.pageDiffs || []).map(p => ` - [${(p.status || '').toUpperCase()}] ${p.desc}`)
                       ].join('\n')
                       downloadBlob(new Blob([textReport], { type: 'text/plain' }), result.name)
                     }}

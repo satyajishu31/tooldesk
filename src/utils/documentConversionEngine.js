@@ -1,7 +1,33 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
+import fontkit from '@pdf-lib/fontkit'
 import { parseDocx } from './docxParser.js'
 import { layoutDocxToPdf } from './docxLayoutEngine.js'
 import { PAGE_SIZES, sanitizeWinAnsi } from './pdfStructuralEngine.js'
+
+const _convFontBytesCache = {}
+async function loadFontBytes(filename) {
+  if (_convFontBytesCache[filename]) return _convFontBytesCache[filename]
+  if (typeof window !== 'undefined') {
+    const res = await fetch(`/fonts/${filename}`)
+    if (!res.ok) throw new Error(`Failed to fetch font: ${filename}`)
+    const buf = await res.arrayBuffer()
+    const bytes = new Uint8Array(buf)
+    _convFontBytesCache[filename] = bytes
+    return bytes
+  } else {
+    const fsMod = 'fs'
+    const pathMod = 'path'
+    const fs = await import(/* @vite-ignore */ fsMod)
+    const path = await import(/* @vite-ignore */ pathMod)
+    const p = path.resolve('public/fonts', filename)
+    if (fs.existsSync(p)) {
+      const bytes = fs.readFileSync(p)
+      _convFontBytesCache[filename] = bytes
+      return bytes
+    }
+    throw new Error(`Font file not found: ${p}`)
+  }
+}
 
 /**
  * Typeset structured blocks containing multi-language Unicode (Hindi, Chinese, Cyrillic, Arabic, Emoji)
@@ -266,9 +292,24 @@ async function typesetDocument(blocks, doc, options = {}) {
     return await typesetUnicodeDocument(blocks, doc, options)
   }
 
-  const fontRegular = await doc.embedFont(StandardFonts.Helvetica)
-  const fontBold = await doc.embedFont(StandardFonts.HelveticaBold)
-  const fontMono = await doc.embedFont(StandardFonts.Courier)
+  let fontRegular = null
+  let fontBold = null
+  let fontMono = null
+
+  try {
+    doc.registerFontkit(fontkit)
+    const [regBytes, boldBytes] = await Promise.all([
+      loadFontBytes('LiberationSans-Regular.ttf'),
+      loadFontBytes('LiberationSans-Bold.ttf'),
+    ])
+    fontRegular = await doc.embedFont(regBytes, { subset: true })
+    fontBold = await doc.embedFont(boldBytes, { subset: true })
+    fontMono = fontRegular
+  } catch (e) {
+    fontRegular = await doc.embedFont(StandardFonts.Helvetica)
+    fontBold = await doc.embedFont(StandardFonts.HelveticaBold)
+    fontMono = await doc.embedFont(StandardFonts.Courier)
+  }
 
   const { width = PAGE_SIZES.A4.width, height = PAGE_SIZES.A4.height } = options.pageSize || PAGE_SIZES.A4
   const margin = options.margin !== undefined ? options.margin : 54
@@ -738,8 +779,38 @@ export async function convertMarkdownToPdf(markdown, options = {}) {
       blocks.push({ type: 'h2', text: trimmed.replace(/^##\s+/, '') })
     } else if (trimmed.startsWith('### ')) {
       blocks.push({ type: 'h3', text: trimmed.replace(/^###\s+/, '') })
+    } else if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+      // Parse Markdown table
+      const tableRows = []
+      let tIdx = i
+      while (tIdx < lines.length) {
+        const tTrim = lines[tIdx].trim()
+        if (tTrim.startsWith('|') && tTrim.endsWith('|')) {
+          if (/^\|(\s*[-:]+[-| :]*)\|$/.test(tTrim)) {
+            tIdx++
+            continue
+          }
+          const cells = tTrim.slice(1, -1).split('|').map(c => c.trim())
+          tableRows.push(cells)
+          tIdx++
+        } else {
+          break
+        }
+      }
+      if (tableRows.length > 0) {
+        blocks.push({
+          type: 'table',
+          rows: tableRows,
+          hasHeader: tableRows.length > 1,
+        })
+        i = tIdx - 1
+        continue
+      }
+      blocks.push({ type: 'p', text: trimmed })
     } else if (/^[-*+]\s+/.test(trimmed)) {
       blocks.push({ type: 'bullet', text: trimmed.replace(/^[-*+]\s+/, '') })
+    } else if (/^\d+\.\s+/.test(trimmed)) {
+      blocks.push({ type: 'bullet', text: trimmed })
     } else if (trimmed.startsWith('> ')) {
       blocks.push({ type: 'quote', text: trimmed.replace(/^>\s+/, '') })
     } else if (/^[-*_]{3,}$/.test(trimmed)) {
