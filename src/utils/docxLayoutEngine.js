@@ -128,9 +128,17 @@ export async function layoutDocxToPdf(docIR, onProgress = null) {
       try {
         let embedded
         if (media.format === 'png') {
-          embedded = await pdfDoc.embedPng(media.buffer)
+          try {
+            embedded = await pdfDoc.embedPng(media.buffer)
+          } catch (_) {
+            embedded = await pdfDoc.embedJpg(media.buffer)
+          }
         } else {
-          embedded = await pdfDoc.embedJpg(media.buffer)
+          try {
+            embedded = await pdfDoc.embedJpg(media.buffer)
+          } catch (_) {
+            embedded = await pdfDoc.embedPng(media.buffer)
+          }
         }
         embeddedImages.set(rId, embedded)
       } catch (err) {

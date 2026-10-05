@@ -42,6 +42,7 @@ import {
   createZipFromFiles,
   parsePageRangeString,
   formatPageRangeString,
+  getPdfjsDocumentOptions,
 } from '../src/utils/pdfEngine.js'
 
 console.log('===> Starting ToolDesk Advanced PDF Workstation Forensic Suite...\n')
@@ -88,7 +89,7 @@ await testAsync('DOCX Engine: Tax_Invoice_36-6.docx converts to EXACTLY 1 page w
   assert(result.bytes.length > 1000, `Output PDF size seems too small: ${result.bytes.length}`)
 
   // Verify PDF structure with pdfjs
-  const doc = await pdfjs.getDocument({ data: result.bytes }).promise
+  const doc = await pdfjs.getDocument(getPdfjsDocumentOptions(result.bytes)).promise
   assert.equal(doc.numPages, 1, 'PDF.js must report exactly 1 page')
 
   const page = await doc.getPage(1)

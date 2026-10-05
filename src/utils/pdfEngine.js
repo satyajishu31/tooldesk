@@ -12,6 +12,7 @@ export {
   PAGE_SIZES,
   formatBytes,
   getPdfJs,
+  getPdfjsDocumentOptions,
   toSafeArrayBuffer,
   safeLoadPdfDocument,
   parsePageRangeString,
@@ -45,6 +46,8 @@ export {
   changePdfPassword,
   comparePdfs,
   createZipFromFiles,
+  toSafeUint8Array,
+  sanitizeZipFilename,
 } from './pdfStructuralEngine.js'
 
 // 2. Document Rendering / Conversion Engine (DOCX, HTML, Markdown, CSV, JSON, XML, TXT, Images)

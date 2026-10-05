@@ -704,6 +704,18 @@ export default function PDFToolkit() {
     return ALL_ACTIONS.filter(a => a.cat === activeCategory)
   }, [activeCategory])
 
+  useEffect(() => {
+    return () => {
+      if (result?.type === 'multi-images' && Array.isArray(result.items)) {
+        for (const item of result.items) {
+          if (item?.previewUrl && item.previewUrl.startsWith('blob:')) {
+            try { URL.revokeObjectURL(item.previewUrl) } catch (_) {}
+          }
+        }
+      }
+    }
+  }, [result])
+
   // Select first action when category changes if current action not in category
   const handleCategoryChange = catId => {
     setActiveCategory(catId)
@@ -1235,9 +1247,13 @@ export default function PDFToolkit() {
           msg => setProgressMsg(msg)
         )
         const ext = format === 'image/jpeg' ? 'jpg' : 'png'
+        const pagesWithUrls = pages.map(p => ({
+          ...p,
+          previewUrl: p.dataUrl || (p.blob ? URL.createObjectURL(p.blob) : ''),
+        }))
         setResult({
           type: 'multi-images',
-          items: pages,
+          items: pagesWithUrls,
           zipName: `${targetFile.name.replace(/\.pdf$/i, '')}-${ext}-pages.zip`,
         })
         setStatusMsg({ type: 'success', text: `✅ Rendered ${pages.length} page(s) at ${dpiSetting} DPI!` })
@@ -3592,7 +3608,7 @@ export default function PDFToolkit() {
                       }}
                     >
                       <img
-                        src={item.dataUrl || (item.blob ? URL.createObjectURL(item.blob) : '')}
+                        src={item.previewUrl || item.dataUrl || ''}
                         alt={item.name}
                         style={{ width: '100%', height: 'auto', borderRadius: 6, marginBottom: 6 }}
                       />

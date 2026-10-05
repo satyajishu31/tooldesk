@@ -18,6 +18,7 @@ import {
   createZipFromFiles,
   lockPdf,
   unlockPdf,
+  getPdfjsDocumentOptions,
 } from '../src/utils/pdfStructuralEngine.js';
 import { parseDocx } from '../src/utils/docxParser.js';
 import { layoutDocxToPdf } from '../src/utils/docxLayoutEngine.js';
@@ -87,7 +88,7 @@ async function runTests() {
   assert(invoiceResult.bytes.length > 5000, `Tax Invoice bytes valid (${invoiceResult.bytes.length} bytes)`);
 
   // Verify text content inside Tax Invoice
-  const invoicePdf = await pdfjs.getDocument({ data: new Uint8Array(invoiceResult.bytes) }).promise;
+  const invoicePdf = await pdfjs.getDocument(getPdfjsDocumentOptions(new Uint8Array(invoiceResult.bytes))).promise;
   const p1 = await invoicePdf.getPage(1);
   const tc = await p1.getTextContent();
   const fullText = tc.items.map(it => it.str).join(' ');
@@ -192,7 +193,7 @@ Quarterly projections:
   const doc2 = await createSamplePdf('Part 2', 2);
   const merged = await mergePdfs([doc1, doc2]);
   assert(merged.bytes && merged.bytes.length > 0, 'mergePdfs returned bytes');
-  const mergedPdf = await pdfjs.getDocument({ data: new Uint8Array(merged.bytes) }).promise;
+  const mergedPdf = await pdfjs.getDocument(getPdfjsDocumentOptions(new Uint8Array(merged.bytes))).promise;
   assert(mergedPdf.numPages === 3, `Merged PDF has exactly 3 pages (1 + 2 = ${mergedPdf.numPages})`);
 
   // TEST 9: PDF Split
@@ -206,7 +207,7 @@ Quarterly projections:
   const rotateSource = await createSamplePdf('To Rotate', 1);
   const rotated = await rotatePdfPages(rotateSource, 90);
   assert(rotated.bytes && rotated.bytes.length > 0, 'rotatePdfPages returned bytes');
-  const rotPdf = await pdfjs.getDocument({ data: new Uint8Array(rotated.bytes) }).promise;
+  const rotPdf = await pdfjs.getDocument(getPdfjsDocumentOptions(new Uint8Array(rotated.bytes))).promise;
   const rotP1 = await rotPdf.getPage(1);
   assert(rotP1.rotate === 90, `Page rotation is 90° (got ${rotP1.rotate}°)`);
 

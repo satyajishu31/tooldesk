@@ -68,16 +68,96 @@ export async function getPdfJs() {
 }
 
 /**
+ * Resolves standard PDF.js document loading options with offline standard fonts and cmaps
+ */
+export function getPdfjsDocumentOptions(data, extraOptions = {}) {
+  let standardFontDataUrl = '/fonts/'
+  let cMapUrl = '/cmaps/'
+  if (typeof window !== 'undefined' && window.location) {
+    standardFontDataUrl = `${window.location.origin}/fonts/`
+    cMapUrl = `${window.location.origin}/cmaps/`
+  } else if (typeof process !== 'undefined' && process.cwd) {
+    try {
+      const cwd = process.cwd()
+      standardFontDataUrl = `${cwd}/public/fonts/`
+      cMapUrl = `${cwd}/public/cmaps/`
+    } catch {}
+  }
+  return {
+    data,
+    standardFontDataUrl,
+    cMapUrl,
+    cMapPacked: true,
+    isEvalSupported: false,
+    enableScripting: false,
+    ...extraOptions,
+  }
+}
+
+/**
  * Safely convert File, Blob, Buffer, Uint8Array or ArrayBuffer into an ArrayBuffer
  */
-export async function toSafeArrayBuffer(input) {
+export async function toSafeArrayBuffer(input, clone = false) {
   if (!input) throw new Error('No PDF input provided.')
-  if (input instanceof ArrayBuffer) return input
+  if (input instanceof ArrayBuffer) {
+    if (typeof input.detached !== 'undefined' && input.detached) {
+      throw new Error('Input ArrayBuffer is detached.')
+    }
+    return clone ? input.slice(0) : input
+  }
   if (ArrayBuffer.isView(input)) {
-    return input.buffer.slice(input.byteOffset, input.byteOffset + input.byteLength)
+    const res = input.buffer.slice(input.byteOffset, input.byteOffset + input.byteLength)
+    return clone ? res.slice(0) : res
+  }
+  if (typeof Buffer !== 'undefined' && Buffer.isBuffer(input)) {
+    const res = input.buffer.slice(input.byteOffset, input.byteOffset + input.byteLength)
+    return clone ? res.slice(0) : res
+  }
+  // Check for wrapped properties
+  if (input.blob) return await toSafeArrayBuffer(input.blob, clone)
+  if (input.data) return await toSafeArrayBuffer(input.data, clone)
+  if (input.file) return await toSafeArrayBuffer(input.file, clone)
+  if (input.bytes && typeof input.bytes !== 'function') return await toSafeArrayBuffer(input.bytes, clone)
+
+  if (typeof input.arrayBuffer === 'function') {
+    const ab = await input.arrayBuffer()
+    return clone ? ab.slice(0) : ab
+  }
+  if (typeof input.bytes === 'function') {
+    const u8 = await input.bytes()
+    const res = u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength)
+    return clone ? res.slice(0) : res
+  }
+  throw new Error('Unsupported binary data type.')
+}
+
+/**
+ * Safely convert File, Blob, Buffer, Uint8Array or ArrayBuffer into a Uint8Array
+ */
+export async function toSafeUint8Array(input) {
+  if (!input) throw new Error('No binary input provided.')
+  if (input instanceof Uint8Array) return input
+  if (ArrayBuffer.isView(input)) {
+    return new Uint8Array(input.buffer, input.byteOffset, input.byteLength)
+  }
+  if (input instanceof ArrayBuffer) {
+    return new Uint8Array(input)
+  }
+  if (typeof Buffer !== 'undefined' && Buffer.isBuffer(input)) {
+    return new Uint8Array(input.buffer, input.byteOffset, input.byteLength)
+  }
+  // Check for wrapped properties
+  if (input.blob) return await toSafeUint8Array(input.blob)
+  if (input.data) return await toSafeUint8Array(input.data)
+  if (input.file) return await toSafeUint8Array(input.file)
+  if (input.bytes && typeof input.bytes !== 'function') return await toSafeUint8Array(input.bytes)
+
+  if (typeof input.bytes === 'function') {
+    return await input.bytes()
   }
   if (typeof input.arrayBuffer === 'function') {
-    return await input.arrayBuffer()
+    const ab = await input.arrayBuffer()
+    return new Uint8Array(ab)
   }
   throw new Error('Unsupported binary data type.')
 }
@@ -115,10 +195,10 @@ async function ensureEmbeddedImage(doc, imageBlobOrBuffer) {
   if (typeof imageBlobOrBuffer === 'string') {
     buf = await dataUrlToArrayBuffer(imageBlobOrBuffer)
     type = imageBlobOrBuffer.includes('image/jpeg') ? 'image/jpeg' : 'image/png'
-  } else if (imageBlobOrBuffer instanceof Blob || imageBlobOrBuffer instanceof File) {
-    type = imageBlobOrBuffer.type || ''
-    buf = await imageBlobOrBuffer.arrayBuffer()
   } else {
+    if (imageBlobOrBuffer?.type) {
+      type = imageBlobOrBuffer.type
+    }
     buf = await toSafeArrayBuffer(imageBlobOrBuffer)
   }
 
@@ -146,16 +226,33 @@ async function ensureEmbeddedImage(doc, imageBlobOrBuffer) {
         img.onerror = rej
         img.src = url
       })
+      const naturalW = img.naturalWidth || img.width || 100
+      const naturalH = img.naturalHeight || img.height || 100
+      const maxDim = Math.max(naturalW, naturalH)
+      const scale = maxDim > 4096 ? 4096 / maxDim : 1
       const canvas = document.createElement('canvas')
-      canvas.width = img.naturalWidth || 100
-      canvas.height = img.naturalHeight || 100
+      canvas.width = Math.round(naturalW * scale)
+      canvas.height = Math.round(naturalH * scale)
       const ctx = canvas.getContext('2d')
-      ctx.drawImage(img, 0, 0)
-      const pngBlob = await new Promise(r => canvas.toBlob(r, 'image/png'))
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      let pngBlob = await new Promise(r => canvas.toBlob(r, 'image/png'))
+      if (!pngBlob) {
+        const dataUrl = canvas.toDataURL('image/png')
+        if (dataUrl) {
+          const bin = atob(dataUrl.split(',')[1])
+          const u8 = new Uint8Array(bin.length)
+          for (let k = 0; k < bin.length; k++) u8[k] = bin.charCodeAt(k)
+          pngBlob = new Blob([u8], { type: 'image/png' })
+        }
+      }
       if (pngBlob) {
         const pngBuf = await pngBlob.arrayBuffer()
+        canvas.width = 0
+        canvas.height = 0
         return await doc.embedPng(pngBuf)
       }
+      canvas.width = 0
+      canvas.height = 0
     } finally {
       URL.revokeObjectURL(url)
     }
@@ -289,8 +386,8 @@ export function sanitizeWinAnsi(str) {
 
 export async function renderPdfPagesToImages(file, format = 'image/png', dpi = 150, onProgress) {
   const pdfjs = await getPdfJs()
-  const arrayBuffer = await file.arrayBuffer()
-  const pdf = await pdfjs.getDocument({ data: arrayBuffer, isEvalSupported: false, enableScripting: false }).promise
+  const arrayBuffer = await toSafeArrayBuffer(file, true)
+  const pdf = await pdfjs.getDocument(getPdfjsDocumentOptions(arrayBuffer.slice(0))).promise
   const numPages = pdf.numPages
   const images = []
   const targetDpi = Math.max(72, Math.min(300, Number(dpi) || 150))
@@ -328,7 +425,8 @@ export async function renderPdfPagesToImages(file, format = 'image/png', dpi = 1
     }
 
     const ext = format === 'image/jpeg' ? 'jpg' : 'png'
-    const imgName = `${file.name.replace(/\.pdf$/i, '')}_page_${i}.${ext}`
+    const baseName = file?.name ? file.name.replace(/\.pdf$/i, '') : 'document'
+    const imgName = `${baseName}_page_${i}.${ext}`
 
     images.push({
       pageNumber: i,
@@ -356,8 +454,8 @@ export async function renderPdfPagesToImages(file, format = 'image/png', dpi = 1
 
 export async function generatePdfThumbnails(file, maxPages = 60, onProgress) {
   const pdfjs = await getPdfJs()
-  const arrayBuffer = await file.arrayBuffer()
-  const pdf = await pdfjs.getDocument({ data: arrayBuffer, isEvalSupported: false, enableScripting: false }).promise
+  const arrayBuffer = await toSafeArrayBuffer(file, true)
+  const pdf = await pdfjs.getDocument(getPdfjsDocumentOptions(arrayBuffer.slice(0))).promise
   const totalPages = pdf.numPages
   const pagesToRender = Math.min(totalPages, maxPages)
   const thumbnails = []
@@ -410,10 +508,10 @@ export async function mergePdfs(files, onProgress) {
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i]
-    if (onProgress) onProgress(`Merging "${file.name}" (${i + 1} of ${files.length})...`)
+    const fileName = file?.name || `document_${i + 1}.pdf`
+    if (onProgress) onProgress(`Merging "${fileName}" (${i + 1} of ${files.length})...`)
 
-    const buf = await file.arrayBuffer()
-    const srcDoc = await safeLoadPdfDocument(buf, file.name)
+    const srcDoc = await safeLoadPdfDocument(file, fileName)
     const indices = srcDoc.getPageIndices()
     const copiedPages = await mergedDoc.copyPages(srcDoc, indices)
     copiedPages.forEach(p => mergedDoc.addPage(p))
@@ -432,8 +530,8 @@ export async function mergePdfs(files, onProgress) {
 }
 
 export async function splitPdfPages(file, pageIndices = null, onProgress) {
-  const buf = await file.arrayBuffer()
-  const srcDoc = await safeLoadPdfDocument(buf, file.name)
+  const fileName = file?.name || 'document.pdf'
+  const srcDoc = await safeLoadPdfDocument(file, fileName)
   const totalPages = srcDoc.getPageCount()
 
   const targetIndices = pageIndices && pageIndices.length
@@ -468,8 +566,8 @@ export async function splitPdfPages(file, pageIndices = null, onProgress) {
 export async function extractPagesToSinglePdf(file, selectedPages, onProgress) {
   if (!selectedPages || !selectedPages.length) throw new Error('Please select at least one page to extract.')
 
-  const buf = await file.arrayBuffer()
-  const srcDoc = await safeLoadPdfDocument(buf, file.name)
+  const fileName = file?.name || 'document.pdf'
+  const srcDoc = await safeLoadPdfDocument(file, fileName)
   const totalPages = srcDoc.getPageCount()
 
   const valid0Indices = selectedPages
@@ -485,7 +583,7 @@ export async function extractPagesToSinglePdf(file, selectedPages, onProgress) {
 
   const bytes = await newDoc.save()
   const rangeStr = formatPageRangeString(selectedPages)
-  const baseName = file.name.replace(/\.pdf$/i, '')
+  const baseName = fileName.replace(/\.pdf$/i, '')
 
   return {
     bytes,
@@ -499,8 +597,8 @@ export async function extractPagesToSinglePdf(file, selectedPages, onProgress) {
 export async function reorderPdfPages(file, newPageOrder, onProgress) {
   if (!newPageOrder || !newPageOrder.length) throw new Error('Invalid page order provided.')
 
-  const buf = await file.arrayBuffer()
-  const srcDoc = await safeLoadPdfDocument(buf, file.name)
+  const fileName = file?.name || 'document.pdf'
+  const srcDoc = await safeLoadPdfDocument(file, fileName)
   const totalPages = srcDoc.getPageCount()
 
   const zeroIndices = newPageOrder
@@ -520,7 +618,7 @@ export async function reorderPdfPages(file, newPageOrder, onProgress) {
   return {
     bytes,
     blob: new Blob([bytes], { type: 'application/pdf' }),
-    name: `reordered-${file.name}`,
+    name: `reordered-${fileName}`,
     size: bytes.length,
     pageCount: totalPages,
   }
@@ -529,8 +627,8 @@ export async function reorderPdfPages(file, newPageOrder, onProgress) {
 export async function deletePdfPages(file, pagesToDelete, onProgress) {
   if (!pagesToDelete || !pagesToDelete.length) throw new Error('No pages selected to delete.')
 
-  const buf = await file.arrayBuffer()
-  const srcDoc = await safeLoadPdfDocument(buf, file.name)
+  const fileName = file?.name || 'document.pdf'
+  const srcDoc = await safeLoadPdfDocument(file, fileName)
   const totalPages = srcDoc.getPageCount()
 
   const deleteSet = new Set(pagesToDelete.map(p => p - 1))
@@ -552,7 +650,7 @@ export async function deletePdfPages(file, pagesToDelete, onProgress) {
   return {
     bytes,
     blob: new Blob([bytes], { type: 'application/pdf' }),
-    name: `pruned-${file.name}`,
+    name: `pruned-${fileName}`,
     size: bytes.length,
     pageCount: newDoc.getPageCount(),
     deletedCount: deleteSet.size,
@@ -569,8 +667,8 @@ export async function rotatePdfPages(file, arg2 = 90, arg3 = null, onProgress = 
     targetPages = arg3
   }
 
-  const buf = await file.arrayBuffer()
-  const doc = await safeLoadPdfDocument(buf, file.name)
+  const fileName = file?.name || 'document.pdf'
+  const doc = await safeLoadPdfDocument(file, fileName)
   const totalPages = doc.getPageCount()
 
   const pagesToRotate = targetPages && targetPages.length
@@ -590,7 +688,7 @@ export async function rotatePdfPages(file, arg2 = 90, arg3 = null, onProgress = 
   return {
     bytes,
     blob: new Blob([bytes], { type: 'application/pdf' }),
-    name: `rotated-${file.name}`,
+    name: `rotated-${file?.name || 'document.pdf'}`,
     size: bytes.length,
     pageCount: totalPages,
     rotatedCount: pagesToRotate.length,
@@ -649,8 +747,13 @@ export async function cropPdfPages(file, arg2, arg3 = null, onProgress = null) {
 }
 
 export async function readPdfMetadata(file) {
-  const buf = await file.arrayBuffer()
-  const doc = await safeLoadPdfDocument(buf, file.name)
+  const fileName = file?.name || 'document.pdf'
+  const doc = await safeLoadPdfDocument(file, fileName)
+  const size = file?.size || (await toSafeArrayBuffer(file)).byteLength
+  const pageCount = doc.getPageCount()
+  const firstPage = pageCount > 0 ? doc.getPage(0) : null
+  const pageSize = firstPage ? { width: Math.round(firstPage.getWidth()), height: Math.round(firstPage.getHeight()) } : null
+
   return {
     title: doc.getTitle() || '',
     author: doc.getAuthor() || '',
@@ -660,15 +763,16 @@ export async function readPdfMetadata(file) {
     producer: doc.getProducer() || '',
     creationDate: doc.getCreationDate() ? doc.getCreationDate().toISOString() : '',
     modificationDate: doc.getModificationDate() ? doc.getModificationDate().toISOString() : '',
-    pageCount: doc.getPageCount(),
-    fileSize: file.size || buf.byteLength,
+    pageCount,
+    pageSize,
+    fileSize: size,
   }
 }
 
 export async function updatePdfMetadata(file, metadata, onProgress) {
   if (onProgress) onProgress('Updating document properties...')
-  const buf = await file.arrayBuffer()
-  const doc = await safeLoadPdfDocument(buf, file.name)
+  const fileName = file?.name || 'document.pdf'
+  const doc = await safeLoadPdfDocument(file, fileName)
 
   if (metadata.title !== undefined) doc.setTitle(metadata.title)
   if (metadata.author !== undefined) doc.setAuthor(metadata.author)
@@ -682,8 +786,9 @@ export async function updatePdfMetadata(file, metadata, onProgress) {
   return {
     bytes,
     blob: new Blob([bytes], { type: 'application/pdf' }),
-    name: `metadata-${file.name}`,
+    name: `metadata-${fileName}`,
     size: bytes.length,
+    pageCount: doc.getPageCount(),
   }
 }
 
@@ -731,11 +836,31 @@ export async function watermarkPdf(file, watermarkOptions = {}, onProgress) {
   const opacity = watermarkOptions.opacity !== undefined ? watermarkOptions.opacity : 0.25
   const rotation = watermarkOptions.rotation !== undefined ? watermarkOptions.rotation : (watermarkOptions.angle !== undefined ? watermarkOptions.angle : -45)
   const fontSize = watermarkOptions.fontSize || 48
-  const color = watermarkOptions.color || { r: 0.8, g: 0.2, b: 0.2 }
+  const rawColor = watermarkOptions.color || { r: 0.8, g: 0.2, b: 0.2 }
+  let watermarkColor = rgb(0.8, 0.2, 0.2)
+  if (typeof rawColor === 'string') {
+    const cleanHex = rawColor.replace('#', '').trim()
+    if (cleanHex.length === 6) {
+      watermarkColor = rgb(
+        parseInt(cleanHex.slice(0, 2), 16) / 255,
+        parseInt(cleanHex.slice(2, 4), 16) / 255,
+        parseInt(cleanHex.slice(4, 6), 16) / 255
+      )
+    }
+  } else if (rawColor && typeof rawColor === 'object') {
+    const r = Number(rawColor.r) || 0
+    const g = Number(rawColor.g) || 0
+    const b = Number(rawColor.b) || 0
+    watermarkColor = rgb(
+      r > 1 ? r / 255 : r,
+      g > 1 ? g / 255 : g,
+      b > 1 ? b / 255 : b
+    )
+  }
 
   if (onProgress) onProgress('Loading PDF for watermarking...')
-  const buf = await file.arrayBuffer()
-  const doc = await safeLoadPdfDocument(buf, file.name)
+  const fileName = file?.name || 'document.pdf'
+  const doc = await safeLoadPdfDocument(file, fileName)
   const font = await doc.embedFont(StandardFonts.HelveticaBold)
 
   let embeddedImage = null
@@ -776,7 +901,7 @@ export async function watermarkPdf(file, watermarkOptions = {}, onProgress) {
         y: originY,
         size: fontSize,
         font,
-        color: rgb(color.r, color.g, color.b),
+        color: watermarkColor,
         opacity,
         rotate: degrees(rotation),
       })
@@ -787,7 +912,7 @@ export async function watermarkPdf(file, watermarkOptions = {}, onProgress) {
   return {
     bytes,
     blob: new Blob([bytes], { type: 'application/pdf' }),
-    name: `watermarked-${file.name}`,
+    name: `watermarked-${fileName}`,
     size: bytes.length,
     pageCount: pages.length,
   }
@@ -1140,11 +1265,17 @@ export async function signPdf(file, signatureDataUrl, pageNumber = 1, rect = {},
 export async function redactPdfPages(file, redactionsByPage, onProgress = null) {
   if (onProgress) onProgress('Initializing permanent PDF redaction engine...')
   const pdfjs = await getPdfJs()
-  const arrayBuffer = await file.arrayBuffer()
-  const pdf = await pdfjs.getDocument({ data: arrayBuffer, isEvalSupported: false, enableScripting: false }).promise
+  // Ensure an independent, safe ArrayBuffer from any input type (File, Blob, ArrayBuffer, Uint8Array)
+  const originalBuffer = await toSafeArrayBuffer(file, true)
+
+  // PDF.js worker may detach whatever buffer is given in { data: ... }
+  // So provide PDF.js with its own dedicated clone:
+  const pdfjsData = originalBuffer.slice(0)
+  const pdf = await pdfjs.getDocument(getPdfjsDocumentOptions(pdfjsData)).promise
   const numPages = pdf.numPages
 
-  const srcDoc = await safeLoadPdfDocument(arrayBuffer.slice(0), file.name)
+  // safeLoadPdfDocument receives its own independent copy
+  const srcDoc = await safeLoadPdfDocument(originalBuffer.slice(0), file?.name || 'document.pdf')
   const outDoc = await PDFDocument.create()
 
   for (let p = 1; p <= numPages; p++) {
@@ -1212,7 +1343,7 @@ export async function redactPdfPages(file, redactionsByPage, onProgress = null) 
   return {
     bytes,
     blob: new Blob([bytes], { type: 'application/pdf' }),
-    name: `redacted-${file.name}`,
+    name: `redacted-${file?.name || 'document.pdf'}`,
     size: bytes.length,
     pageCount: numPages,
     notice: 'Permanent redaction complete. Text layer and underlying vector objects on redacted pages have been irreversibly destroyed.',
@@ -1230,11 +1361,13 @@ export async function compressPdf(file, arg2 = null, arg3 = null) {
   const preset = options.preset || 'balanced' // 'balanced', 'high', 'lossless'
 
   if (onProgress) onProgress('Analyzing PDF structures...')
-  const buf = await file.arrayBuffer()
-  const origSize = file.size || buf.byteLength
+  const buf = await toSafeArrayBuffer(file, true)
+  const origSize = file?.size || buf.byteLength
+  const fileName = file?.name || 'document.pdf'
 
   // 1. Lossless object stream compaction and metadata cleanup
-  const doc = await safeLoadPdfDocument(buf.slice(0), file.name)
+  const doc = await safeLoadPdfDocument(buf.slice(0), fileName)
+  const totalPages = doc.getPageCount()
   const losslessBytes = await doc.save({
     useObjectStreams: true,
     addDefaultPage: false,
@@ -1250,8 +1383,9 @@ export async function compressPdf(file, arg2 = null, arg3 = null) {
   const canAttemptRaster = (preset === 'high' || options.dpi) && typeof window !== 'undefined' && typeof document !== 'undefined'
   if (canAttemptRaster) {
     try {
+      if (onProgress) onProgress(`Performing raster downsampling...`)
       const pdfjs = await getPdfJs()
-      const loadingTask = pdfjs.getDocument({ data: buf.slice(0), isEvalSupported: false, enableScripting: false })
+      const loadingTask = pdfjs.getDocument(getPdfjsDocumentOptions(buf.slice(0)))
       const pdf = await loadingTask.promise
       const numPages = pdf.numPages
 
@@ -1310,6 +1444,9 @@ export async function compressPdf(file, arg2 = null, arg3 = null) {
             const origVp = page.getViewport({ scale: 1.0 })
             const p = outDoc.addPage([origVp.width, origVp.height])
             p.drawImage(embedded, { x: 0, y: 0, width: origVp.width, height: origVp.height })
+          } else {
+            const [copied] = await outDoc.copyPages(doc, [i - 1])
+            outDoc.addPage(copied)
           }
 
           canvas.width = 0
@@ -1343,13 +1480,14 @@ export async function compressPdf(file, arg2 = null, arg3 = null) {
   return {
     bytes: bestBytes,
     blob: new Blob([bestBytes], { type: 'application/pdf' }),
-    name: `compressed-${file.name}`,
+    name: `compressed-${file?.name || 'document.pdf'}`,
     origSize,
     size: bestSize,
     savedBytes,
     savedPct,
     reductionNotice,
     rasterized,
+    pageCount: totalPages,
   }
 }
 
@@ -1400,6 +1538,7 @@ export async function lockPdf(file, password, options = {}, onProgress = null) {
     size: encryptedBytes.length,
     pageCount,
     algorithm,
+    isEncrypted: true,
     permissions: encryptOpts.permissions || null,
   }
 }
@@ -1441,7 +1580,7 @@ export async function unlockPdf(file, password, onProgress = null) {
   const pdfjs = await getPdfJs()
   let pdf
   try {
-    const loadingTask = pdfjs.getDocument({ data: arrayBuffer.slice(0), password, isEvalSupported: false, enableScripting: false })
+    const loadingTask = pdfjs.getDocument(getPdfjsDocumentOptions(arrayBuffer.slice(0), { password }))
     pdf = await loadingTask.promise
   } catch (err) {
     if (/password|incorrect/i.test(err?.message || '')) {
@@ -1515,11 +1654,11 @@ export async function changePdfPassword(file, currentPassword, newPassword, opti
 
 export async function comparePdfs(fileA, fileB, onProgress) {
   if (onProgress) onProgress('Analyzing documents for comparison...')
-  const bufA = await fileA.arrayBuffer()
-  const bufB = await fileB.arrayBuffer()
+  const bufA = await toSafeArrayBuffer(fileA, true)
+  const bufB = await toSafeArrayBuffer(fileB, true)
 
-  const docA = await safeLoadPdfDocument(bufA, fileA.name)
-  const docB = await safeLoadPdfDocument(bufB, fileB.name)
+  const docA = await safeLoadPdfDocument(bufA, fileA?.name || 'documentA.pdf')
+  const docB = await safeLoadPdfDocument(bufB, fileB?.name || 'documentB.pdf')
 
   const pagesA = docA.getPageCount()
   const pagesB = docB.getPageCount()
@@ -1555,8 +1694,8 @@ export async function comparePdfs(fileA, fileB, onProgress) {
   if (typeof window !== 'undefined') {
     try {
       const pdfjs = await getPdfJs()
-      const pdfjsDocA = await pdfjs.getDocument({ data: bufA.slice(0), isEvalSupported: false, enableScripting: false }).promise
-      const pdfjsDocB = await pdfjs.getDocument({ data: bufB.slice(0), isEvalSupported: false, enableScripting: false }).promise
+      const pdfjsDocA = await pdfjs.getDocument(getPdfjsDocumentOptions(bufA.slice(0))).promise
+      const pdfjsDocB = await pdfjs.getDocument(getPdfjsDocumentOptions(bufB.slice(0))).promise
 
       for (let i = 1; i <= pagesA; i++) {
         const page = await pdfjsDocA.getPage(i)
@@ -1652,14 +1791,14 @@ export async function comparePdfs(fileA, fileB, onProgress) {
     success: true,
     summary: isIdentical ? 'Documents are identical in layout, text, and metadata' : 'Differences detected between documents',
     fileA: {
-      name: fileA.name || 'Document A',
-      size: fileA.size || bufA.byteLength,
+      name: fileA?.name || 'Document A',
+      size: fileA?.size || bufA.byteLength,
       pageCount: pagesA,
       title: docA.getTitle() || 'Untitled',
     },
     fileB: {
-      name: fileB.name || 'Document B',
-      size: fileB.size || bufB.byteLength,
+      name: fileB?.name || 'Document B',
+      size: fileB?.size || bufB.byteLength,
       pageCount: pagesB,
       title: docB.getTitle() || 'Untitled',
     },
@@ -1677,20 +1816,75 @@ export async function comparePdfs(fileA, fileB, onProgress) {
   }
 }
 
+/**
+ * Sanitize filename for ZIP archive entries to prevent path traversal,
+ * null byte injection, and directory structure hijacking.
+ */
+export function sanitizeZipFilename(name, fallback = 'document.pdf') {
+  if (!name || typeof name !== 'string') return fallback
+  let clean = name.replace(/\0/g, '')
+  clean = clean.replace(/\\/g, '/')
+  const segments = clean.split('/').filter(Boolean)
+  clean = segments.pop() || fallback
+  clean = clean.replace(/^(\.\.)+/, '').replace(/[\x00-\x1f\x7f]/g, '').trim()
+  if (!clean || clean === '.' || clean === '..') clean = fallback
+  if (clean.length > 180) {
+    const dotIdx = clean.lastIndexOf('.')
+    if (dotIdx > 0 && dotIdx > clean.length - 20) {
+      const ext = clean.slice(dotIdx)
+      clean = clean.slice(0, 180 - ext.length) + ext
+    } else {
+      clean = clean.slice(0, 180)
+    }
+  }
+  return clean
+}
+
 export async function createZipFromFiles(items, zipFilename = 'export.zip', onProgress) {
   if (onProgress) onProgress('Archiving outputs into ZIP...')
   const zip = new JSZip()
-  for (const item of items) {
-    const data = item.blob || item.bytes || item
-    const name = item.name || 'document.pdf'
-    zip.file(name, data)
+  const usedNames = new Set()
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]
+    let rawData = item
+    if (item && typeof item === 'object') {
+      if (item.blob) {
+        rawData = item.blob
+      } else if (item.bytes && typeof item.bytes !== 'function') {
+        rawData = item.bytes
+      } else if (item.file) {
+        rawData = item.file
+      }
+    }
+    const rawName = item?.name || `document_${i + 1}.pdf`
+    let cleanName = sanitizeZipFilename(rawName, `document_${i + 1}.pdf`)
+
+    // Disambiguate duplicate names in archive
+    let finalEntryName = cleanName
+    let base = cleanName
+    let ext = ''
+    const dot = cleanName.lastIndexOf('.')
+    if (dot > 0) {
+      base = cleanName.slice(0, dot)
+      ext = cleanName.slice(dot)
+    }
+    let counter = 1
+    while (usedNames.has(finalEntryName)) {
+      finalEntryName = `${base}_(${counter})${ext}`
+      counter++
+    }
+    usedNames.add(finalEntryName)
+
+    // Convert rawData to Uint8Array safely across all environments (browser Blob/File, Node File/Buffer, Uint8Array, ArrayBuffer)
+    const u8 = await toSafeUint8Array(rawData)
+    zip.file(finalEntryName, u8)
   }
   const zipBlob = await zip.generateAsync({ type: 'blob' }, metadata => {
     if (onProgress) onProgress(`Compressing archive: ${Math.round(metadata.percent)}%...`)
   })
   return {
     blob: zipBlob,
-    name: zipFilename,
+    name: sanitizeZipFilename(zipFilename, 'export.zip'),
     size: zipBlob.size,
   }
 }

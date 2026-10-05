@@ -66,9 +66,14 @@ async function parseRelationships(zip) {
   if (!relsFile) return rels
 
   const relsXml = await relsFile.async('text')
-  const relMatches = relsXml.matchAll(/<Relationship\s+[^>]*Id="([^"]+)"[^>]*Target="([^"]+)"[^>]*\/>/g)
+  const relMatches = relsXml.matchAll(/<Relationship\s+([^>]+)(?:\/>|>[\s\S]*?<\/Relationship>)/gi)
   for (const match of relMatches) {
-    rels.set(match[1], match[2])
+    const attrs = match[1]
+    const idMatch = attrs.match(/\bId="([^"]+)"/i)
+    const targetMatch = attrs.match(/\bTarget="([^"]+)"/i)
+    if (idMatch && targetMatch) {
+      rels.set(idMatch[1], targetMatch[1])
+    }
   }
   return rels
 }
@@ -433,10 +438,23 @@ function parseTable(tblXml, defaultStyles, rels, zip) {
  */
 export async function parseDocx(input) {
   let zip
-  if (input instanceof ArrayBuffer || ArrayBuffer.isView(input)) {
-    zip = await JSZip.loadAsync(input)
-  } else if (input && typeof input.arrayBuffer === 'function') {
-    const buf = await input.arrayBuffer()
+  if (!input) {
+    throw new Error('No DOCX input provided for parsing.')
+  }
+  let binaryData = input
+  if (input.blob) binaryData = input.blob
+  else if (input.data) binaryData = input.data
+  else if (input.file) binaryData = input.file
+
+  if (binaryData instanceof ArrayBuffer || ArrayBuffer.isView(binaryData)) {
+    zip = await JSZip.loadAsync(binaryData)
+  } else if (typeof Buffer !== 'undefined' && Buffer.isBuffer(binaryData)) {
+    zip = await JSZip.loadAsync(binaryData)
+  } else if (typeof binaryData.bytes === 'function') {
+    const u8 = await binaryData.bytes()
+    zip = await JSZip.loadAsync(u8)
+  } else if (typeof binaryData.arrayBuffer === 'function') {
+    const buf = await binaryData.arrayBuffer()
     zip = await JSZip.loadAsync(buf)
   } else {
     throw new Error('Unsupported input type for DOCX parsing.')

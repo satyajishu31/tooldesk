@@ -2,7 +2,37 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import fontkit from '@pdf-lib/fontkit'
 import { parseDocx } from './docxParser.js'
 import { layoutDocxToPdf } from './docxLayoutEngine.js'
-import { PAGE_SIZES, sanitizeWinAnsi } from './pdfStructuralEngine.js'
+import { PAGE_SIZES, sanitizeWinAnsi, toSafeArrayBuffer } from './pdfStructuralEngine.js'
+
+/**
+ * Safely extract string content from String, File, Blob, Buffer, or Uint8Array
+ */
+export async function toSafeString(input) {
+  if (typeof input === 'string') return input
+  if (!input) return ''
+  if (typeof input.text === 'function') {
+    return await input.text()
+  }
+  if (input instanceof Uint8Array || ArrayBuffer.isView(input)) {
+    return new TextDecoder().decode(input)
+  }
+  if (input instanceof ArrayBuffer) {
+    return new TextDecoder().decode(new Uint8Array(input))
+  }
+  if (typeof Buffer !== 'undefined' && Buffer.isBuffer(input)) {
+    return input.toString('utf-8')
+  }
+  if (input.blob) {
+    return await toSafeString(input.blob)
+  }
+  if (input.data) {
+    return await toSafeString(input.data)
+  }
+  if (input.file) {
+    return await toSafeString(input.file)
+  }
+  return String(input)
+}
 
 const _convFontBytesCache = {}
 async function loadFontBytes(filename) {
@@ -66,9 +96,20 @@ async function typesetUnicodeDocument(blocks, doc, options = {}) {
     const numW = ctx.measureText(pageStr).width
     ctx.fillText(pageStr, cWidth - margin - numW, cHeight - margin + 20 * scale)
 
-    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'))
-    const buf = await blob.arrayBuffer()
-    pagesBitmaps.push(buf)
+    let blob = await new Promise(res => canvas.toBlob(res, 'image/png'))
+    if (!blob) {
+      const dataUrl = canvas.toDataURL('image/png')
+      if (dataUrl) {
+        const bin = atob(dataUrl.split(',')[1])
+        const u8 = new Uint8Array(bin.length)
+        for (let k = 0; k < bin.length; k++) u8[k] = bin.charCodeAt(k)
+        blob = new Blob([u8], { type: 'image/png' })
+      }
+    }
+    if (blob) {
+      const buf = await blob.arrayBuffer()
+      pagesBitmaps.push(buf)
+    }
 
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, cWidth, cHeight)
@@ -287,7 +328,13 @@ async function typesetUnicodeDocument(blocks, doc, options = {}) {
  * Typeset multi-line structured text blocks into PDFDocument
  */
 async function typesetDocument(blocks, doc, options = {}) {
-  const allText = blocks.map(b => b.text || '').join(' ')
+  const allText = blocks.map(b => {
+    if (b.text) return b.text
+    if (b.rows && Array.isArray(b.rows)) {
+      return b.rows.map(r => Array.isArray(r) ? r.join(' ') : '').join(' ')
+    }
+    return ''
+  }).join(' ')
   if (typeof document !== 'undefined' && /[^\x00-\x7F\xA0-\xFF]/.test(allText)) {
     return await typesetUnicodeDocument(blocks, doc, options)
   }
@@ -609,13 +656,13 @@ async function typesetDocument(blocks, doc, options = {}) {
  */
 export async function convertDocxToPdf(file, onProgress = null) {
   if (onProgress) onProgress('Parsing Word document structure...')
-  const arrayBuffer = await file.arrayBuffer()
+  const arrayBuffer = await toSafeArrayBuffer(file, true)
   const docIR = await parseDocx(arrayBuffer)
 
   if (onProgress) onProgress('Typesetting high-fidelity document layout...')
   const result = await layoutDocxToPdf(docIR, onProgress)
 
-  const baseName = file.name.replace(/\.docx?$/i, '')
+  const baseName = file?.name ? file.name.replace(/\.docx?$/i, '') : 'document'
   return {
     bytes: result.bytes,
     blob: new Blob([result.bytes], { type: 'application/pdf' }),
@@ -639,24 +686,85 @@ export async function convertImagesToPdf(files, options = {}, onProgress = null)
 
   for (let idx = 0; idx < files.length; idx++) {
     const file = files[idx]
-    if (onProgress) onProgress(`Processing image ${idx + 1} of ${files.length}: ${file.name}...`)
+    if (onProgress) onProgress(`Processing image ${idx + 1} of ${files.length}: ${file?.name || 'image'}...`)
 
-    const imgObj = await new Promise((resolve, reject) => {
-      const img = new Image()
-      const url = URL.createObjectURL(file)
-      img.onload = () => {
-        URL.revokeObjectURL(url)
-        resolve(img)
-      }
-      img.onerror = (e) => {
-        URL.revokeObjectURL(url)
-        reject(new Error(`Failed to load image: ${file.name}`))
-      }
-      img.src = url
-    })
+    const arrayBuffer = await toSafeArrayBuffer(file, true)
+    let embeddedImg
+    const isJpg = file?.type === 'image/jpeg' || (typeof file?.name === 'string' && file.name.match(/\.jpe?g$/i))
+    const isPng = file?.type === 'image/png' || (typeof file?.name === 'string' && file.name.match(/\.png$/i))
 
-    const naturalWidth = imgObj.naturalWidth || imgObj.width || 800
-    const naturalHeight = imgObj.naturalHeight || imgObj.height || 600
+    if (isJpg) {
+      try {
+        embeddedImg = await doc.embedJpg(arrayBuffer)
+      } catch (_) {}
+    } else if (isPng) {
+      try {
+        embeddedImg = await doc.embedPng(arrayBuffer)
+      } catch (_) {}
+    }
+
+    if (!embeddedImg) {
+      // Try direct embedding as PNG or JPG fallback
+      try {
+        embeddedImg = await doc.embedPng(arrayBuffer)
+      } catch (_) {
+        try {
+          embeddedImg = await doc.embedJpg(arrayBuffer)
+        } catch (_) {}
+      }
+    }
+
+    let naturalWidth = embeddedImg ? embeddedImg.width : 0
+    let naturalHeight = embeddedImg ? embeddedImg.height : 0
+
+    if (!embeddedImg && typeof Image !== 'undefined' && typeof URL !== 'undefined' && typeof document !== 'undefined') {
+      // Re-encode WebP/GIF/SVG/BMP or mislabeled JPG/PNG via canvas
+      const imgObj = await new Promise((resolve, reject) => {
+        const img = new Image()
+        const url = URL.createObjectURL(file instanceof Blob ? file : new Blob([arrayBuffer]))
+        img.onload = () => {
+          URL.revokeObjectURL(url)
+          resolve(img)
+        }
+        img.onerror = () => {
+          URL.revokeObjectURL(url)
+          reject(new Error(`Failed to load image: ${file?.name || 'image'}`))
+        }
+        img.src = url
+      })
+
+      naturalWidth = imgObj.naturalWidth || imgObj.width || 800
+      naturalHeight = imgObj.naturalHeight || imgObj.height || 600
+
+      const canvas = document.createElement('canvas')
+      canvas.width = naturalWidth
+      canvas.height = naturalHeight
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(imgObj, 0, 0)
+      let pngBlob = await new Promise(res => canvas.toBlob(res, 'image/png'))
+      if (!pngBlob) {
+        const dataUrl = canvas.toDataURL('image/png')
+        if (dataUrl) {
+          const bin = atob(dataUrl.split(',')[1])
+          const u8 = new Uint8Array(bin.length)
+          for (let k = 0; k < bin.length; k++) u8[k] = bin.charCodeAt(k)
+          pngBlob = new Blob([u8], { type: 'image/png' })
+        }
+      }
+      if (pngBlob) {
+        const pngBuf = await pngBlob.arrayBuffer()
+        embeddedImg = await doc.embedPng(pngBuf)
+      }
+      canvas.width = 0
+      canvas.height = 0
+    }
+
+    if (!embeddedImg) {
+      throw new Error(`Unsupported or unreadable image format for file: ${file?.name || 'image'}`)
+    }
+
+    naturalWidth = naturalWidth || embeddedImg.width || 800
+    naturalHeight = naturalHeight || embeddedImg.height || 600
 
     let pWidth, pHeight
     if (pageSize === 'FIT') {
@@ -677,26 +785,6 @@ export async function convertImagesToPdf(files, options = {}, onProgress = null)
     const posX = margin + (availW - finalW) / 2
     const posY = margin + (availH - finalH) / 2
 
-    const arrayBuffer = await file.arrayBuffer()
-    let embeddedImg
-    if (file.type === 'image/jpeg' || file.name.match(/\.jpe?g$/i)) {
-      embeddedImg = await doc.embedJpg(arrayBuffer)
-    } else if (file.type === 'image/png' || file.name.match(/\.png$/i)) {
-      embeddedImg = await doc.embedPng(arrayBuffer)
-    } else {
-      // Re-encode WebP/GIF/SVG/BMP to PNG via canvas
-      const canvas = document.createElement('canvas')
-      canvas.width = naturalWidth
-      canvas.height = naturalHeight
-      const ctx = canvas.getContext('2d')
-      ctx.drawImage(imgObj, 0, 0)
-      const pngBlob = await new Promise(res => canvas.toBlob(res, 'image/png'))
-      const pngBuf = await pngBlob.arrayBuffer()
-      embeddedImg = await doc.embedPng(pngBuf)
-      canvas.width = 0
-      canvas.height = 0
-    }
-
     const page = doc.addPage([pWidth, pHeight])
     page.drawImage(embeddedImg, {
       x: posX,
@@ -707,7 +795,7 @@ export async function convertImagesToPdf(files, options = {}, onProgress = null)
   }
 
   const pdfBytes = await doc.save()
-  const singleName = files.length === 1 ? files[0].name.replace(/\.[^/.]+$/, '') : 'combined-images'
+  const singleName = files.length === 1 ? (files[0]?.name ? files[0].name.replace(/\.[^/.]+$/, '') : 'image') : 'combined-images'
 
   return {
     bytes: pdfBytes,
@@ -721,7 +809,8 @@ export async function convertImagesToPdf(files, options = {}, onProgress = null)
 /**
  * 1C. Plain Text (.txt) → PDF
  */
-export async function convertTextToPdf(text, options = {}) {
+export async function convertTextToPdf(input, options = {}) {
+  const text = await toSafeString(input)
   const doc = await PDFDocument.create()
   doc.setCreator('ToolDesk PDF Studio')
 
@@ -743,7 +832,8 @@ export async function convertTextToPdf(text, options = {}) {
 /**
  * 1D. Markdown (.md) → PDF
  */
-export async function convertMarkdownToPdf(markdown, options = {}) {
+export async function convertMarkdownToPdf(input, options = {}) {
+  const markdown = await toSafeString(input)
   const doc = await PDFDocument.create()
   doc.setCreator('ToolDesk PDF Studio')
 
@@ -838,7 +928,8 @@ export async function convertMarkdownToPdf(markdown, options = {}) {
 /**
  * 1E. HTML → PDF
  */
-export async function convertHtmlToPdf(htmlString, options = {}) {
+export async function convertHtmlToPdf(input, options = {}) {
+  const htmlString = await toSafeString(input)
   const doc = await PDFDocument.create()
   doc.setCreator('ToolDesk PDF Studio')
 
@@ -952,7 +1043,8 @@ function parseCsv(csvText) {
   return rows
 }
 
-export async function convertCsvToPdf(csvText, options = {}) {
+export async function convertCsvToPdf(input, options = {}) {
+  const csvText = await toSafeString(input)
   const rows = parseCsv(csvText)
   if (!rows.length) throw new Error('CSV file is empty.')
 
@@ -978,7 +1070,8 @@ export async function convertCsvToPdf(csvText, options = {}) {
 /**
  * 1G. JSON → PDF
  */
-export async function convertJsonToPdf(jsonText, options = {}) {
+export async function convertJsonToPdf(input, options = {}) {
+  const jsonText = await toSafeString(input)
   let parsed
   try {
     parsed = JSON.parse(jsonText)
@@ -1009,7 +1102,8 @@ export async function convertJsonToPdf(jsonText, options = {}) {
 /**
  * 1H. XML → PDF
  */
-export async function convertXmlToPdf(xmlText, options = {}) {
+export async function convertXmlToPdf(input, options = {}) {
+  const xmlText = await toSafeString(input)
   if (!xmlText || !xmlText.trim()) throw new Error('XML file is empty.')
 
   const doc = await PDFDocument.create()

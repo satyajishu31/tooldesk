@@ -203,7 +203,10 @@ export function createBatchSession({
       const usedNames = new Set()
 
       for (const item of doneItems) {
-        let name = item.result.filename || item.name
+        let name = (item.result?.filename || item.name || 'file')
+          .replace(/[/\\]/g, '_')
+          .replace(/[\x00-\x1f\x7f]/g, '')
+          .trim() || 'file'
         let base = name
         let ext = ''
         const dot = name.lastIndexOf('.')

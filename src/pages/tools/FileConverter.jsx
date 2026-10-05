@@ -8,7 +8,7 @@ import { createOutput } from '../../utils/fileEngine'
 import { createJob, JOB_STATES } from '../../utils/jobEngine'
 import { createBatchSession, BATCH_ITEM_STATUS } from '../../utils/batchEngine'
 import { consumePendingInboundFiles } from '../../utils/inboundShare'
-import { convertTextToPdf, convertMarkdownToPdf, getPdfJs } from '../../utils/pdfEngine'
+import { convertTextToPdf, convertMarkdownToPdf, getPdfJs, getPdfjsDocumentOptions } from '../../utils/pdfEngine'
 import { addToHistory } from '../../utils/history'
 import { useToolHistory } from '../../hooks/useToolHistory'
 import { Clock, Trash2, ShieldCheck, FileText, Database, Image as ImageIcon, Film } from 'lucide-react'
@@ -64,11 +64,7 @@ function base64ToUtf8(b64) {
 ══════════════════════════════════════════ */
 async function extractPdfText(ab) {
   const lib = await getPdfJs()
-  const loadingTask = lib.getDocument({
-    data: new Uint8Array(ab),
-    isEvalSupported: false,
-    enableScripting: false,
-  })
+  const loadingTask = lib.getDocument(getPdfjsDocumentOptions(new Uint8Array(ab)))
   const pdf = await loadingTask.promise
   const pages = []
   try {
